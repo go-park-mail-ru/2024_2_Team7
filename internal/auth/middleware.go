@@ -1,20 +1,36 @@
 package auth
 
 import (
-	"kudago/session"
+	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
 )
 
-func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		_, ok := session.CheckSession(r)
-		if !ok {
+func (h *Handler) AuthMiddleware(whitelist []string, authHandler Handler, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println(r)
+		for _, path := range whitelist {
+			if strings.HasPrefix(r.URL.Path, path) {
+				next.ServeHTTP(w, r)
+				return
+			}
+		}
+
+		_, authenticated := authHandler.SessionDb.CheckSession(r)
+		if !authenticated {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
-		next(w, r)
-	}
+
+		next.ServeHTTP(w, r)
+	})
 }
+
+func (h *Handler) GetEventsHandler(w http.ResponseWriter, r *http.Request) {
+	json.NewEncoder(w).Encode(h.EventDB.Events)
+}
+
 func CORSMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Устанавливаем CORS-заголовки

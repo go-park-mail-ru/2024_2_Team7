@@ -9,27 +9,43 @@ import (
 
 type Session struct {
 	Username string
+	Token    string
 	Expires  time.Time
 }
 
-var sessions = make(map[string]Session)
-
-func CreateSession(username string) string {
-	sessionToken := generateSessionToken()
-	expiration := time.Now().Add(30 * time.Minute)
-	sessions[sessionToken] = Session{
-		Username: username,
-		Expires:  expiration,
-	}
-	return sessionToken
+type SessionDB struct {
+	sessions map[string]Session
 }
 
-func CheckSession(r *http.Request) (*Session, bool) {
+const ExpirationTime = 30 * time.Minute
+
+func NewSessionDB() *SessionDB {
+	return &SessionDB{
+		sessions: make(map[string]Session),
+	}
+}
+
+func (db *SessionDB) CreateSession(username string) Session {
+	sessionToken := generateSessionToken()
+	expiration := time.Now().Add(ExpirationTime)
+
+	session := Session{
+		Username: username,
+		Token:    sessionToken,
+		Expires:  expiration,
+	}
+
+	db.sessions[sessionToken] = session
+	return session
+}
+
+func (db *SessionDB) CheckSession(r *http.Request) (*Session, bool) {
 	cookie, err := r.Cookie("session_token")
 	if err != nil {
 		return nil, false
 	}
-	session, exists := sessions[cookie.Value]
+
+	session, exists := db.sessions[cookie.Value]
 	if !exists || session.Expires.Before(time.Now()) {
 		return nil, false
 	}
@@ -41,10 +57,7 @@ func generateSessionToken() string {
 	rand.Read(b)
 	return hex.EncodeToString(b)
 }
-func DeleteSession(token string) {
-	delete(sessions, token)
-}
 
-func GetExpiration() time.Time {
-	return time.Now().Add(30 * time.Minute)
+func (db *SessionDB) DeleteSession(token string) {
+	delete(db.sessions, token)
 }

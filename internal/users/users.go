@@ -1,25 +1,18 @@
 package users
 
-import "errors"
-
-var users = make(map[string]User)
-
-func AddUser(user User) {
-	users[user.Username] = user
+func (d *UserDB) AddUser(user User) {
+	d.users[user.Username] = user
 }
 
-func CheckCredentials(username, password string) bool {
-	user, exists := users[username]
+func (d *UserDB) CheckCredentials(username, password string) bool {
+	user, exists := d.users[username]
 	if !exists || user.Password != password {
 		return false
 	}
 	return true
 }
 
-func GetUser(username string) (User, error) {
-	user, exists := users[username]
-	if !exists {
-		return User{}, errors.New("user not found")
-	}
-	return user, nil
+func (d *UserDB) GetUser(username string) User {
+	user, _ := d.users[username]
+	return user
 }
