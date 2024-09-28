@@ -1,4 +1,4 @@
-package news
+package events
 
 import (
 	"encoding/json"

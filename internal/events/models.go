@@ -1,4 +1,4 @@
-package news
+package events
 
 type News struct {
 	ID          string

@@ -2,9 +2,9 @@ package auth
 
 import (
 	"encoding/json"
+	"kudago/internal/users"
+	"kudago/session"
 	"net/http"
-	"news-api/internal/users"
-	"news-api/pkg/session"
 )
 
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {
