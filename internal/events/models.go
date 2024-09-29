@@ -5,7 +5,7 @@ type Event struct {
 	Title       string   `json:"title"`
 	DateStart   string   `json:"date_start"`
 	DateEnd     string   `json:"date_end"`
-	Tag         []string `json:"tag"` 
+	Tag         []string `json:"tag"`
 	Description string   `json:"description"`
 	ImageURL    string   `json:"image"`
 }

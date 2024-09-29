@@ -43,7 +43,6 @@ func main() {
 	r.HandleFunc("/events", eventHandler.GetAllEventsHandler).Methods("GET")
 	r.HandleFunc("/events/{tag}", eventHandler.GetEventsByTagHandler).Methods("GET")
 
-
 	handlerWithCORS := auth.CORSMiddleware(r)
 
 	handler := authHandler.AuthMiddleware(whitelist, *authHandler, handlerWithCORS)
