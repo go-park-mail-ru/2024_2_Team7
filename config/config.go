@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	DefaultPort = "8080"
+	DefaultPort = "5500"
 )
 
 func LoadConfig() string {

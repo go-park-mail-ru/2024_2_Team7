@@ -36,6 +36,9 @@ func main() {
 		"/events",
 	}
 
+	fs := http.FileServer(http.Dir("./static/"))
+	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fs))
+
 	r.HandleFunc("/register", authHandler.RegisterHandler).Methods("POST")
 	r.HandleFunc("/login", authHandler.LoginHandler).Methods("POST")
 	r.HandleFunc("/logout", authHandler.LogoutHandler).Methods("POST")

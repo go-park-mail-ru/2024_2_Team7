@@ -50,7 +50,7 @@ func createEventMapWithDefaultValues() []Event {
 			DateEnd:     "2024-10-3",
 			Tag:         []string{"popular"},
 			Description: "Творчество Малевича",
-			ImageURL:    "/static/images/Events1.jpg",
+			ImageURL:    "/static/images/Event1.jpeg",
 		},
 		{
 			ID:          "2",
