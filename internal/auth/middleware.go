@@ -1,15 +1,12 @@
 package auth
 
 import (
-	"encoding/json"
-	"fmt"
 	"net/http"
 	"strings"
 )
 
-func (h *Handler) AuthMiddleware(whitelist []string, authHandler Handler, next http.Handler) http.Handler {
+func (h *AuthHandler) AuthMiddleware(whitelist []string, authHandler AuthHandler, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println(r)
 		for _, path := range whitelist {
 			if strings.HasPrefix(r.URL.Path, path) {
 				next.ServeHTTP(w, r)
@@ -25,10 +22,6 @@ func (h *Handler) AuthMiddleware(whitelist []string, authHandler Handler, next h
 
 		next.ServeHTTP(w, r)
 	})
-}
-
-func (h *Handler) GetEventsHandler(w http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(w).Encode(h.EventDB.Events)
 }
 
 func CORSMiddleware(next http.Handler) http.Handler {

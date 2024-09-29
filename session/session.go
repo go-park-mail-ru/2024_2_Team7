@@ -7,6 +7,11 @@ import (
 	"time"
 )
 
+const (
+	SessionToken   = "session_token"
+	ExpirationTime = 30 * time.Minute
+)
+
 type Session struct {
 	Username string
 	Token    string
@@ -16,8 +21,6 @@ type Session struct {
 type SessionDB struct {
 	sessions map[string]Session
 }
-
-const ExpirationTime = 30 * time.Minute
 
 func NewSessionDB() *SessionDB {
 	return &SessionDB{
@@ -39,17 +42,17 @@ func (db *SessionDB) CreateSession(username string) Session {
 	return session
 }
 
-func (db *SessionDB) CheckSession(r *http.Request) (*Session, bool) {
-	cookie, err := r.Cookie("session_token")
+func (db *SessionDB) CheckSession(r *http.Request) (Session, bool) {
+	cookie, err := r.Cookie(SessionToken)
 	if err != nil {
-		return nil, false
+		return Session{}, false
 	}
 
 	session, exists := db.sessions[cookie.Value]
 	if !exists || session.Expires.Before(time.Now()) {
-		return nil, false
+		return Session{}, false
 	}
-	return &session, true
+	return session, true
 }
 
 func generateSessionToken() string {

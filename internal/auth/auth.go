@@ -4,37 +4,56 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"kudago/internal/events"
 	"kudago/internal/users"
 	"kudago/session"
 )
 
-type Handler struct {
+type AuthHandler struct {
 	UserDB    users.UserDB
 	SessionDb session.SessionDB
-	EventDB   events.EventDB
 }
 
-const sessionToken = "session_token"
+const SessionToken = session.SessionToken
 
-func (h *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
+	session, authorized := h.SessionDb.CheckSession(r)
+	if authorized {
+		http.Error(w, "Alredy logged in", http.StatusForbidden)
+		return
+	}
+
 	var user users.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
+
+	if h.UserDB.UserExists(user.Username) {
+		http.Error(w, "User already exists", http.StatusConflict)
+		return
+	}
+
 	h.UserDB.AddUser(user)
-	session := h.SessionDb.CreateSession(user.Username)
+	session = h.SessionDb.CreateSession(user.Username)
 	http.SetCookie(w, &http.Cookie{
-		Name:    sessionToken,
-		Value:   session.Token,
-		Expires: session.Expires,
+		Name:     SessionToken,
+		Value:    session.Token,
+		Expires:  session.Expires,
+		HttpOnly: true,
 	})
-	json.NewEncoder(w).Encode(user)
+
 	w.WriteHeader(http.StatusCreated)
+	creds := h.UserDB.GetCredentials(user.Username)
+	json.NewEncoder(w).Encode(creds)
 }
 
-func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) LoginHandler(w http.ResponseWriter, r *http.Request) {
+	_, authorized := h.SessionDb.CheckSession(r)
+	if authorized {
+		http.Error(w, "Alredy logged in", http.StatusForbidden)
+		return
+	}
+
 	var creds users.User
 	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
@@ -42,12 +61,13 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if h.UserDB.CheckCredentials(creds.Username, creds.Password) {
-		user := h.UserDB.GetUser(creds.Username)
+		user := h.UserDB.GetCredentials(creds.Username)
 		session := h.SessionDb.CreateSession(creds.Username)
 		http.SetCookie(w, &http.Cookie{
-			Name:    sessionToken,
-			Value:   session.Token,
-			Expires: session.Expires,
+			Name:     SessionToken,
+			Value:    session.Token,
+			Expires:  session.Expires,
+			HttpOnly: true,
 		})
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(user)
@@ -56,9 +76,8 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
-	// Получаем cookie сессии
-	cookie, err := r.Cookie(sessionToken)
+func (h *AuthHandler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie(SessionToken)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
@@ -66,12 +85,21 @@ func (h *Handler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 
 	h.SessionDb.DeleteSession(cookie.Value)
 
-	// Удаляем cookie у пользователя
 	http.SetCookie(w, &http.Cookie{
-		Name:   sessionToken,
+		Name:   SessionToken,
 		MaxAge: -1, // Устанавливаем истекшее время, чтобы удалить cookie
 	})
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode("logged out")
+}
+
+func (h *AuthHandler) CheckSessionHandler(w http.ResponseWriter, r *http.Request) {
+	session, authorized := h.SessionDb.CheckSession(r)
+	if !authorized {
+		http.Error(w, "", http.StatusUnauthorized)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(session)
 }

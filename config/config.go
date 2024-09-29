@@ -5,9 +5,16 @@ import (
 	"os"
 )
 
-func LoadConfig() {
+const (
+	DefaultPort = "8080"
+)
+
+func LoadConfig() string {
 	log.Println("Loading configuration...")
-	if _, exists := os.LookupEnv("PORT"); !exists {
-		os.Setenv("PORT", "8080")
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = DefaultPort
 	}
+	log.Printf("Используется порт: %s", port)
+	return port
 }
