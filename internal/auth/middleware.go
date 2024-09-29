@@ -27,7 +27,19 @@ func (h *Handler) AuthMiddleware(whitelist []string, authHandler *Handler, next 
 func CORSMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Устанавливаем CORS-заголовки
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5500")
+		origin := r.Header.Get("Origin")
+		allowedOrigins := []string{
+			"http://localhost",       // Клиент на порту 80
+			"http://vyhodnoy.online", // Другой разрешенный домен
+		}
+
+		// Проверка на разрешенные домены
+		for _, allowedOrigin := range allowedOrigins {
+			if origin == allowedOrigin {
+				w.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
+				break
+			}
+		}
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
