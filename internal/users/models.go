@@ -1,11 +1,13 @@
 package users
 
+import "sync"
+
 type User struct {
 	ID          int    `json:"id"`
 	Username    string `json:"username"`
 	Email       string `json:"email"`
 	DateOfBirth string `json:"date_of_birth,omitempty"`
-	Password    string `json:"-"`
+	Password    string `json:"password"`
 }
 
 type Credentials struct {
@@ -15,6 +17,7 @@ type Credentials struct {
 
 type UserDB struct {
 	users map[string]User
+	mu    sync.RWMutex
 }
 
 func NewUserDB() *UserDB {

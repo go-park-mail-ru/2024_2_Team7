@@ -33,7 +33,8 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.UserDB.AddUser(user)
+	h.UserDB.AddUser(&user)
+	user.Password=""
 	h.setSessionCookie(w, user.Username)
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(user)
@@ -54,6 +55,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	if h.UserDB.CheckCredentials(creds.Username, creds.Password) {
 		user := h.UserDB.GetUser(creds.Username)
+		user.Password=""
 		h.setSessionCookie(w, creds.Username)
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(user)
@@ -85,13 +87,13 @@ func (h *Handler) CheckSession(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "", http.StatusUnauthorized)
 		return
 	}
-	user:=h.UserDB.GetUser(session.Username)
+	user := h.UserDB.GetUser(session.Username)
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(user)
 }
 
-func (h *Handler) setSessionCookie(w http.ResponseWriter, username string){
+func (h *Handler) setSessionCookie(w http.ResponseWriter, username string) {
 	session := h.SessionDb.CreateSession(username)
 	http.SetCookie(w, &http.Cookie{
 		Name:     SessionToken,

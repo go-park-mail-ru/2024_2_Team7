@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -20,6 +21,7 @@ type Session struct {
 
 type SessionDB struct {
 	sessions map[string]Session
+	mu       sync.RWMutex
 }
 
 func NewSessionDB() *SessionDB {
@@ -29,6 +31,9 @@ func NewSessionDB() *SessionDB {
 }
 
 func (db *SessionDB) CreateSession(username string) *Session {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
 	sessionToken := generateSessionToken()
 	expiration := time.Now().Add(ExpirationTime)
 
@@ -43,6 +48,9 @@ func (db *SessionDB) CreateSession(username string) *Session {
 }
 
 func (db *SessionDB) CheckSession(r *http.Request) (*Session, bool) {
+	db.mu.RLock()
+	defer db.mu.RUnlock()
+
 	cookie, err := r.Cookie(SessionToken)
 	if err != nil {
 		return nil, false
@@ -62,5 +70,7 @@ func generateSessionToken() string {
 }
 
 func (db *SessionDB) DeleteSession(token string) {
+	db.mu.Lock()
+	defer db.mu.Unlock()
 	delete(db.sessions, token)
 }

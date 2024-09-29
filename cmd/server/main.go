@@ -15,25 +15,23 @@ import (
 
 func main() {
 	port := config.LoadConfig()
-
 	r := mux.NewRouter()
-	userDB := users.NewUserDB()
-	sessionDB := session.NewSessionDB()
-	eventsDB := events.NewEventDB()
 
 	authHandler := &auth.Handler{
-		UserDB:    *userDB,
-		SessionDb: *sessionDB,
+		UserDB:    *users.NewUserDB(),
+		SessionDb: *session.NewSessionDB(),
 	}
 
 	eventHandler := &events.Handler{
-		EventDB: *eventsDB,
+		EventDB: *events.NewEventDB(),
 	}
 
 	whitelist := []string{
 		"/login",
 		"/register",
 		"/events",
+		"/static",
+		"/session",
 	}
 
 	fs := http.FileServer(http.Dir("./static/"))
@@ -48,7 +46,7 @@ func main() {
 
 	handlerWithCORS := auth.CORSMiddleware(r)
 
-	handler := authHandler.AuthMiddleware(whitelist, *authHandler, handlerWithCORS)
+	handler := authHandler.AuthMiddleware(whitelist, authHandler, handlerWithCORS)
 
 	err := http.ListenAndServe(":"+port, handler)
 	if err != nil {
