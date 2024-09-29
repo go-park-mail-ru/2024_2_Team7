@@ -28,7 +28,7 @@ func NewSessionDB() *SessionDB {
 	}
 }
 
-func (db *SessionDB) CreateSession(username string) Session {
+func (db *SessionDB) CreateSession(username string) *Session {
 	sessionToken := generateSessionToken()
 	expiration := time.Now().Add(ExpirationTime)
 
@@ -39,20 +39,20 @@ func (db *SessionDB) CreateSession(username string) Session {
 	}
 
 	db.sessions[sessionToken] = session
-	return session
+	return &session
 }
 
-func (db *SessionDB) CheckSession(r *http.Request) (Session, bool) {
+func (db *SessionDB) CheckSession(r *http.Request) (*Session, bool) {
 	cookie, err := r.Cookie(SessionToken)
 	if err != nil {
-		return Session{}, false
+		return nil, false
 	}
 
 	session, exists := db.sessions[cookie.Value]
 	if !exists || session.Expires.Before(time.Now()) {
-		return Session{}, false
+		return nil, false
 	}
-	return session, true
+	return &session, true
 }
 
 func generateSessionToken() string {

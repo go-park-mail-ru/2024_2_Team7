@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-func (h *AuthHandler) AuthMiddleware(whitelist []string, authHandler AuthHandler, next http.Handler) http.Handler {
+func (h *Handler) AuthMiddleware(whitelist []string, authHandler Handler, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		for _, path := range whitelist {
 			if strings.HasPrefix(r.URL.Path, path) {

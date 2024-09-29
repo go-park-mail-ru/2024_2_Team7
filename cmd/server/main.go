@@ -21,12 +21,12 @@ func main() {
 	sessionDB := session.NewSessionDB()
 	eventsDB := events.NewEventDB()
 
-	authHandler := &auth.AuthHandler{
+	authHandler := &auth.Handler{
 		UserDB:    *userDB,
 		SessionDb: *sessionDB,
 	}
 
-	eventHandler := &events.EventHandler{
+	eventHandler := &events.Handler{
 		EventDB: *eventsDB,
 	}
 
@@ -39,12 +39,12 @@ func main() {
 	fs := http.FileServer(http.Dir("./static/"))
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fs))
 
-	r.HandleFunc("/register", authHandler.RegisterHandler).Methods("POST")
-	r.HandleFunc("/login", authHandler.LoginHandler).Methods("POST")
-	r.HandleFunc("/logout", authHandler.LogoutHandler).Methods("POST")
-	r.HandleFunc("/session", authHandler.CheckSessionHandler).Methods("GET")
-	r.HandleFunc("/events", eventHandler.GetAllEventsHandler).Methods("GET")
-	r.HandleFunc("/events/{tag}", eventHandler.GetEventsByTagHandler).Methods("GET")
+	r.HandleFunc("/register", authHandler.Register).Methods("POST")
+	r.HandleFunc("/login", authHandler.Login).Methods("POST")
+	r.HandleFunc("/logout", authHandler.Logout).Methods("POST")
+	r.HandleFunc("/session", authHandler.CheckSession).Methods("GET")
+	r.HandleFunc("/events", eventHandler.GetAllEvents).Methods("GET")
+	r.HandleFunc("/events/{tag}", eventHandler.GetEventsByTag).Methods("GET")
 
 	handlerWithCORS := auth.CORSMiddleware(r)
 

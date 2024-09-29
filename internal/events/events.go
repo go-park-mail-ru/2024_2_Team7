@@ -16,11 +16,11 @@ func NewEventDB() *EventDB {
 	}
 }
 
-func (h *EventHandler) GetAllEventsHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetAllEvents(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(h.EventDB.Events)
 }
 
-func (h *EventHandler) GetEventsByTagHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetEventsByTag(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	tag := vars["tag"]
 	tag = strings.ToLower(tag)
@@ -35,9 +35,10 @@ func (h *EventHandler) GetEventsByTagHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	if len(filteredEvents) == 0 {
-		http.Error(w, "Not found", http.StatusNotFound)
+        w.WriteHeader(http.StatusNoContent)
 		return
 	}
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(filteredEvents)
 }
 

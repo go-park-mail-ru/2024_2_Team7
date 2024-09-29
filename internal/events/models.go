@@ -14,6 +14,6 @@ type EventDB struct {
 	Events []Event
 }
 
-type EventHandler struct {
+type Handler struct {
 	EventDB EventDB
 }

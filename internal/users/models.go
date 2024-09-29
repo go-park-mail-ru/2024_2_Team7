@@ -1,18 +1,16 @@
 package users
 
 type User struct {
-	ID          string `json:"id"`
+	ID          int    `json:"id"`
 	Username    string `json:"username"`
 	Email       string `json:"email"`
-	DateOfBirth string `json:"date_of_birth"`
-	Password    string `json:"password"`
+	DateOfBirth string `json:"date_of_birth,omitempty"`
+	Password    string `json:"-"`
 }
 
 type Credentials struct {
-	ID          string `json:"id"`
-	Username    string `json:"username"`
-	Email       string `json:"email"`
-	DateOfBirth string `json:"date_of_birth"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 type UserDB struct {
@@ -31,7 +29,7 @@ func createUserMapWithDefaultValues() map[string]User {
 	users := make(map[string]User)
 
 	users["rvasily"] = User{
-		ID:          "0",
+		ID:          0,
 		Username:    "rvasily",
 		Email:       "rvasily@example.com",
 		DateOfBirth: "1990-05-15",
@@ -39,7 +37,7 @@ func createUserMapWithDefaultValues() map[string]User {
 	}
 
 	users["ivanov"] = User{
-		ID:          "1",
+		ID:          1,
 		Username:    "ivanov",
 		Email:       "ivanov@example.com",
 		DateOfBirth: "1985-02-12",
@@ -47,7 +45,7 @@ func createUserMapWithDefaultValues() map[string]User {
 	}
 
 	users["petrov"] = User{
-		ID:          "2",
+		ID:          2,
 		Username:    "petrov",
 		Email:       "petrov@example.com",
 		DateOfBirth: "1995-08-28",
@@ -55,7 +53,7 @@ func createUserMapWithDefaultValues() map[string]User {
 	}
 
 	users["semenov"] = User{
-		ID:          "3",
+		ID:          3,
 		Username:    "semenov",
 		Email:       "semenov@example.com",
 		DateOfBirth: "1988-11-22",
