@@ -3,11 +3,12 @@ package auth
 import (
 	"bytes"
 	"encoding/json"
-	"kudago/internal/users"
-	"kudago/session"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"kudago/internal/users"
+	"kudago/session"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -19,8 +20,6 @@ type testCase struct {
 	expectedUsername string
 	expectedStatus   int
 }
-
-
 
 func setupTest() *Handler {
 	handler := &Handler{
@@ -235,12 +234,12 @@ func TestLogout(t *testing.T) {
 				})
 				return req
 			}(),
-			expectedStatus:   http.StatusOK,
+			expectedStatus: http.StatusOK,
 		},
 		{
-			name:             "Invalid cookie",
-			req:              httptest.NewRequest("GET", "/session", nil),
-			expectedStatus:   http.StatusUnauthorized,
+			name:           "Invalid cookie",
+			req:            httptest.NewRequest("GET", "/session", nil),
+			expectedStatus: http.StatusUnauthorized,
 		},
 	}
 
@@ -257,4 +256,3 @@ func TestLogout(t *testing.T) {
 		})
 	}
 }
-

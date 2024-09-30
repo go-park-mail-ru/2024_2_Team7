@@ -21,9 +21,9 @@ func TestCreateSession(t *testing.T) {
 }
 
 type testCase struct {
-	name    string
-	setup   func(*SessionDB, *http.Request) 
-	output  bool
+	name   string
+	setup  func(*SessionDB, *http.Request)
+	output bool
 }
 
 func TestCheckSession(t *testing.T) {

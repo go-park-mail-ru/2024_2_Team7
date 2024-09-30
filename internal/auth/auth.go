@@ -34,7 +34,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.UserDB.AddUser(&user)
-	user.Password=""
+	user.Password = ""
 	h.setSessionCookie(w, user.Username)
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(user)
@@ -55,7 +55,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	if h.UserDB.CheckCredentials(creds.Username, creds.Password) {
 		user := h.UserDB.GetUser(creds.Username)
-		user.Password=""
+		user.Password = ""
 		h.setSessionCookie(w, creds.Username)
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(user)
@@ -88,7 +88,7 @@ func (h *Handler) CheckSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user := h.UserDB.GetUser(session.Username)
-	user.Password=""
+	user.Password = ""
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(user)

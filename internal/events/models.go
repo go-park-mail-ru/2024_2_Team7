@@ -3,7 +3,7 @@ package events
 import "sync"
 
 type Event struct {
-	ID          int   `json:"id"`
+	ID          int      `json:"id"`
 	Title       string   `json:"title"`
 	DateStart   string   `json:"date_start"`
 	DateEnd     string   `json:"date_end"`
@@ -19,7 +19,7 @@ type EventDB struct {
 
 func (db EventDB) GetAllEvents() []Event {
 	db.mu.RLock()
-	events:= db.Events
+	events := db.Events
 	db.mu.RUnlock()
 	return events
 }
