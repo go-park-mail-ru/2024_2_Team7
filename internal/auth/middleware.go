@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"log"
 	"net/http"
 	"strings"
 )
@@ -53,4 +54,11 @@ func CORSMiddleware(next http.Handler) http.Handler {
 		// Передаем управление следующему обработчику
 		next.ServeHTTP(w, r)
 	})
+}
+
+func LoggingMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        log.Println("Запрос:", r.Method, r.URL.Path)
+        next.ServeHTTP(w, r)
+    })
 }

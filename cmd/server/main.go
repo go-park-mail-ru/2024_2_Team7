@@ -45,8 +45,8 @@ func main() {
 	r.HandleFunc("/events/{tag}", eventHandler.GetEventsByTag).Methods("GET")
 
 	handlerWithCORS := auth.CORSMiddleware(r)
-
-	handler := authHandler.AuthMiddleware(whitelist, authHandler, handlerWithCORS)
+	handlerWithLogging := auth.LoggingMiddleware(handlerWithCORS)
+	handler := authHandler.AuthMiddleware(whitelist, authHandler, handlerWithLogging)
 
 	err := http.ListenAndServe(":"+port, handler)
 	if err != nil {
