@@ -1,5 +1,4 @@
 .idea
 pkg
-/static
 coverage.out
 .vscode

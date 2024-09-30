@@ -17,27 +17,16 @@ func NewEventDB() *EventDB {
 }
 
 func (h *Handler) GetAllEvents(w http.ResponseWriter, r *http.Request) {
-	h.EventDB.mu.RLock()
-	defer h.EventDB.mu.RUnlock()
-	json.NewEncoder(w).Encode(h.EventDB.Events)
+	events:=h.EventDB.GetAllEvents()
+	json.NewEncoder(w).Encode(events)
 }
 
 func (h *Handler) GetEventsByTag(w http.ResponseWriter, r *http.Request) {
-	h.EventDB.mu.RLock()
-	defer h.EventDB.mu.RUnlock()
-
 	vars := mux.Vars(r)
 	tag := vars["tag"]
 	tag = strings.ToLower(tag)
 
-	var filteredEvents []Event
-	for _, event := range h.EventDB.Events {
-		for _, eventTag := range event.Tag {
-			if tag == eventTag {
-				filteredEvents = append(filteredEvents, event)
-			}
-		}
-	}
+	filteredEvents:=h.EventDB.GetEventsByTag(tag)
 
 	if len(filteredEvents) == 0 {
         w.WriteHeader(http.StatusNoContent)
@@ -87,4 +76,26 @@ func createEventMapWithDefaultValues() []Event {
 		},
 	}
 	return events
+}
+
+func (db* EventDB) GetAllEvents() []Event{
+	db.mu.RLock()
+	defer db.mu.RUnlock()
+
+	return db.Events
+}
+
+func (db* EventDB) GetEventsByTag(tag string) []Event{
+	db.mu.RLock()
+	defer db.mu.RUnlock()
+
+	var filteredEvents []Event
+	for _, event := range db.Events {
+		for _, eventTag := range event.Tag {
+			if tag == eventTag {
+				filteredEvents = append(filteredEvents, event)
+			}
+		}
+	}
+	return filteredEvents
 }

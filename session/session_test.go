@@ -21,8 +21,7 @@ func TestCreateSession(t *testing.T) {
 
 type testCase struct {
 	name    string
-	setup   func(*SessionDB, *http.Request) // функция для установки состояния
-	request *http.Request
+	setup   func(*SessionDB, *http.Request) 
 	output  bool
 }
 
