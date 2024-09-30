@@ -1,6 +1,7 @@
 package session
 
 import (
+	"fmt"
 	"net/http"
 	"testing"
 	"time"
@@ -11,7 +12,7 @@ import (
 func TestCreateSession(t *testing.T) {
 	db := NewSessionDB()
 	username := "test_user"
-
+	fmt.Println(db.sessions)
 	session := db.CreateSession(username)
 
 	assert.NotEmpty(t, session.Token)

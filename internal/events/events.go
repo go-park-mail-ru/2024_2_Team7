@@ -4,20 +4,26 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/gorilla/mux"
 )
+
+type Handler struct {
+	EventDB EventDB
+}
 
 func NewEventDB() *EventDB {
 	eventsFeed := createEventMapWithDefaultValues()
 
 	return &EventDB{
 		Events: eventsFeed,
+		mu:     &sync.RWMutex{},
 	}
 }
 
 func (h *Handler) GetAllEvents(w http.ResponseWriter, r *http.Request) {
-	events:=h.EventDB.GetAllEvents()
+	events := h.EventDB.GetAllEvents()
 	json.NewEncoder(w).Encode(events)
 }
 
@@ -26,10 +32,10 @@ func (h *Handler) GetEventsByTag(w http.ResponseWriter, r *http.Request) {
 	tag := vars["tag"]
 	tag = strings.ToLower(tag)
 
-	filteredEvents:=h.EventDB.GetEventsByTag(tag)
+	filteredEvents := h.EventDB.GetEventsByTag(tag)
 
 	if len(filteredEvents) == 0 {
-        w.WriteHeader(http.StatusNoContent)
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -76,26 +82,4 @@ func createEventMapWithDefaultValues() []Event {
 		},
 	}
 	return events
-}
-
-func (db* EventDB) GetAllEvents() []Event{
-	db.mu.RLock()
-	defer db.mu.RUnlock()
-
-	return db.Events
-}
-
-func (db* EventDB) GetEventsByTag(tag string) []Event{
-	db.mu.RLock()
-	defer db.mu.RUnlock()
-
-	var filteredEvents []Event
-	for _, event := range db.Events {
-		for _, eventTag := range event.Tag {
-			if tag == eventTag {
-				filteredEvents = append(filteredEvents, event)
-			}
-		}
-	}
-	return filteredEvents
 }

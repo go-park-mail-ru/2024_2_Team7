@@ -88,6 +88,7 @@ func (h *Handler) CheckSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user := h.UserDB.GetUser(session.Username)
+	user.Password=""
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(user)

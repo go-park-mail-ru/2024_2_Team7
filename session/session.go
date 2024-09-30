@@ -20,20 +20,18 @@ type Session struct {
 }
 
 type SessionDB struct {
+	mu       *sync.RWMutex
 	sessions map[string]Session
-	mu       sync.RWMutex
 }
 
 func NewSessionDB() *SessionDB {
 	return &SessionDB{
 		sessions: make(map[string]Session),
+		mu:       &sync.RWMutex{},
 	}
 }
 
 func (db *SessionDB) CreateSession(username string) *Session {
-	db.mu.Lock()
-	defer db.mu.Unlock()
-
 	sessionToken := generateSessionToken()
 	expiration := time.Now().Add(ExpirationTime)
 
@@ -42,21 +40,21 @@ func (db *SessionDB) CreateSession(username string) *Session {
 		Token:    sessionToken,
 		Expires:  expiration,
 	}
-
+	db.mu.Lock()
 	db.sessions[sessionToken] = session
+	db.mu.Unlock()
 	return &session
 }
 
 func (db *SessionDB) CheckSession(r *http.Request) (*Session, bool) {
-	db.mu.RLock()
-	defer db.mu.RUnlock()
-
 	cookie, err := r.Cookie(SessionToken)
 	if err != nil {
 		return nil, false
 	}
 
+	db.mu.RLock()
 	session, exists := db.sessions[cookie.Value]
+	db.mu.RUnlock()
 	if !exists || session.Expires.Before(time.Now()) {
 		return nil, false
 	}
@@ -71,6 +69,6 @@ func generateSessionToken() string {
 
 func (db *SessionDB) DeleteSession(token string) {
 	db.mu.Lock()
-	defer db.mu.Unlock()
 	delete(db.sessions, token)
+	db.mu.Unlock()
 }

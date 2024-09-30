@@ -12,13 +12,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type testCaseRegister struct {
+type testCase struct {
 	name             string
 	req              *http.Request
-	setupHandler     func()
+	setup            func()
 	expectedUsername string
 	expectedStatus   int
 }
+
+
 
 func setupTest() *Handler {
 	handler := &Handler{
@@ -31,20 +33,18 @@ func setupTest() *Handler {
 func TestRegister(t *testing.T) {
 	handler := setupTest()
 	newUser := users.User{
-		Username:    "new_user",
-		Email:       "new_user@example.com",
-		DateOfBirth: "1990-01-01",
-		Password:    "password123",
+		Username: "new_user",
+		Email:    "new_user@example.com",
+		Password: "password123",
 	}
 
 	body, _ := json.Marshal(newUser)
 
-	testCases := []testCaseRegister{
+	testCases := []testCase{
 		{
-			name:             "Valid Input",
-			req:              httptest.NewRequest("POST", "/register", bytes.NewReader(body)),
-			setupHandler: func() {
-				handler = setupTest() 
+			name: "Valid Input",
+			req:  httptest.NewRequest("POST", "/register", bytes.NewReader(body)),
+			setup: func() {
 			},
 			expectedStatus:   http.StatusCreated,
 			expectedUsername: newUser.Username,
@@ -52,8 +52,8 @@ func TestRegister(t *testing.T) {
 		{
 			name: "User already exists",
 			req:  httptest.NewRequest("POST", "/register", bytes.NewReader(body)),
-			setupHandler: func() {
-				handler = setupTest() 
+			setup: func() {
+				handler = setupTest()
 				handler.UserDB.AddUser(&newUser)
 			},
 			expectedStatus:   http.StatusConflict,
@@ -62,8 +62,8 @@ func TestRegister(t *testing.T) {
 		{
 			name: "Bad data",
 			req:  httptest.NewRequest("POST", "/register", bytes.NewReader([]byte{})),
-			setupHandler: func() {
-				handler = setupTest() 
+			setup: func() {
+				handler = setupTest()
 			},
 			expectedStatus:   http.StatusBadRequest,
 			expectedUsername: "",
@@ -71,8 +71,8 @@ func TestRegister(t *testing.T) {
 		{
 			name: "Wrong method",
 			req:  httptest.NewRequest("GET", "/register", bytes.NewReader([]byte{})),
-			setupHandler: func() {
-				handler = setupTest() 
+			setup: func() {
+				handler = setupTest()
 			},
 			expectedStatus:   http.StatusBadRequest,
 			expectedUsername: "",
@@ -81,7 +81,7 @@ func TestRegister(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.setupHandler() 
+			tc.setup()
 			w := httptest.NewRecorder()
 
 			handler.Register(w, tc.req)
@@ -96,13 +96,13 @@ func TestRegister(t *testing.T) {
 	}
 }
 
-
 func TestLogin(t *testing.T) {
 	handler := setupTest()
 	newUser := users.User{
 		Username: "new_user",
 		Password: "password123",
 	}
+
 	wrongUser := users.User{
 		Username: "new_user",
 		Password: "password124",
@@ -111,11 +111,11 @@ func TestLogin(t *testing.T) {
 	body, _ := json.Marshal(newUser)
 	wrongData, _ := json.Marshal(wrongUser)
 
-	testCases := []testCaseRegister{
+	testCases := []testCase{
 		{
 			name: "Valid Input",
 			req:  httptest.NewRequest("POST", "/login", bytes.NewReader(body)),
-			setupHandler: func() {
+			setup: func() {
 				handler.UserDB.AddUser(&newUser)
 			},
 			expectedStatus:   http.StatusOK,
@@ -124,7 +124,7 @@ func TestLogin(t *testing.T) {
 		{
 			name: "Wrong password",
 			req:  httptest.NewRequest("POST", "/login", bytes.NewReader(wrongData)),
-			setupHandler: func() {
+			setup: func() {
 				handler.UserDB.AddUser(&newUser)
 			},
 			expectedStatus:   http.StatusUnauthorized,
@@ -133,7 +133,7 @@ func TestLogin(t *testing.T) {
 		{
 			name: "Bad data",
 			req:  httptest.NewRequest("POST", "/login", bytes.NewReader([]byte{})),
-			setupHandler: func() {
+			setup: func() {
 			},
 			expectedStatus:   http.StatusBadRequest,
 			expectedUsername: "",
@@ -141,7 +141,7 @@ func TestLogin(t *testing.T) {
 		{
 			name: "Wrong method",
 			req:  httptest.NewRequest("GET", "/login", bytes.NewReader([]byte{})),
-			setupHandler: func() {
+			setup: func() {
 			},
 			expectedStatus:   http.StatusBadRequest,
 			expectedUsername: "",
@@ -152,7 +152,7 @@ func TestLogin(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			tc.setupHandler()
+			tc.setup()
 			w := httptest.NewRecorder()
 
 			handler.Login(w, tc.req)
@@ -166,3 +166,95 @@ func TestLogin(t *testing.T) {
 		})
 	}
 }
+
+func TestCheckSession(t *testing.T) {
+	handler := setupTest()
+	newUser := users.User{
+		Username: "new_user",
+		Password: "password123",
+	}
+	handler.UserDB.AddUser(&newUser)
+	session := handler.SessionDb.CreateSession(newUser.Username)
+
+	testCases := []testCase{
+		{
+			name: "Valid input",
+			req: func() *http.Request {
+				req := httptest.NewRequest("GET", "/session", nil)
+				req.AddCookie(&http.Cookie{
+					Name:  SessionToken,
+					Value: session.Token,
+				})
+				return req
+			}(),
+			expectedStatus:   http.StatusOK,
+			expectedUsername: newUser.Username,
+		},
+		{
+			name:             "Invalid cookie",
+			req:              httptest.NewRequest("GET", "/session", nil),
+			expectedStatus:   http.StatusUnauthorized,
+			expectedUsername: "",
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			w := httptest.NewRecorder()
+
+			handler.CheckSession(w, tc.req)
+
+			resp := w.Result()
+			assert.Equal(t, tc.expectedStatus, resp.StatusCode)
+			var user users.User
+			json.NewDecoder(resp.Body).Decode(&user)
+			assert.Equal(t, tc.expectedUsername, user.Username)
+		})
+	}
+}
+
+func TestLogout(t *testing.T) {
+	handler := setupTest()
+	newUser := users.User{
+		Username: "new_user",
+		Password: "password123",
+	}
+
+	handler.UserDB.AddUser(&newUser)
+	session := handler.SessionDb.CreateSession(newUser.Username)
+
+	testCases := []testCase{
+		{
+			name: "Valid input",
+			req: func() *http.Request {
+				req := httptest.NewRequest("GET", "/session", nil)
+				req.AddCookie(&http.Cookie{
+					Name:  SessionToken,
+					Value: session.Token,
+				})
+				return req
+			}(),
+			expectedStatus:   http.StatusOK,
+		},
+		{
+			name:             "Invalid cookie",
+			req:              httptest.NewRequest("GET", "/session", nil),
+			expectedStatus:   http.StatusUnauthorized,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			w := httptest.NewRecorder()
+
+			handler.Logout(w, tc.req)
+
+			resp := w.Result()
+			assert.Equal(t, tc.expectedStatus, resp.StatusCode)
+		})
+	}
+}
+

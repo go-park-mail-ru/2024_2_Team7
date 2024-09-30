@@ -6,7 +6,6 @@ type User struct {
 	ID          int    `json:"id"`
 	Username    string `json:"username"`
 	Email       string `json:"email"`
-	DateOfBirth string `json:"date_of_birth,omitempty"`
 	Password    string `json:"password"`
 }
 
@@ -17,7 +16,7 @@ type Credentials struct {
 
 type UserDB struct {
 	users map[string]User
-	mu    sync.RWMutex
+	mu    *sync.RWMutex
 }
 
 func NewUserDB() *UserDB {
@@ -25,6 +24,7 @@ func NewUserDB() *UserDB {
 
 	return &UserDB{
 		users: users,
+		mu:       &sync.RWMutex{}, 
 	}
 }
 
@@ -35,7 +35,6 @@ func createUserMapWithDefaultValues() map[string]User {
 		ID:          0,
 		Username:    "rvasily",
 		Email:       "rvasily@example.com",
-		DateOfBirth: "1990-05-15",
 		Password:    "123",
 	}
 
@@ -43,7 +42,6 @@ func createUserMapWithDefaultValues() map[string]User {
 		ID:          1,
 		Username:    "ivanov",
 		Email:       "ivanov@example.com",
-		DateOfBirth: "1985-02-12",
 		Password:    "234",
 	}
 
@@ -51,7 +49,6 @@ func createUserMapWithDefaultValues() map[string]User {
 		ID:          2,
 		Username:    "petrov",
 		Email:       "petrov@example.com",
-		DateOfBirth: "1995-08-28",
 		Password:    "345",
 	}
 
@@ -59,7 +56,6 @@ func createUserMapWithDefaultValues() map[string]User {
 		ID:          3,
 		Username:    "semenov",
 		Email:       "semenov@example.com",
-		DateOfBirth: "1988-11-22",
 		Password:    "456",
 	}
 
