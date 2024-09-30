@@ -22,12 +22,12 @@ func NewEventDB() *EventDB {
 	}
 }
 
-func (h *Handler) GetAllEvents(w http.ResponseWriter, r *http.Request) {
+func (h Handler) GetAllEvents(w http.ResponseWriter, r *http.Request) {
 	events := h.EventDB.GetAllEvents()
 	json.NewEncoder(w).Encode(events)
 }
 
-func (h *Handler) GetEventsByTag(w http.ResponseWriter, r *http.Request) {
+func (h Handler) GetEventsByTag(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	tag := vars["tag"]
 	tag = strings.ToLower(tag)

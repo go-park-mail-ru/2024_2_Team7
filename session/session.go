@@ -46,7 +46,7 @@ func (db *SessionDB) CreateSession(username string) *Session {
 	return &session
 }
 
-func (db *SessionDB) CheckSession(r *http.Request) (*Session, bool) {
+func (db SessionDB) CheckSession(r *http.Request) (*Session, bool) {
 	cookie, err := r.Cookie(SessionToken)
 	if err != nil {
 		return nil, false
