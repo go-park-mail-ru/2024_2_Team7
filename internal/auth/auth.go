@@ -33,7 +33,10 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.UserDB.AddUser(&user)
+	if err:=h.UserDB.AddUser(&user); err!=nil{
+		http.Error(w, err.Error(), http.StatusConflict)
+		return
+	}
 	user.Password = ""
 	h.setSessionCookie(w, user.Username)
 	w.WriteHeader(http.StatusCreated)

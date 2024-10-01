@@ -52,8 +52,20 @@ func TestRegister(t *testing.T) {
 			name: "User already exists",
 			req:  httptest.NewRequest("POST", "/register", bytes.NewReader(body)),
 			setup: func() {
-				handler = setupTest()
 				handler.UserDB.AddUser(&newUser)
+			},
+			expectedStatus:   http.StatusConflict,
+			expectedUsername: "",
+		},
+		{
+			name: "Email already used",
+			req:  httptest.NewRequest("POST", "/register", bytes.NewReader(body)),
+			setup: func() {
+				handler.UserDB.AddUser(&users.User{
+					Username: "new_user2",
+					Email:    "new_user@example.com",
+					Password: "password123",
+				})
 			},
 			expectedStatus:   http.StatusConflict,
 			expectedUsername: "",
@@ -62,7 +74,6 @@ func TestRegister(t *testing.T) {
 			name: "Bad data",
 			req:  httptest.NewRequest("POST", "/register", bytes.NewReader([]byte{})),
 			setup: func() {
-				handler = setupTest()
 			},
 			expectedStatus:   http.StatusBadRequest,
 			expectedUsername: "",
@@ -71,7 +82,6 @@ func TestRegister(t *testing.T) {
 			name: "Wrong method",
 			req:  httptest.NewRequest("GET", "/register", bytes.NewReader([]byte{})),
 			setup: func() {
-				handler = setupTest()
 			},
 			expectedStatus:   http.StatusBadRequest,
 			expectedUsername: "",

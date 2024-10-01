@@ -1,6 +1,11 @@
 package users
 
-import "sync"
+import (
+	"errors"
+	"sync"
+)
+
+var ErrEmailIsUsed = errors.New("Email is already used")
 
 type User struct {
 	ID       int    `json:"id"`

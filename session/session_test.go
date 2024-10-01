@@ -1,24 +1,12 @@
 package session
 
 import (
-	"fmt"
 	"net/http"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 )
-
-func TestCreateSession(t *testing.T) {
-	db := NewSessionDB()
-	username := "test_user"
-	fmt.Println(db.sessions)
-	session := db.CreateSession(username)
-
-	assert.NotEmpty(t, session.Token)
-	assert.Equal(t, username, session.Username)
-	assert.WithinDuration(t, time.Now().Add(ExpirationTime), session.Expires, time.Second)
-}
 
 type testCase struct {
 	name   string

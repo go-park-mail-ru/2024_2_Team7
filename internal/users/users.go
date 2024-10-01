@@ -1,10 +1,16 @@
 package users
 
-func (d *UserDB) AddUser(user *User) {
+func (d *UserDB) AddUser(user *User) error {
 	d.mu.Lock()
+	defer d.mu.Unlock()
+	for _, u := range d.users {
+		if user.Email == u.Email {
+			return ErrEmailIsUsed
+		}
+	}
 	user.ID = len(d.users)
 	d.users[user.Username] = *user
-	d.mu.Unlock()
+	return nil
 }
 
 func (d UserDB) CheckCredentials(username, password string) bool {
@@ -27,7 +33,6 @@ func (d UserDB) GetUser(username string) User {
 
 func (d UserDB) UserExists(username string) bool {
 	d.mu.RLock()
-
 	_, exists := d.users[username]
 	d.mu.RUnlock()
 	return exists
