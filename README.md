@@ -11,8 +11,8 @@
 * [Леонид Фикслер](https://github.com/reddiridabl666) - _go_
 * [Александра Смирнова](https://github.com/AlexandraSmirnova) - _frontend_
 
-# Backend
-* [Backend](https://github.com/go-park-mail-ru/2024_2_Team7)
+# Frontend
+* [frontend](https://github.com/frontend-park-mail-ru/2024_2_Komanda7)
 
 # Проект
 * http://vyhodnoy.online/
