@@ -32,6 +32,9 @@ func CORSMiddleware(next http.Handler) http.Handler {
 		allowedOrigins := []string{
 			"http://localhost",       // Клиент на порту 80
 			"http://vyhodnoy.online", // Другой разрешенный домен
+			"http://37.139.40.252",
+			"http://37.139.40.252:8080",
+			"37.139.40.252",
 		}
 
 		// Проверка на разрешенные домены
@@ -41,6 +44,7 @@ func CORSMiddleware(next http.Handler) http.Handler {
 				break
 			}
 		}
+		w.Header().Set("Access-Control-Allow-Origin", "139")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
