@@ -32,7 +32,6 @@ func main() {
 		"/events",
 		"/static",
 		"/session",
-		"/logout",
 	}
 
 	fs := http.FileServer(http.Dir("./static/"))
