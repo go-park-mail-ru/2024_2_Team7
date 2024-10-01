@@ -32,6 +32,7 @@ func CORSMiddleware(next http.Handler) http.Handler {
 		allowedOrigins := []string{
 			"http://localhost",       // Клиент на порту 80
 			"http://vyhodnoy.online", // Другой разрешенный домен
+			"http://37.139.40.252",
 		}
 
 		// Проверка на разрешенные домены
