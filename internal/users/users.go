@@ -1,10 +1,12 @@
 package users
 
+import "strings"
+
 func (d *UserDB) AddUser(user *User) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	for _, u := range d.users {
-		if user.Email == u.Email {
+		if strings.ToLower(user.Email) == strings.ToLower(u.Email) {
 			return ErrEmailIsUsed
 		}
 	}
