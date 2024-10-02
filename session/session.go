@@ -10,7 +10,7 @@ import (
 
 const (
 	SessionToken   = "session_token"
-	ExpirationTime = 30 * time.Minute
+	ExpirationTime = 24 * time.Hour
 )
 
 type Session struct {
