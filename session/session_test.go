@@ -15,6 +15,7 @@ type testCase struct {
 }
 
 func TestCheckSession(t *testing.T) {
+	t.Parallel()
 	db := NewSessionDB()
 	username := "test_user"
 	validSession := db.CreateSession(username)

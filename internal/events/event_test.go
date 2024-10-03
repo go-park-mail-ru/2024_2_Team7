@@ -17,6 +17,8 @@ func setupTest() *Handler {
 }
 
 func TestGetAllEvents(t *testing.T) {
+t.Parallel()
+
 	handler := setupTest()
 	req := httptest.NewRequest("GET", "/events", nil)
 	w := httptest.NewRecorder()

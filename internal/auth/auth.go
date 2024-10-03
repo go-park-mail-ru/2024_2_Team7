@@ -13,28 +13,49 @@ type Handler struct {
 	SessionDb session.SessionDB
 }
 
+type authError struct {
+	Message string `json:"message"`
+	Code    int    `json:"code"`
+}
+
 const SessionToken = session.SessionToken
 
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	_, authorized := h.SessionDb.CheckSession(r)
 	if authorized {
-		http.Error(w, "Alredy logged in", http.StatusForbidden)
+		err := &authError{
+			Message: "User is authorized",
+			Code:    http.StatusForbidden,
+		}
+		json.NewEncoder(w).Encode(err)
 		return
 	}
 
 	var user users.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		http.Error(w, "Invalid request", http.StatusBadRequest)
+		err := &authError{
+			Message: "Invalid request",
+			Code:    http.StatusBadRequest,
+		}
+		json.NewEncoder(w).Encode(err)
 		return
 	}
 
 	if h.UserDB.UserExists(user.Username) {
-		http.Error(w, "User already exists", http.StatusConflict)
+		err := &authError{
+			Message: "User alresdy exists",
+			Code:    http.StatusConflict,
+		}
+		json.NewEncoder(w).Encode(err)
 		return
 	}
 
-	if err:=h.UserDB.AddUser(&user); err!=nil{
-		http.Error(w, err.Error(), http.StatusConflict)
+	if err := h.UserDB.AddUser(&user); err != nil {
+		err := &authError{
+			Message: "Email is already used",
+			Code:    http.StatusConflict,
+		}
+		json.NewEncoder(w).Encode(err)
 		return
 	}
 	user.Password = ""
@@ -46,13 +67,21 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	_, authorized := h.SessionDb.CheckSession(r)
 	if authorized {
-		http.Error(w, "Alredy logged in", http.StatusForbidden)
+		err := &authError{
+			Message: "Already logged in",
+			Code:    http.StatusForbidden,
+		}
+		json.NewEncoder(w).Encode(err)
 		return
 	}
 
 	var creds users.Credentials
 	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
-		http.Error(w, "Invalid request", http.StatusBadRequest)
+		err := &authError{
+			Message: "Invalid request",
+			Code:    http.StatusBadRequest,
+		}
+		json.NewEncoder(w).Encode(err)
 		return
 	}
 
@@ -62,15 +91,24 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		h.setSessionCookie(w, creds.Username)
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(user)
-	} else {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
 	}
+	err := &authError{
+		Message: "Unauthorized",
+		Code:    http.StatusUnauthorized,
+	}
+	json.NewEncoder(w).Encode(err)
+
 }
 
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(SessionToken)
 	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		err := &authError{
+			Message: "Unauthorized",
+			Code:    http.StatusUnauthorized,
+		}
+		json.NewEncoder(w).Encode(err)
 		return
 	}
 
@@ -86,14 +124,19 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) CheckSession(w http.ResponseWriter, r *http.Request) {
 	session, authorized := h.SessionDb.CheckSession(r)
+	w.WriteHeader(http.StatusOK)
+
 	if !authorized {
-		http.Error(w, "", http.StatusUnauthorized)
+		err := &authError{
+			Message: "User is not authorized",
+			Code:    http.StatusUnauthorized,
+		}
+		json.NewEncoder(w).Encode(err)
 		return
 	}
 	user := h.UserDB.GetUser(session.Username)
 	user.Password = ""
 
-	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(user)
 }
 

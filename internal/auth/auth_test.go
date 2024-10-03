@@ -3,6 +3,7 @@ package auth
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -14,11 +15,12 @@ import (
 )
 
 type testCase struct {
-	name             string
-	req              *http.Request
-	setup            func()
-	expectedUsername string
-	expectedStatus   int
+	name              string
+	req               *http.Request
+	setup             func()
+	expectedUsername  string
+	expectedStatus    int
+	expectedErrStatus int
 }
 
 func setupTest() *Handler {
@@ -30,6 +32,7 @@ func setupTest() *Handler {
 }
 
 func TestRegister(t *testing.T) {
+	t.Parallel()
 	handler := setupTest()
 	newUser := users.User{
 		Username: "new_user",
@@ -45,8 +48,9 @@ func TestRegister(t *testing.T) {
 			req:  httptest.NewRequest("POST", "/register", bytes.NewReader(body)),
 			setup: func() {
 			},
-			expectedStatus:   http.StatusCreated,
-			expectedUsername: newUser.Username,
+			expectedStatus:    http.StatusCreated,
+			expectedErrStatus: 0,
+			expectedUsername:  newUser.Username,
 		},
 		{
 			name: "User already exists",
@@ -54,8 +58,9 @@ func TestRegister(t *testing.T) {
 			setup: func() {
 				handler.UserDB.AddUser(&newUser)
 			},
-			expectedStatus:   http.StatusConflict,
-			expectedUsername: "",
+			expectedStatus:    http.StatusOK,
+			expectedErrStatus: http.StatusConflict,
+			expectedUsername:  "",
 		},
 		{
 			name: "Email already used",
@@ -67,24 +72,27 @@ func TestRegister(t *testing.T) {
 					Password: "password123",
 				})
 			},
-			expectedStatus:   http.StatusConflict,
-			expectedUsername: "",
+			expectedStatus:    http.StatusOK,
+			expectedErrStatus: http.StatusConflict,
+			expectedUsername:  "",
 		},
 		{
 			name: "Bad data",
 			req:  httptest.NewRequest("POST", "/register", bytes.NewReader([]byte{})),
 			setup: func() {
 			},
-			expectedStatus:   http.StatusBadRequest,
-			expectedUsername: "",
+			expectedStatus:    http.StatusOK,
+			expectedErrStatus: http.StatusBadRequest,
+			expectedUsername:  "",
 		},
 		{
 			name: "Wrong method",
 			req:  httptest.NewRequest("GET", "/register", bytes.NewReader([]byte{})),
 			setup: func() {
 			},
-			expectedStatus:   http.StatusBadRequest,
-			expectedUsername: "",
+			expectedStatus:    http.StatusOK,
+			expectedErrStatus: http.StatusBadRequest,
+			expectedUsername:  "",
 		},
 	}
 
@@ -97,15 +105,21 @@ func TestRegister(t *testing.T) {
 
 			resp := w.Result()
 			assert.Equal(t, tc.expectedStatus, resp.StatusCode)
+			body, _ := io.ReadAll(resp.Body)
+
+			var responseErr authError
+			json.Unmarshal(body, &responseErr)
+			assert.Equal(t, tc.expectedErrStatus, responseErr.Code)
 
 			var user users.User
-			json.NewDecoder(resp.Body).Decode(&user)
+			json.Unmarshal(body, &user)
 			assert.Equal(t, tc.expectedUsername, user.Username)
 		})
 	}
 }
 
 func TestLogin(t *testing.T) {
+	t.Parallel()
 	handler := setupTest()
 	newUser := users.User{
 		Username: "new_user",
@@ -127,8 +141,9 @@ func TestLogin(t *testing.T) {
 			setup: func() {
 				handler.UserDB.AddUser(&newUser)
 			},
-			expectedStatus:   http.StatusOK,
-			expectedUsername: newUser.Username,
+			expectedStatus:    http.StatusOK,
+			expectedErrStatus: 0,
+			expectedUsername:  newUser.Username,
 		},
 		{
 			name: "Wrong password",
@@ -136,30 +151,32 @@ func TestLogin(t *testing.T) {
 			setup: func() {
 				handler.UserDB.AddUser(&newUser)
 			},
-			expectedStatus:   http.StatusUnauthorized,
-			expectedUsername: "",
+			expectedStatus:    http.StatusOK,
+			expectedErrStatus: http.StatusUnauthorized,
+			expectedUsername:  "",
 		},
 		{
 			name: "Bad data",
 			req:  httptest.NewRequest("POST", "/login", bytes.NewReader([]byte{})),
 			setup: func() {
 			},
-			expectedStatus:   http.StatusBadRequest,
-			expectedUsername: "",
+			expectedStatus:    http.StatusOK,
+			expectedErrStatus: http.StatusBadRequest,
+			expectedUsername:  "",
 		},
 		{
 			name: "Wrong method",
 			req:  httptest.NewRequest("GET", "/login", bytes.NewReader([]byte{})),
 			setup: func() {
 			},
-			expectedStatus:   http.StatusBadRequest,
-			expectedUsername: "",
+			expectedStatus:    http.StatusOK,
+			expectedErrStatus: http.StatusBadRequest,
+			expectedUsername:  "",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
 
 			tc.setup()
 			w := httptest.NewRecorder()
@@ -168,15 +185,21 @@ func TestLogin(t *testing.T) {
 
 			resp := w.Result()
 			assert.Equal(t, tc.expectedStatus, resp.StatusCode)
+			body, _ := io.ReadAll(resp.Body)
+
+			var responseErr authError
+			json.Unmarshal(body, &responseErr)
+			assert.Equal(t, tc.expectedErrStatus, responseErr.Code)
 
 			var user users.User
-			json.NewDecoder(resp.Body).Decode(&user)
+			json.Unmarshal(body, &user)
 			assert.Equal(t, tc.expectedUsername, user.Username)
 		})
 	}
 }
 
 func TestCheckSession(t *testing.T) {
+	t.Parallel()
 	handler := setupTest()
 	newUser := users.User{
 		Username: "new_user",
@@ -196,34 +219,46 @@ func TestCheckSession(t *testing.T) {
 				})
 				return req
 			}(),
-			expectedStatus:   http.StatusOK,
-			expectedUsername: newUser.Username,
+			setup:             func() {},
+			expectedStatus:    http.StatusOK,
+			expectedErrStatus: 0,
+			expectedUsername:  newUser.Username,
 		},
 		{
-			name:             "Invalid cookie",
-			req:              httptest.NewRequest("GET", "/session", nil),
-			expectedStatus:   http.StatusUnauthorized,
-			expectedUsername: "",
+			name:              "Invalid cookie",
+			req:               httptest.NewRequest("GET", "/session", nil),
+			expectedErrStatus: http.StatusUnauthorized,
+			expectedStatus:    http.StatusOK,
+			setup:             func() {},
+			expectedUsername:  "",
 		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
+			tc.setup()
 			w := httptest.NewRecorder()
 
 			handler.CheckSession(w, tc.req)
 
 			resp := w.Result()
+			body, _ := io.ReadAll(resp.Body)
 			assert.Equal(t, tc.expectedStatus, resp.StatusCode)
+
 			var user users.User
-			json.NewDecoder(resp.Body).Decode(&user)
+			json.Unmarshal(body, &user)
 			assert.Equal(t, tc.expectedUsername, user.Username)
+
+			var responseErr authError
+			json.Unmarshal(body, &responseErr)
+			assert.Equal(t, tc.expectedErrStatus, responseErr.Code)
 		})
 	}
+
 }
 
 func TestLogout(t *testing.T) {
+	t.Parallel()
+
 	handler := setupTest()
 	newUser := users.User{
 		Username: "new_user",
@@ -244,12 +279,14 @@ func TestLogout(t *testing.T) {
 				})
 				return req
 			}(),
-			expectedStatus: http.StatusOK,
+			expectedErrStatus: 0,
+			expectedStatus:    http.StatusOK,
 		},
 		{
-			name:           "Invalid cookie",
-			req:            httptest.NewRequest("GET", "/session", nil),
-			expectedStatus: http.StatusUnauthorized,
+			name:              "Invalid cookie",
+			req:               httptest.NewRequest("GET", "/session", nil),
+			expectedErrStatus: http.StatusUnauthorized,
+			expectedStatus:    http.StatusOK,
 		},
 	}
 
@@ -263,6 +300,13 @@ func TestLogout(t *testing.T) {
 
 			resp := w.Result()
 			assert.Equal(t, tc.expectedStatus, resp.StatusCode)
+
+			body, _ := io.ReadAll(resp.Body)
+			var responseErr authError
+			json.Unmarshal(body, &responseErr)
+
+			assert.Equal(t, tc.expectedErrStatus, responseErr.Code)
+
 		})
 	}
 }
