@@ -1,6 +1,7 @@
-package session
+package repository
 
 import (
+	"context"
 	"net/http"
 	"testing"
 	"time"
@@ -18,7 +19,8 @@ func TestCheckSession(t *testing.T) {
 	t.Parallel()
 	db := NewSessionDB()
 	username := "test_user"
-	validSession := db.CreateSession(username)
+	ctx:=context.Background()
+	validSession := db.CreateSession(ctx,username)
 
 	req, _ := http.NewRequest("GET", "/", nil)
 
@@ -57,8 +59,8 @@ func TestCheckSession(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.setup(db, req)
-
-			session, exists := db.CheckSession(req)
+			cookie, _ := req.Cookie(SessionToken)
+			session, exists := db.CheckSession(ctx,cookie.Value)
 			assert.Equal(t, tc.output, exists)
 
 			if exists {

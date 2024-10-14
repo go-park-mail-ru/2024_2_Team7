@@ -1,9 +1,10 @@
-package session
+package repository
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"net/http"
+	"kudago/internal/models"
 	"sync"
 	"time"
 )
@@ -13,29 +14,23 @@ const (
 	ExpirationTime = 24 * time.Hour
 )
 
-type Session struct {
-	Username string
-	Token    string
-	Expires  time.Time
-}
-
 type SessionDB struct {
 	mu       *sync.RWMutex
-	sessions map[string]Session
+	sessions map[string]models.Session
 }
 
 func NewSessionDB() *SessionDB {
 	return &SessionDB{
-		sessions: make(map[string]Session),
+		sessions: make(map[string]models.Session),
 		mu:       &sync.RWMutex{},
 	}
 }
 
-func (db *SessionDB) CreateSession(username string) *Session {
+func (db *SessionDB) CreateSession(ctx context.Context, username string) *models.Session {
 	sessionToken := generateSessionToken()
 	expiration := time.Now().Add(ExpirationTime)
 
-	session := Session{
+	session := models.Session{
 		Username: username,
 		Token:    sessionToken,
 		Expires:  expiration,
@@ -46,14 +41,9 @@ func (db *SessionDB) CreateSession(username string) *Session {
 	return &session
 }
 
-func (db SessionDB) CheckSession(r *http.Request) (*Session, bool) {
-	cookie, err := r.Cookie(SessionToken)
-	if err != nil {
-		return nil, false
-	}
-
+func (db SessionDB) CheckSession(ctx context.Context, cookie string) (*models.Session, bool) {
 	db.mu.RLock()
-	session, exists := db.sessions[cookie.Value]
+	session, exists := db.sessions[cookie]
 	db.mu.RUnlock()
 	if !exists || session.Expires.Before(time.Now()) {
 		return nil, false
@@ -61,14 +51,14 @@ func (db SessionDB) CheckSession(r *http.Request) (*Session, bool) {
 	return &session, true
 }
 
+func (db *SessionDB) DeleteSession(ctx context.Context, token string) {
+	db.mu.Lock()
+	delete(db.sessions, token)
+	db.mu.Unlock()
+}
+
 func generateSessionToken() string {
 	b := make([]byte, 16)
 	rand.Read(b)
 	return hex.EncodeToString(b)
-}
-
-func (db *SessionDB) DeleteSession(token string) {
-	db.mu.Lock()
-	delete(db.sessions, token)
-	db.mu.Unlock()
 }

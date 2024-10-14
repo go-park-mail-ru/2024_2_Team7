@@ -1,16 +1,14 @@
-package events
+package repository
 
 import (
-	"encoding/json"
-	"net/http"
-	"strings"
+	"context"
+	"kudago/internal/models"
 	"sync"
-
-	"github.com/gorilla/mux"
 )
 
-type Handler struct {
-	EventDB EventDB
+type EventDB struct {
+	Events []models.Event
+	mu     *sync.RWMutex
 }
 
 func NewEventDB() *EventDB {
@@ -22,28 +20,29 @@ func NewEventDB() *EventDB {
 	}
 }
 
-func (h Handler) GetAllEvents(w http.ResponseWriter, r *http.Request) {
-	events := h.EventDB.GetAllEvents()
-	json.NewEncoder(w).Encode(events)
+func (db EventDB) GetAllEvents(ctx context.Context) []models.Event {
+	db.mu.RLock()
+	events := db.Events
+	db.mu.RUnlock()
+	return events
 }
 
-func (h Handler) GetEventsByTag(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	tag := vars["tag"]
-	tag = strings.ToLower(tag)
-
-	filteredEvents := h.EventDB.GetEventsByTag(tag)
-
-	if len(filteredEvents) == 0 {
-		w.WriteHeader(http.StatusNoContent)
-		return
+func (db EventDB) GetEventsByTag(ctx context.Context,tag string) []models.Event {
+	var filteredEvents []models.Event
+	db.mu.RLock()
+	for _, event := range db.Events {
+		for _, eventTag := range event.Tag {
+			if tag == eventTag {
+				filteredEvents = append(filteredEvents, event)
+			}
+		}
 	}
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(filteredEvents)
+	db.mu.RUnlock()
+	return filteredEvents
 }
 
-func createEventMapWithDefaultValues() []Event {
-	events := []Event{
+func createEventMapWithDefaultValues() []models.Event {
+	events := []models.Event{
 		{
 			ID:          1,
 			Title:       "Выставка в Третьяковской галерее",

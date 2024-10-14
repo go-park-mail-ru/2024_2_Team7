@@ -5,34 +5,36 @@ import (
 	"net/http"
 
 	"kudago/config"
-	"kudago/internal/auth"
-	"kudago/internal/events"
-	"kudago/internal/users"
-	"kudago/session"
+	handler "kudago/internal/http"
+	"kudago/internal/middleware"
+	"kudago/internal/repository"
+	"kudago/internal/service"
 
 	"github.com/gorilla/mux"
+	"go.uber.org/zap"
 )
 
 func main() {
 	port := config.LoadConfig()
+
+	logger, err := zap.NewProduction()
+	if err != nil {
+		log.Fatalf("Server failed to start logger: %v", err)
+	}
+	defer logger.Sync()
+	sugar := logger.Sugar()
+
+	userDB := repository.NewUserDB()
+	sessionDB := repository.NewSessionDB()
+	eventDB := repository.NewEventDB()
+
+	authService := service.NewAuthService(userDB, sessionDB)
+	eventService := service.NewEventService(eventDB)
+
+	authHandler := handler.NewAuthHandler(&authService)
+	eventHandler := handler.NewEventHandler(&eventService)
+
 	r := mux.NewRouter()
-
-	authHandler := &auth.Handler{
-		UserDB:    *users.NewUserDB(),
-		SessionDb: *session.NewSessionDB(),
-	}
-
-	eventHandler := &events.Handler{
-		EventDB: *events.NewEventDB(),
-	}
-
-	whitelist := []string{
-		"/login",
-		"/register",
-		"/events",
-		"/static",
-		"/session",
-	}
 
 	fs := http.FileServer(http.Dir("./static/"))
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fs))
@@ -44,11 +46,21 @@ func main() {
 	r.HandleFunc("/events", eventHandler.GetAllEvents).Methods("GET")
 	r.HandleFunc("/events/{tag}", eventHandler.GetEventsByTag).Methods("GET")
 
-	handlerWithAuth := authHandler.AuthMiddleware(whitelist, authHandler, r)
-    handlerWithCORS := auth.CORSMiddleware(handlerWithAuth)
-    handler := auth.LoggingMiddleware(handlerWithCORS)
+	whitelist := []string{
+		"/login",
+		"/register",
+		"/events",
+		"/static",
+		"/session",
+		"/logout",
+	}
 
-	err := http.ListenAndServe(":"+port, handler)
+	handlerWithAuth := middleware.AuthMiddleware(whitelist, authHandler, r)
+	handlerWithCORS := middleware.CORSMiddleware(handlerWithAuth)
+	handlerWithLogging := middleware.LoggingMiddleware(handlerWithCORS, sugar)
+	handler := middleware.PanicMiddleware(handlerWithLogging)
+
+	err = http.ListenAndServe(":"+port, handler)
 	if err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
