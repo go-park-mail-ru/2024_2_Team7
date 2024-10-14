@@ -4,9 +4,10 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"kudago/internal/models"
 	"sync"
 	"time"
+
+	"kudago/internal/models"
 )
 
 const (

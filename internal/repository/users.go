@@ -3,9 +3,10 @@ package repository
 import (
 	"context"
 	"errors"
-	"kudago/internal/models"
 	"strings"
 	"sync"
+
+	"kudago/internal/models"
 )
 
 var ErrEmailIsUsed = errors.New("Email is already used")

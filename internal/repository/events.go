@@ -2,8 +2,9 @@ package repository
 
 import (
 	"context"
-	"kudago/internal/models"
 	"sync"
+
+	"kudago/internal/models"
 )
 
 type EventDB struct {
@@ -27,7 +28,7 @@ func (db EventDB) GetAllEvents(ctx context.Context) []models.Event {
 	return events
 }
 
-func (db EventDB) GetEventsByTag(ctx context.Context,tag string) []models.Event {
+func (db EventDB) GetEventsByTag(ctx context.Context, tag string) []models.Event {
 	var filteredEvents []models.Event
 	db.mu.RLock()
 	for _, event := range db.Events {

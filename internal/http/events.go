@@ -28,7 +28,7 @@ func (h EventHandler) GetEventsByTag(w http.ResponseWriter, r *http.Request) {
 	tag := vars["tag"]
 	tag = strings.ToLower(tag)
 
-	filteredEvents := h.Service.GetEventsByTag(r.Context(),tag)
+	filteredEvents := h.Service.GetEventsByTag(r.Context(), tag)
 
 	if len(filteredEvents) == 0 {
 		w.WriteHeader(http.StatusNoContent)

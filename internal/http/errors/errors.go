@@ -15,22 +15,22 @@ var (
 		Code:    http.StatusForbidden,
 	}
 
-	ErrInvalidRequest= &AuthError{
+	ErrInvalidRequest = &AuthError{
 		Message: "Invalid request",
 		Code:    http.StatusBadRequest,
 	}
 
-	ErrUserAlreadyExists= &AuthError{
+	ErrUserAlreadyExists = &AuthError{
 		Message: "User alresdy exists",
 		Code:    http.StatusConflict,
 	}
 
-	ErrUserAlreadyLoggedIn= &AuthError{
+	ErrUserAlreadyLoggedIn = &AuthError{
 		Message: "Already logged in",
 		Code:    http.StatusForbidden,
 	}
 
-	ErrUnauthorized= &AuthError{
+	ErrUnauthorized = &AuthError{
 		Message: "Unauthorized",
 		Code:    http.StatusUnauthorized,
 	}

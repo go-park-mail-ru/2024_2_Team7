@@ -23,7 +23,7 @@ func NewAuthHandler(s AuthService) *AuthHandler {
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(repository.SessionToken)
-	if err==nil{
+	if err == nil {
 		_, authorized := h.Service.CheckSession(r.Context(), cookie.Value)
 		if authorized {
 			json.NewEncoder(w).Encode(httpErrors.ErrUserIsAuthorized)
@@ -43,15 +43,15 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user.Password = ""
-	h.setSessionCookie(w,r, user.Username)
+	h.setSessionCookie(w, r, user.Username)
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(user)
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(repository.SessionToken)
-	if err==nil{
-		_, authorized := h.Service.CheckSession(r.Context(),cookie.Value)
+	if err == nil {
+		_, authorized := h.Service.CheckSession(r.Context(), cookie.Value)
 		if authorized {
 			json.NewEncoder(w).Encode(httpErrors.ErrUserAlreadyLoggedIn)
 			return
@@ -64,9 +64,9 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if h.Service.CheckCredentials(r.Context(),creds) {
+	if h.Service.CheckCredentials(r.Context(), creds) {
 		user := h.Service.GetUser(r.Context(), creds.Username)
-		h.setSessionCookie(w,r, creds.Username)
+		h.setSessionCookie(w, r, creds.Username)
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(user)
 		return
@@ -111,8 +111,8 @@ func (h *AuthHandler) CheckSession(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(user)
 }
 
-func (h *AuthHandler) setSessionCookie(w http.ResponseWriter,  r *http.Request, username string) {
-	session := h.Service.CreateSession(r.Context(),username)
+func (h *AuthHandler) setSessionCookie(w http.ResponseWriter, r *http.Request, username string) {
+	session := h.Service.CreateSession(r.Context(), username)
 	http.SetCookie(w, &http.Cookie{
 		Name:     SessionToken,
 		Value:    session.Token,

@@ -19,8 +19,8 @@ func TestCheckSession(t *testing.T) {
 	t.Parallel()
 	db := NewSessionDB()
 	username := "test_user"
-	ctx:=context.Background()
-	validSession := db.CreateSession(ctx,username)
+	ctx := context.Background()
+	validSession := db.CreateSession(ctx, username)
 
 	req, _ := http.NewRequest("GET", "/", nil)
 
@@ -60,7 +60,7 @@ func TestCheckSession(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.setup(db, req)
 			cookie, _ := req.Cookie(SessionToken)
-			session, exists := db.CheckSession(ctx,cookie.Value)
+			session, exists := db.CheckSession(ctx, cookie.Value)
 			assert.Equal(t, tc.output, exists)
 
 			if exists {
