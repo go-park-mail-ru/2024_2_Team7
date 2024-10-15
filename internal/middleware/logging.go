@@ -12,6 +12,7 @@ func LoggingMiddleware(next http.Handler, logger *zap.SugaredLogger) http.Handle
 		start := time.Now()
 
 		next.ServeHTTP(w, r)
+
 		logger.Info(r.URL.Path,
 			zap.String("method", r.Method),
 			zap.String("remote_addr", r.RemoteAddr),

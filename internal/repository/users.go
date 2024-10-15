@@ -25,17 +25,17 @@ func NewUserDB() *UserDB {
 	}
 }
 
-func (d *UserDB) AddUser(ctx context.Context, user *models.User) error {
+func (d *UserDB) AddUser(ctx context.Context, user *models.User) (models.User, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	for _, u := range d.users {
 		if strings.ToLower(user.Email) == strings.ToLower(u.Email) {
-			return ErrEmailIsUsed
+			return models.User{}, ErrEmailIsUsed
 		}
 	}
 	user.ID = len(d.users)
 	d.users[user.Username] = *user
-	return nil
+	return *user, nil
 }
 
 func (d UserDB) CheckCredentials(ctx context.Context, username, password string) bool {

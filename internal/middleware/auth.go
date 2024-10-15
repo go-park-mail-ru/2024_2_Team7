@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	auth "kudago/internal/http"
+	"kudago/internal/http/auth"
 	"kudago/internal/repository"
 )
 

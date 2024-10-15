@@ -4,14 +4,18 @@ import (
 	"context"
 
 	"kudago/internal/models"
-	"kudago/internal/repository"
 )
 
 type EventService struct {
-	EventDB iEventDB
+	EventDB EventDB
 }
 
-func NewEventService(eventDB *repository.EventDB) EventService {
+type EventDB interface {
+	GetAllEvents(ctx context.Context) []models.Event
+	GetEventsByTag(ctx context.Context, tag string) []models.Event
+}
+
+func NewEventService(eventDB EventDB) EventService {
 	return EventService{EventDB: eventDB}
 }
 

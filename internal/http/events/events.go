@@ -1,15 +1,22 @@
-package http
+package events
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strings"
 
 	"github.com/gorilla/mux"
+	"kudago/internal/models"
 )
 
 type EventHandler struct {
 	Service EventService
+}
+
+type EventService interface {
+	GetAllEvents(ctx context.Context) []models.Event
+	GetEventsByTag(ctx context.Context, tag string) []models.Event
 }
 
 func NewEventHandler(s EventService) *EventHandler {

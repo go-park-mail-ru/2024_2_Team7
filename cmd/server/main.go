@@ -5,7 +5,8 @@ import (
 	"net/http"
 
 	"kudago/config"
-	handler "kudago/internal/http"
+	"kudago/internal/http/auth"
+	"kudago/internal/http/events"
 	"kudago/internal/middleware"
 	"kudago/internal/repository"
 	"kudago/internal/service"
@@ -31,8 +32,8 @@ func main() {
 	authService := service.NewAuthService(userDB, sessionDB)
 	eventService := service.NewEventService(eventDB)
 
-	authHandler := handler.NewAuthHandler(&authService)
-	eventHandler := handler.NewEventHandler(&eventService)
+	authHandler := auth.NewAuthHandler(&authService)
+	eventHandler := events.NewEventHandler(&eventService)
 
 	r := mux.NewRouter()
 
