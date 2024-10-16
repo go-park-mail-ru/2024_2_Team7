@@ -47,10 +47,14 @@ func main() {
 	r.HandleFunc("/login", authHandler.Login).Methods("POST")
 	r.HandleFunc("/logout", authHandler.Logout).Methods("POST")
 	r.HandleFunc("/session", authHandler.CheckSession).Methods("GET")
-	r.HandleFunc("/profile", authHandler.Profile).Methods("GET", "POST")
+	r.HandleFunc("/profile", authHandler.Profile).Methods("GET")
 
-	r.HandleFunc("/events", eventHandler.GetAllEvents).Methods("GET")
+	r.HandleFunc("/events/{id:[0-9]+}", eventHandler.GetEventByID).Methods("GET")
 	r.HandleFunc("/events/{tag}", eventHandler.GetEventsByTag).Methods("GET")
+	r.HandleFunc("/events", eventHandler.GetAllEvents).Methods("GET")
+	r.HandleFunc("/events/{id:[0-9]+}", eventHandler.UpdateEvent).Methods("PUT")
+	r.HandleFunc("/events/{id:[0-9]+}", eventHandler.DeleteEvent).Methods("DELETE")
+	r.HandleFunc("/events", eventHandler.AddEvent).Methods("POST")
 
 	whitelist := []string{
 		"/login",

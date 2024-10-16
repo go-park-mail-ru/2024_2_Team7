@@ -20,8 +20,12 @@ var (
 		Message: "Unauthorized",
 		Code:    "forbidden",
 	}
+	errWrongCredentials = &AuthError{
+		Message: "Wrong username or password",
+		Code:    "wrong_credentials",
+	}
 
-	errInvalidFields = &AuthError{
+	errInvalidData = &AuthError{
 		Message: "Can't decode JSON",
 		Code:    "invalid_data",
 	}

@@ -6,22 +6,16 @@ import (
 	"errors"
 	"net/http"
 	"regexp"
-	"strings"
-
+	
+	"kudago/internal/http/pkg"
 	"kudago/internal/models"
 
 	"github.com/asaskevich/govalidator"
-	"github.com/gorilla/schema"
 )
 
-const (
-	SessionToken = "session_token"
-	SessionKey   = "session"
-)
 
 type AuthHandler struct {
 	Service AuthService
-	decoder *schema.Decoder
 }
 
 type AuthService interface {
@@ -82,27 +76,26 @@ func init() {
 func NewAuthHandler(s AuthService) *AuthHandler {
 	return &AuthHandler{
 		Service: s,
-		decoder: schema.NewDecoder(),
 	}
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
-	_, ok := getSessionFromContext(r.Context())
-	if ok {
-		writeResponse(w, http.StatusForbidden, errUserIsAuthorized)
+	sessionInfo, ok := pkg.GetSessionFromContext(r.Context())
+	if ok && sessionInfo.Authenticated {
+		pkg.WriteResponse(w, http.StatusForbidden, errUserIsAuthorized)
 		return
 	}
 
 	var req RegisterRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		writeResponse(w, http.StatusBadRequest, errInvalidFields)
+		pkg.WriteResponse(w, http.StatusBadRequest, errInvalidData)
 		return
 	}
 
 	_, err = govalidator.ValidateStruct(&req)
 	if err != nil {
-		processValidationErrors(w, err)
+		pkg.ProcessValidationErrors(w, err)
 		return
 	}
 
@@ -116,11 +109,11 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, models.ErrUsernameIsUsed):
-			writeResponse(w, http.StatusConflict, errUsernameIsAlredyTaken)
+			pkg.WriteResponse(w, http.StatusConflict, errUsernameIsAlredyTaken)
 		case errors.Is(err, models.ErrEmailIsUsed):
-			writeResponse(w, http.StatusConflict, errEmailIsAlredyTaken)
+			pkg.WriteResponse(w, http.StatusConflict, errEmailIsAlredyTaken)
 		default:
-			writeResponse(w, http.StatusInternalServerError, errInternal)
+			pkg.WriteResponse(w, http.StatusInternalServerError, errInternal)
 		}
 		return
 	}
@@ -133,24 +126,24 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		User: userResponse,
 	}
 
-	writeResponse(w, http.StatusCreated, resp)
+	pkg.WriteResponse(w, http.StatusCreated, resp)
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
-	_, ok := getSessionFromContext(r.Context())
-	if ok {
-		writeResponse(w, http.StatusForbidden, errUserAlreadyLoggedIn)
+	sessionInfo, ok := pkg.GetSessionFromContext(r.Context())
+	if ok && sessionInfo.Authenticated {
+		pkg.WriteResponse(w, http.StatusForbidden, errUserAlreadyLoggedIn)
 		return
 	}
 	var req AuthRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeResponse(w, http.StatusBadRequest, errInvalidFields)
+		pkg.WriteResponse(w, http.StatusBadRequest, errInvalidData)
 		return
 	}
 
 	_, err := govalidator.ValidateStruct(&req)
 	if err != nil {
-		processValidationErrors(w, err)
+		pkg.ProcessValidationErrors(w, err)
 		return
 	}
 
@@ -168,23 +161,23 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 			User: userResponse,
 		}
 
-		writeResponse(w, http.StatusOK, resp)
+		pkg.WriteResponse(w, http.StatusOK, resp)
 		return
 	}
-	writeResponse(w, http.StatusForbidden, errUnauthorized)
+	pkg.WriteResponse(w, http.StatusForbidden, errWrongCredentials)
 }
 
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie(SessionToken)
+	cookie, err := r.Cookie(models.SessionToken)
 	if err != nil {
-		writeResponse(w, http.StatusForbidden, errUnauthorized)
+		pkg.WriteResponse(w, http.StatusForbidden, errUnauthorized)
 		return
 	}
 
 	h.Service.DeleteSession(r.Context(), cookie.Value)
 
 	http.SetCookie(w, &http.Cookie{
-		Name:   SessionToken,
+		Name:   models.SessionToken,
 		MaxAge: -1, // Устанавливаем истекшее время, чтобы удалить cookie
 	})
 
@@ -192,39 +185,39 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) CheckSession(w http.ResponseWriter, r *http.Request) {
-	session, ok := getSessionFromContext(r.Context())
-	if !ok {
-		writeResponse(w, http.StatusOK, errUnauthorized)
+	sessionInfo, ok := pkg.GetSessionFromContext(r.Context())
+	if !ok || !sessionInfo.Authenticated {
+		pkg.WriteResponse(w, http.StatusOK, errUnauthorized)
 		return
 	}
 
-	user := h.Service.GetUserByID(r.Context(), session.UserID)
+	user := h.Service.GetUserByID(r.Context(), sessionInfo.Session.UserID)
 	userResponse := userToUserResponse(user)
 
 	resp := AuthResponse{
 		User: userResponse,
 	}
 
-	writeResponse(w, http.StatusOK, resp)
+	pkg.WriteResponse(w, http.StatusOK, resp)
 }
 
 func (h *AuthHandler) Profile(w http.ResponseWriter, r *http.Request) {
-	session, ok := getSessionFromContext(r.Context())
-	if !ok {
-		writeResponse(w, http.StatusOK, errUnauthorized)
+	sessionInfo, ok := pkg.GetSessionFromContext(r.Context())
+	if !ok || !sessionInfo.Authenticated {
+		pkg.WriteResponse(w, http.StatusOK, errUnauthorized)
 		return
 	}
 
-	user := h.Service.GetUserByID(r.Context(), session.UserID)
+	user := h.Service.GetUserByID(r.Context(), sessionInfo.Session.UserID)
 	userResponse := userToProfileResponse(user)
 
-	writeResponse(w, http.StatusOK, userResponse)
+	pkg.WriteResponse(w, http.StatusOK, userResponse)
 }
 
 func (h *AuthHandler) setSessionCookie(w http.ResponseWriter, r *http.Request, ID int) {
 	session := h.Service.CreateSession(r.Context(), ID)
 	http.SetCookie(w, &http.Cookie{
-		Name:     SessionToken,
+		Name:     models.SessionToken,
 		Value:    session.Token,
 		Expires:  session.Expires,
 		HttpOnly: true,
@@ -246,37 +239,4 @@ func userToProfileResponse(user models.User) ProfileResponse {
 		Email:    user.Email,
 		ImageURL: user.ImageURL,
 	}
-}
-
-func getSessionFromContext(ctx context.Context) (*models.Session, bool) {
-	session, ok := ctx.Value(SessionKey).(*models.Session)
-	return session, ok
-}
-
-func writeResponse(w http.ResponseWriter, status int, body interface{}) {
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(body)
-}
-
-func processValidationErrors(w http.ResponseWriter, err error) {
-	errors := strings.Split(err.Error(), ";")
-	resp := ValidationErrResponse{}
-
-	for _, err := range errors {
-		colonIndex := strings.Index(err, ":")
-
-		if colonIndex == -1 {
-			continue
-		}
-
-		field := err[:colonIndex]
-		errorMsg := err[colonIndex+2:]
-
-		valErr := ValidationError{
-			Field: field,
-			Error: errorMsg,
-		}
-		resp.Errors = append(resp.Errors, valErr)
-	}
-	writeResponse(w, http.StatusUnauthorized, resp)
 }

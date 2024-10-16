@@ -9,16 +9,27 @@ import (
 	"kudago/internal/models"
 )
 
+
+const (
+	SessionToken = "session_token"
+	SessionKey = "session"
+)
+
 func AuthMiddleware(whitelist []string, authHandler *auth.AuthHandler, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cookie, err := r.Cookie(SessionToken)
 		var session *models.Session
 		var authenticated bool
-		cookie, err := r.Cookie(auth.SessionToken)
-
 		if err == nil {
 			session, authenticated = authHandler.Service.CheckSession(r.Context(), cookie.Value)
-			ctx := context.WithValue(r.Context(), auth.SessionKey, session)
-			r = r.WithContext(ctx)
+			if session != nil {
+				sessionInfo := models.SessionInfo{
+					Session:       *session,
+					Authenticated: authenticated,
+				}
+				ctx := context.WithValue(r.Context(), SessionKey, sessionInfo)
+				r = r.WithContext(ctx)
+			}
 		}
 
 		for _, path := range whitelist {
