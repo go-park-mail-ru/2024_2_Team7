@@ -6,7 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"regexp"
-	
+
 	"kudago/internal/http/pkg"
 	"kudago/internal/models"
 
@@ -54,15 +54,6 @@ type ProfileResponse struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	ImageURL string `json:"image"`
-}
-
-type ValidationErrResponse struct {
-	Errors []ValidationError `json:"errors"`
-}
-
-type ValidationError struct {
-	Field string `json:"field"`
-	Error string `json:"error"`
 }
 
 func init() {
