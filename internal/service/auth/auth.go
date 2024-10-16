@@ -1,4 +1,4 @@
-package service
+package authService
 
 import (
 	"context"
@@ -14,17 +14,18 @@ type authService struct {
 type UserDB interface {
 	UserExists(ctx context.Context, username string) bool
 	AddUser(ctx context.Context, user *models.User) (models.User, error)
-	GetUser(ctx context.Context, username string) models.User
+	GetUserByUsername(ctx context.Context, username string) models.User
+	GetUserByID(ctx context.Context, ID int) models.User
 	CheckCredentials(ctx context.Context, username string, password string) bool
 }
 
 type SessionDB interface {
 	CheckSession(ctx context.Context, cookie string) (*models.Session, bool)
-	CreateSession(ctx context.Context, username string) *models.Session
-	DeleteSession(ctx context.Context, username string)
+	CreateSession(ctx context.Context, ID int) *models.Session
+	DeleteSession(ctx context.Context, token string)
 }
 
-func NewAuthService(userDB UserDB, sessionDB SessionDB) authService {
+func NewService(userDB UserDB, sessionDB SessionDB) authService {
 	return authService{UserDB: userDB, SessionDB: sessionDB}
 }
 
@@ -40,8 +41,12 @@ func (a *authService) AddUser(ctx context.Context, user *models.User) (models.Us
 	return a.UserDB.AddUser(ctx, user)
 }
 
-func (a *authService) GetUser(ctx context.Context, username string) models.User {
-	return a.UserDB.GetUser(ctx, username)
+func (a *authService) GetUserByUsername(ctx context.Context, username string) models.User {
+	return a.UserDB.GetUserByUsername(ctx, username)
+}
+
+func (a *authService) GetUserByID(ctx context.Context, ID int) models.User {
+	return a.UserDB.GetUserByID(ctx, ID)
 }
 
 func (a *authService) CheckCredentials(ctx context.Context, creds models.Credentials) bool {
@@ -50,7 +55,7 @@ func (a *authService) CheckCredentials(ctx context.Context, creds models.Credent
 
 func (a *authService) Register(ctx context.Context, user models.User) (models.User, error) {
 	if a.UserDB.UserExists(ctx, user.Username) {
-		return models.User{}, models.ErrUserAlreadyExists
+		return models.User{}, models.ErrUsernameIsUsed
 	}
 
 	user, err := a.UserDB.AddUser(ctx, &user)
@@ -61,10 +66,10 @@ func (a *authService) Register(ctx context.Context, user models.User) (models.Us
 	return user, nil
 }
 
-func (a *authService) CreateSession(ctx context.Context, username string) *models.Session {
-	return a.SessionDB.CreateSession(ctx, username)
+func (a *authService) CreateSession(ctx context.Context, ID int) *models.Session {
+	return a.SessionDB.CreateSession(ctx, ID)
 }
 
-func (a *authService) DeleteSession(ctx context.Context, username string) {
-	a.SessionDB.DeleteSession(ctx, username)
+func (a *authService) DeleteSession(ctx context.Context, token string) {
+	a.SessionDB.DeleteSession(ctx, token)
 }

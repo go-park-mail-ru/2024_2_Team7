@@ -1,4 +1,4 @@
-package repository
+package sessionRepository
 
 import (
 	"context"
@@ -11,7 +11,6 @@ import (
 )
 
 const (
-	SessionToken   = "session_token"
 	ExpirationTime = 24 * time.Hour
 )
 
@@ -20,21 +19,21 @@ type SessionDB struct {
 	sessions map[string]models.Session
 }
 
-func NewSessionDB() *SessionDB {
+func NewDB() *SessionDB {
 	return &SessionDB{
 		sessions: make(map[string]models.Session),
 		mu:       &sync.RWMutex{},
 	}
 }
 
-func (db *SessionDB) CreateSession(ctx context.Context, username string) *models.Session {
+func (db *SessionDB) CreateSession(ctx context.Context, ID int) *models.Session {
 	sessionToken := generateSessionToken()
 	expiration := time.Now().Add(ExpirationTime)
 
 	session := models.Session{
-		Username: username,
-		Token:    sessionToken,
-		Expires:  expiration,
+		UserID:  ID,
+		Token:   sessionToken,
+		Expires: expiration,
 	}
 	db.mu.Lock()
 	db.sessions[sessionToken] = session

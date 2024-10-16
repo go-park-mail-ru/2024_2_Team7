@@ -1,4 +1,4 @@
-package service
+package eventService
 
 import (
 	"context"
@@ -15,7 +15,7 @@ type EventDB interface {
 	GetEventsByTag(ctx context.Context, tag string) []models.Event
 }
 
-func NewEventService(eventDB EventDB) EventService {
+func NewService(eventDB EventDB) EventService {
 	return EventService{EventDB: eventDB}
 }
 

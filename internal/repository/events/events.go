@@ -1,4 +1,4 @@
-package repository
+package eventRepository
 
 import (
 	"context"
@@ -12,7 +12,7 @@ type EventDB struct {
 	mu     *sync.RWMutex
 }
 
-func NewEventDB() *EventDB {
+func NewDB() *EventDB {
 	eventsFeed := createEventMapWithDefaultValues()
 
 	return &EventDB{

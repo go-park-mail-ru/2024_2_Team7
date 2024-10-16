@@ -8,30 +8,36 @@ type AuthError struct {
 var (
 	errUserIsAuthorized = &AuthError{
 		Message: "User is authorized",
-		Code:    "invalid_request",
-	}
-
-	errInvalidRequest = &AuthError{
-		Message: "Invalid request",
-		Code:    "invalid_request",
-	}
-
-	errInvalidData = &AuthError{
-		Message: "Data is already used",
-		Code:    "invalid_data",
+		Code:    "already_authorized",
 	}
 
 	errUserAlreadyLoggedIn = &AuthError{
 		Message: "Already logged in",
-		Code:    "invalid_request",
+		Code:    "already_logged",
 	}
 
 	errUnauthorized = &AuthError{
 		Message: "Unauthorized",
 		Code:    "forbidden",
 	}
+
 	errInvalidFields = &AuthError{
-		Message: "Invalid field",
+		Message: "Can't decode JSON",
 		Code:    "invalid_data",
+	}
+
+	errUsernameIsAlredyTaken = &AuthError{
+		Message: "Username is already taken",
+		Code:    "already_taken",
+	}
+
+	errEmailIsAlredyTaken = &AuthError{
+		Message: "Email is already taken",
+		Code:    "already_taken",
+	}
+
+	errInternal = &AuthError{
+		Message: "Internal server error",
+		Code:    "internal_error",
 	}
 )

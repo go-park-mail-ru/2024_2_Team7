@@ -8,8 +8,11 @@ import (
 	"kudago/internal/http/auth"
 	"kudago/internal/http/events"
 	"kudago/internal/middleware"
-	"kudago/internal/repository"
-	"kudago/internal/service"
+	eventRepository "kudago/internal/repository/events"
+	sessionRepository "kudago/internal/repository/session"
+	userRepository "kudago/internal/repository/users"
+	"kudago/internal/service/auth"
+	"kudago/internal/service/events"
 
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
@@ -25,12 +28,12 @@ func main() {
 	defer logger.Sync()
 	sugar := logger.Sugar()
 
-	userDB := repository.NewUserDB()
-	sessionDB := repository.NewSessionDB()
-	eventDB := repository.NewEventDB()
+	userDB := userRepository.NewDB()
+	sessionDB := sessionRepository.NewDB()
+	eventDB := eventRepository.NewDB()
 
-	authService := service.NewAuthService(userDB, sessionDB)
-	eventService := service.NewEventService(eventDB)
+	authService := authService.NewService(userDB, sessionDB)
+	eventService := eventService.NewService(eventDB)
 
 	authHandler := auth.NewAuthHandler(&authService)
 	eventHandler := events.NewEventHandler(&eventService)
@@ -44,6 +47,8 @@ func main() {
 	r.HandleFunc("/login", authHandler.Login).Methods("POST")
 	r.HandleFunc("/logout", authHandler.Logout).Methods("POST")
 	r.HandleFunc("/session", authHandler.CheckSession).Methods("GET")
+	r.HandleFunc("/profile", authHandler.Profile).Methods("GET", "POST")
+
 	r.HandleFunc("/events", eventHandler.GetAllEvents).Methods("GET")
 	r.HandleFunc("/events/{tag}", eventHandler.GetEventsByTag).Methods("GET")
 

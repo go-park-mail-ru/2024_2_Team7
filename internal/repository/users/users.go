@@ -1,4 +1,4 @@
-package repository
+package userRepository
 
 import (
 	"context"
@@ -9,14 +9,14 @@ import (
 	"kudago/internal/models"
 )
 
-var ErrEmailIsUsed = errors.New("Email is already used")
+var errEmailIsUsed = errors.New("Email is already used")
 
 type UserDB struct {
 	users map[string]models.User
 	mu    *sync.RWMutex
 }
 
-func NewUserDB() *UserDB {
+func NewDB() *UserDB {
 	users := createUserMapWithDefaultValues()
 
 	return &UserDB{
@@ -30,7 +30,7 @@ func (d *UserDB) AddUser(ctx context.Context, user *models.User) (models.User, e
 	defer d.mu.Unlock()
 	for _, u := range d.users {
 		if strings.ToLower(user.Email) == strings.ToLower(u.Email) {
-			return models.User{}, ErrEmailIsUsed
+			return models.User{}, errEmailIsUsed
 		}
 	}
 	user.ID = len(d.users)
@@ -49,11 +49,22 @@ func (d UserDB) CheckCredentials(ctx context.Context, username, password string)
 	return true
 }
 
-func (d UserDB) GetUser(ctx context.Context, username string) models.User {
+func (d UserDB) GetUserByUsername(ctx context.Context, username string) models.User {
 	d.mu.RLock()
 	user, _ := d.users[username]
 	d.mu.RUnlock()
 	return user
+}
+
+func (d UserDB) GetUserByID(ctx context.Context, ID int) models.User {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	for _, user := range d.users {
+		if user.ID == ID {
+			return user
+		}
+	}
+	return models.User{}
 }
 
 func (d UserDB) UserExists(ctx context.Context, username string) bool {
@@ -70,6 +81,7 @@ func createUserMapWithDefaultValues() map[string]models.User {
 		ID:       0,
 		Username: "rvasily",
 		Email:    "rvasily@example.com",
+		ImageURL: "/static/images/profile1.jpeg",
 		Password: "123",
 	}
 
