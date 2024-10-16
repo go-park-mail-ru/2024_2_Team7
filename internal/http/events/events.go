@@ -15,11 +15,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type SessionInfo struct {
-	Session       models.Session
-	Authenticated bool
-}
-
 type EventRequest struct {
 	Title       string   `json:"title" valid:"required,length(3|50)"`
 	Description string   `json:"description" valid:"required"`
