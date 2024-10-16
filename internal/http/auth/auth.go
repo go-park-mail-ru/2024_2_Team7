@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"regexp"
 
-	"kudago/internal/http/pkg"
+	"kudago/internal/http/utils"
 	"kudago/internal/models"
 
 	"github.com/asaskevich/govalidator"
@@ -71,22 +71,22 @@ func NewAuthHandler(s AuthService) *AuthHandler {
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
-	sessionInfo, ok := pkg.GetSessionFromContext(r.Context())
+	sessionInfo, ok := utils.GetSessionFromContext(r.Context())
 	if ok && sessionInfo.Authenticated {
-		pkg.WriteResponse(w, http.StatusForbidden, errUserIsAuthorized)
+		utils.WriteResponse(w, http.StatusForbidden, errUserIsAuthorized)
 		return
 	}
 
 	var req RegisterRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		pkg.WriteResponse(w, http.StatusBadRequest, errInvalidData)
+		utils.WriteResponse(w, http.StatusBadRequest, errInvalidData)
 		return
 	}
 
 	_, err = govalidator.ValidateStruct(&req)
 	if err != nil {
-		pkg.ProcessValidationErrors(w, err)
+		utils.ProcessValidationErrors(w, err)
 		return
 	}
 
@@ -100,11 +100,11 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, models.ErrUsernameIsUsed):
-			pkg.WriteResponse(w, http.StatusConflict, errUsernameIsAlredyTaken)
+			utils.WriteResponse(w, http.StatusConflict, errUsernameIsAlredyTaken)
 		case errors.Is(err, models.ErrEmailIsUsed):
-			pkg.WriteResponse(w, http.StatusConflict, errEmailIsAlredyTaken)
+			utils.WriteResponse(w, http.StatusConflict, errEmailIsAlredyTaken)
 		default:
-			pkg.WriteResponse(w, http.StatusInternalServerError, errInternal)
+			utils.WriteResponse(w, http.StatusInternalServerError, errInternal)
 		}
 		return
 	}
@@ -117,24 +117,24 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		User: userResponse,
 	}
 
-	pkg.WriteResponse(w, http.StatusCreated, resp)
+	utils.WriteResponse(w, http.StatusCreated, resp)
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
-	sessionInfo, ok := pkg.GetSessionFromContext(r.Context())
+	sessionInfo, ok := utils.GetSessionFromContext(r.Context())
 	if ok && sessionInfo.Authenticated {
-		pkg.WriteResponse(w, http.StatusForbidden, errUserAlreadyLoggedIn)
+		utils.WriteResponse(w, http.StatusForbidden, errUserAlreadyLoggedIn)
 		return
 	}
 	var req AuthRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		pkg.WriteResponse(w, http.StatusBadRequest, errInvalidData)
+		utils.WriteResponse(w, http.StatusBadRequest, errInvalidData)
 		return
 	}
 
 	_, err := govalidator.ValidateStruct(&req)
 	if err != nil {
-		pkg.ProcessValidationErrors(w, err)
+		utils.ProcessValidationErrors(w, err)
 		return
 	}
 
@@ -152,16 +152,16 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 			User: userResponse,
 		}
 
-		pkg.WriteResponse(w, http.StatusOK, resp)
+		utils.WriteResponse(w, http.StatusOK, resp)
 		return
 	}
-	pkg.WriteResponse(w, http.StatusForbidden, errWrongCredentials)
+	utils.WriteResponse(w, http.StatusForbidden, errWrongCredentials)
 }
 
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(models.SessionToken)
 	if err != nil {
-		pkg.WriteResponse(w, http.StatusForbidden, errUnauthorized)
+		utils.WriteResponse(w, http.StatusForbidden, errUnauthorized)
 		return
 	}
 
@@ -176,9 +176,9 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) CheckSession(w http.ResponseWriter, r *http.Request) {
-	sessionInfo, ok := pkg.GetSessionFromContext(r.Context())
+	sessionInfo, ok := utils.GetSessionFromContext(r.Context())
 	if !ok || !sessionInfo.Authenticated {
-		pkg.WriteResponse(w, http.StatusOK, errUnauthorized)
+		utils.WriteResponse(w, http.StatusOK, errUnauthorized)
 		return
 	}
 
@@ -189,20 +189,20 @@ func (h *AuthHandler) CheckSession(w http.ResponseWriter, r *http.Request) {
 		User: userResponse,
 	}
 
-	pkg.WriteResponse(w, http.StatusOK, resp)
+	utils.WriteResponse(w, http.StatusOK, resp)
 }
 
 func (h *AuthHandler) Profile(w http.ResponseWriter, r *http.Request) {
-	sessionInfo, ok := pkg.GetSessionFromContext(r.Context())
+	sessionInfo, ok := utils.GetSessionFromContext(r.Context())
 	if !ok || !sessionInfo.Authenticated {
-		pkg.WriteResponse(w, http.StatusOK, errUnauthorized)
+		utils.WriteResponse(w, http.StatusOK, errUnauthorized)
 		return
 	}
 
 	user := h.Service.GetUserByID(r.Context(), sessionInfo.Session.UserID)
 	userResponse := userToProfileResponse(user)
 
-	pkg.WriteResponse(w, http.StatusOK, userResponse)
+	utils.WriteResponse(w, http.StatusOK, userResponse)
 }
 
 func (h *AuthHandler) setSessionCookie(w http.ResponseWriter, r *http.Request, ID int) {

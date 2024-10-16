@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"kudago/internal/http/pkg"
+	utils"kudago/internal/http/utils"
 	"kudago/internal/models"
 
 	"github.com/asaskevich/govalidator"
@@ -103,7 +103,7 @@ func (h EventHandler) GetEventByID(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, models.ErrEventNotFound):
 			w.WriteHeader(http.StatusNoContent)
 		default:
-			pkg.WriteResponse(w, http.StatusInternalServerError, errInternal)
+			utils.WriteResponse(w, http.StatusInternalServerError, errInternal)
 		}
 		return
 	}
@@ -112,9 +112,9 @@ func (h EventHandler) GetEventByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h EventHandler) DeleteEvent(w http.ResponseWriter, r *http.Request) {
-	sessionInfo, ok := pkg.GetSessionFromContext(r.Context())
+	sessionInfo, ok := utils.GetSessionFromContext(r.Context())
 	if !ok || !sessionInfo.Authenticated {
-		pkg.WriteResponse(w, http.StatusForbidden, errUnauthorized)
+		utils.WriteResponse(w, http.StatusForbidden, errUnauthorized)
 		return
 	}
 
@@ -125,38 +125,38 @@ func (h EventHandler) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authorID:=sessionInfo.Session.UserID
+	authorID := sessionInfo.Session.UserID
 	err = h.Service.DeleteEvent(r.Context(), id, authorID)
 	if err != nil {
 		switch {
 		case errors.Is(err, models.ErrEventNotFound):
-			pkg.WriteResponse(w, http.StatusNotFound, errEventNotFound)
+			utils.WriteResponse(w, http.StatusNotFound, errEventNotFound)
 		case errors.Is(err, models.ErrAccessDenied):
-			pkg.WriteResponse(w, http.StatusForbidden, errAccessDenied)
+			utils.WriteResponse(w, http.StatusForbidden, errAccessDenied)
 		default:
-			pkg.WriteResponse(w, http.StatusInternalServerError, errInternal)
+			utils.WriteResponse(w, http.StatusInternalServerError, errInternal)
 		}
 		return
 	}
 }
 
 func (h EventHandler) AddEvent(w http.ResponseWriter, r *http.Request) {
-	sessionInfo, ok := pkg.GetSessionFromContext(r.Context())
+	sessionInfo, ok := utils.GetSessionFromContext(r.Context())
 	if !ok || !sessionInfo.Authenticated {
-		pkg.WriteResponse(w, http.StatusForbidden, errUnauthorized)
+		utils.WriteResponse(w, http.StatusForbidden, errUnauthorized)
 		return
 	}
 
 	var req EventRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		pkg.WriteResponse(w, http.StatusBadRequest, errInvalidData)
+		utils.WriteResponse(w, http.StatusBadRequest, errInvalidData)
 		return
 	}
 
 	_, err = govalidator.ValidateStruct(&req)
 	if err != nil {
-		pkg.ProcessValidationErrors(w, err)
+		utils.ProcessValidationErrors(w, err)
 		return
 	}
 
@@ -175,7 +175,7 @@ func (h EventHandler) AddEvent(w http.ResponseWriter, r *http.Request) {
 		switch {
 		///TODO пока оставлю так, когда будет более четкая бд и ошибки для обработки, поправлю
 		default:
-			pkg.WriteResponse(w, http.StatusInternalServerError, errInternal)
+			utils.WriteResponse(w, http.StatusInternalServerError, errInternal)
 		}
 		return
 	}
@@ -184,9 +184,9 @@ func (h EventHandler) AddEvent(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
-	sessionInfo, ok := pkg.GetSessionFromContext(r.Context())
+	sessionInfo, ok := utils.GetSessionFromContext(r.Context())
 	if !ok || !sessionInfo.Authenticated {
-		pkg.WriteResponse(w, http.StatusForbidden, errUnauthorized)
+		utils.WriteResponse(w, http.StatusForbidden, errUnauthorized)
 		return
 	}
 
@@ -200,13 +200,13 @@ func (h EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 	var req EventRequest
 	err = json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		pkg.WriteResponse(w, http.StatusBadRequest, errInvalidData)
+		utils.WriteResponse(w, http.StatusBadRequest, errInvalidData)
 		return
 	}
 
 	_, err = govalidator.ValidateStruct(&req)
 	if err != nil {
-		pkg.ProcessValidationErrors(w, err)
+		utils.ProcessValidationErrors(w, err)
 		return
 	}
 
@@ -225,11 +225,11 @@ func (h EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, models.ErrEventNotFound):
-			pkg.WriteResponse(w, http.StatusNotFound, errEventNotFound)
+			utils.WriteResponse(w, http.StatusNotFound, errEventNotFound)
 		case errors.Is(err, models.ErrAccessDenied):
-			pkg.WriteResponse(w, http.StatusForbidden, errAccessDenied)
+			utils.WriteResponse(w, http.StatusForbidden, errAccessDenied)
 		default:
-			pkg.WriteResponse(w, http.StatusInternalServerError, errInternal)
+			utils.WriteResponse(w, http.StatusInternalServerError, errInternal)
 		}
 		return
 	}
