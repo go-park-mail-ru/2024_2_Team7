@@ -248,5 +248,6 @@ func eventToEventResponse(event models.Event) EventResponse {
 		DateStart:   event.DateStart,
 		DateEnd:     event.DateEnd,
 		Tag:         event.Tag,
+		AuthorID:    event.AuthorID,
 	}
 }

@@ -3,11 +3,10 @@ package auth
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"regexp"
 
-	"kudago/internal/http/errors"
+	httpErrors "kudago/internal/http/errors"
 	"kudago/internal/http/utils"
 	"kudago/internal/models"
 
@@ -99,14 +98,12 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	user, err = h.Service.Register(r.Context(), user)
 	if err != nil {
-		switch {
-		case errors.Is(err, models.ErrUsernameIsUsed):
-			utils.WriteResponse(w, http.StatusConflict, httpErrors.ErrUsernameIsAlredyTaken)
-		case errors.Is(err, models.ErrEmailIsUsed):
-			utils.WriteResponse(w, http.StatusConflict, httpErrors.ErrEmailIsAlredyTaken)
-		default:
-			utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
+		authErr, ok := err.(*models.AuthError)
+		if ok {
+			utils.WriteResponse(w, http.StatusConflict, authErr)
+			return
 		}
+		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
 

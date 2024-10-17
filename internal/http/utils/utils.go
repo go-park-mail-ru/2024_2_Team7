@@ -11,12 +11,7 @@ import (
 )
 
 type ValidationErrResponse struct {
-	Errors []ValidationError `json:"errors"`
-}
-
-type ValidationError struct {
-	Field string `json:"field"`
-	Error string `json:"error"`
+	Errors []models.AuthError `json:"errors"`
 }
 
 func WriteResponse(w http.ResponseWriter, status int, body interface{}) {
@@ -35,9 +30,9 @@ func ProcessValidationErrors(w http.ResponseWriter, err error) {
 
 	for _, err := range errors {
 		if validationErr, ok := err.(govalidator.Error); ok {
-			valErr := ValidationError{
-				Field: validationErr.Name,
-				Error: validationErr.Validator,
+			valErr := models.AuthError{
+				Field:   validationErr.Name,
+				Message: validationErr.Validator,
 			}
 			resp.Errors = append(resp.Errors, valErr)
 		}

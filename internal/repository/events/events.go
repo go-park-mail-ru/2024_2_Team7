@@ -2,7 +2,6 @@ package eventRepository
 
 import (
 	"context"
-	"fmt"
 	"slices"
 	"sync"
 
@@ -74,7 +73,6 @@ func (db *EventDB) UpdateEvent(ctx context.Context, updatedEvent models.Event) e
 	defer db.mu.Unlock()
 	for i, event := range db.Events {
 		if event.ID == updatedEvent.ID {
-			fmt.Println(event, updatedEvent)
 			db.Events[i] = updatedEvent
 			return nil
 		}
