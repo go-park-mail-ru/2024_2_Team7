@@ -6,29 +6,23 @@ import (
 	"strings"
 
 	"kudago/internal/http/auth"
-	"kudago/internal/models"
 )
-
 
 const (
 	SessionToken = "session_token"
-	SessionKey = "session"
+	SessionKey   = "session"
 )
 
 func AuthMiddleware(whitelist []string, authHandler *auth.AuthHandler, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie(SessionToken)
-		var session *models.Session
-		var authenticated bool
 		if err == nil {
-			session, authenticated = authHandler.Service.CheckSession(r.Context(), cookie.Value)
-			if session != nil {
-				sessionInfo := models.SessionInfo{
-					Session:       *session,
-					Authenticated: authenticated,
-				}
-				ctx := context.WithValue(r.Context(), SessionKey, sessionInfo)
+			session, authenticated := authHandler.Service.CheckSession(r.Context(), cookie.Value)
+			if authenticated {
+				ctx := context.WithValue(r.Context(), SessionKey, session)
 				r = r.WithContext(ctx)
+				next.ServeHTTP(w, r)
+				return
 			}
 		}
 
@@ -39,11 +33,7 @@ func AuthMiddleware(whitelist []string, authHandler *auth.AuthHandler, next http
 			}
 		}
 
-		if !authenticated {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-
-		next.ServeHTTP(w, r)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
 	})
 }

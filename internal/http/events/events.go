@@ -8,7 +8,9 @@ import (
 	"strconv"
 	"strings"
 
-	utils"kudago/internal/http/utils"
+	httpErrors "kudago/internal/http/errors"
+	"kudago/internal/http/utils"
+
 	"kudago/internal/models"
 
 	"github.com/asaskevich/govalidator"
@@ -63,11 +65,12 @@ func NewEventHandler(s EventService) *EventHandler {
 func (h EventHandler) GetAllEvents(w http.ResponseWriter, r *http.Request) {
 	events := h.Service.GetAllEvents(r.Context())
 	resp := GetEventsResponse{}
+
 	for _, event := range events {
 		eventResp := eventToEventResponse(event)
 		resp.Events = append(resp.Events, eventResp)
 	}
-	json.NewEncoder(w).Encode(resp)
+	utils.WriteResponse(w, http.StatusOK, resp)
 }
 
 func (h EventHandler) GetEventsByTag(w http.ResponseWriter, r *http.Request) {
@@ -81,12 +84,13 @@ func (h EventHandler) GetEventsByTag(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
+
 	resp := GetEventsResponse{}
 	for _, event := range filteredEvents {
 		eventResp := eventToEventResponse(event)
 		resp.Events = append(resp.Events, eventResp)
 	}
-	json.NewEncoder(w).Encode(resp)
+	utils.WriteResponse(w, http.StatusOK, resp)
 }
 
 func (h EventHandler) GetEventByID(w http.ResponseWriter, r *http.Request) {
@@ -96,25 +100,26 @@ func (h EventHandler) GetEventByID(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	event, err := h.Service.GetEventByID(r.Context(), id)
 
+	event, err := h.Service.GetEventByID(r.Context(), id)
 	if err != nil {
 		switch {
 		case errors.Is(err, models.ErrEventNotFound):
 			w.WriteHeader(http.StatusNoContent)
 		default:
-			utils.WriteResponse(w, http.StatusInternalServerError, errInternal)
+			utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		}
 		return
 	}
 	resp := eventToEventResponse(event)
-	json.NewEncoder(w).Encode(resp)
+	utils.WriteResponse(w, http.StatusOK, resp)
 }
 
 func (h EventHandler) DeleteEvent(w http.ResponseWriter, r *http.Request) {
-	sessionInfo, ok := utils.GetSessionFromContext(r.Context())
-	if !ok || !sessionInfo.Authenticated {
-		utils.WriteResponse(w, http.StatusForbidden, errUnauthorized)
+	session, ok := utils.GetSessionFromContext(r.Context())
+
+	if !ok {
+		utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrUnauthorized)
 		return
 	}
 
@@ -125,32 +130,32 @@ func (h EventHandler) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authorID := sessionInfo.Session.UserID
+	authorID := session.UserID
 	err = h.Service.DeleteEvent(r.Context(), id, authorID)
 	if err != nil {
 		switch {
 		case errors.Is(err, models.ErrEventNotFound):
-			utils.WriteResponse(w, http.StatusNotFound, errEventNotFound)
+			utils.WriteResponse(w, http.StatusNotFound, httpErrors.ErrEventNotFound)
 		case errors.Is(err, models.ErrAccessDenied):
-			utils.WriteResponse(w, http.StatusForbidden, errAccessDenied)
+			utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrAccessDenied)
 		default:
-			utils.WriteResponse(w, http.StatusInternalServerError, errInternal)
+			utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		}
 		return
 	}
 }
 
 func (h EventHandler) AddEvent(w http.ResponseWriter, r *http.Request) {
-	sessionInfo, ok := utils.GetSessionFromContext(r.Context())
-	if !ok || !sessionInfo.Authenticated {
-		utils.WriteResponse(w, http.StatusForbidden, errUnauthorized)
+	session, ok := utils.GetSessionFromContext(r.Context())
+	if !ok {
+		utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrUnauthorized)
 		return
 	}
 
 	var req EventRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		utils.WriteResponse(w, http.StatusBadRequest, errInvalidData)
+		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
 		return
 	}
 
@@ -165,28 +170,27 @@ func (h EventHandler) AddEvent(w http.ResponseWriter, r *http.Request) {
 		Description: req.Description,
 		DateStart:   req.DateStart,
 		DateEnd:     req.DateEnd,
-		AuthorID:    sessionInfo.Session.UserID,
+		AuthorID:    session.UserID,
 		Tag:         req.Tag,
 	}
 
 	event, err = h.Service.AddEvent(r.Context(), event)
-
 	if err != nil {
 		switch {
 		///TODO пока оставлю так, когда будет более четкая бд и ошибки для обработки, поправлю
 		default:
-			utils.WriteResponse(w, http.StatusInternalServerError, errInternal)
+			utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		}
 		return
 	}
 	resp := eventToEventResponse(event)
-	json.NewEncoder(w).Encode(resp)
+	utils.WriteResponse(w, http.StatusOK, resp)
 }
 
 func (h EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
-	sessionInfo, ok := utils.GetSessionFromContext(r.Context())
-	if !ok || !sessionInfo.Authenticated {
-		utils.WriteResponse(w, http.StatusForbidden, errUnauthorized)
+	session, ok := utils.GetSessionFromContext(r.Context())
+	if !ok {
+		utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrUnauthorized)
 		return
 	}
 
@@ -200,7 +204,7 @@ func (h EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 	var req EventRequest
 	err = json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		utils.WriteResponse(w, http.StatusBadRequest, errInvalidData)
+		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
 		return
 	}
 
@@ -216,25 +220,24 @@ func (h EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 		Description: req.Description,
 		DateStart:   req.DateStart,
 		DateEnd:     req.DateEnd,
-		AuthorID:    sessionInfo.Session.UserID,
+		AuthorID:    session.UserID,
 		Tag:         req.Tag,
 	}
 
 	err = h.Service.UpdateEvent(r.Context(), event)
-
 	if err != nil {
 		switch {
 		case errors.Is(err, models.ErrEventNotFound):
-			utils.WriteResponse(w, http.StatusNotFound, errEventNotFound)
+			utils.WriteResponse(w, http.StatusNotFound, httpErrors.ErrEventNotFound)
 		case errors.Is(err, models.ErrAccessDenied):
-			utils.WriteResponse(w, http.StatusForbidden, errAccessDenied)
+			utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrAccessDenied)
 		default:
-			utils.WriteResponse(w, http.StatusInternalServerError, errInternal)
+			utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		}
 		return
 	}
 	resp := eventToEventResponse(event)
-	json.NewEncoder(w).Encode(resp)
+	utils.WriteResponse(w, http.StatusOK, resp)
 }
 
 func eventToEventResponse(event models.Event) EventResponse {

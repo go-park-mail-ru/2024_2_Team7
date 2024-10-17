@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"strings"
 
 	"kudago/internal/models"
+
+	"github.com/asaskevich/govalidator"
 )
 
 type ValidationErrResponse struct {
@@ -23,30 +24,23 @@ func WriteResponse(w http.ResponseWriter, status int, body interface{}) {
 	json.NewEncoder(w).Encode(body)
 }
 
-func GetSessionFromContext(ctx context.Context) (models.SessionInfo, bool) {
-	sessionInfo, ok := ctx.Value(models.SessionKey).(models.SessionInfo)
-	return sessionInfo, ok
+func GetSessionFromContext(ctx context.Context) (*models.Session, bool) {
+	session, ok := ctx.Value(models.SessionKey).(*models.Session)
+	return session, ok
 }
 
 func ProcessValidationErrors(w http.ResponseWriter, err error) {
-	errors := strings.Split(err.Error(), ";")
 	resp := ValidationErrResponse{}
+	errors := err.(govalidator.Errors)
 
 	for _, err := range errors {
-		colonIndex := strings.Index(err, ":")
-
-		if colonIndex == -1 {
-			continue
+		if validationErr, ok := err.(govalidator.Error); ok {
+			valErr := ValidationError{
+				Field: validationErr.Name,
+				Error: validationErr.Validator,
+			}
+			resp.Errors = append(resp.Errors, valErr)
 		}
-
-		field := err[:colonIndex]
-		errorMsg := err[colonIndex+2:]
-
-		valErr := ValidationError{
-			Field: field,
-			Error: errorMsg,
-		}
-		resp.Errors = append(resp.Errors, valErr)
 	}
 	WriteResponse(w, http.StatusUnauthorized, resp)
 }
