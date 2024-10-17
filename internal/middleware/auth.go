@@ -1,11 +1,11 @@
 package middleware
 
 import (
-	"context"
 	"net/http"
 	"strings"
 
 	"kudago/internal/http/auth"
+	"kudago/internal/http/utils"
 )
 
 const (
@@ -19,7 +19,7 @@ func AuthMiddleware(whitelist []string, authHandler *auth.AuthHandler, next http
 		if err == nil {
 			session, authenticated := authHandler.Service.CheckSession(r.Context(), cookie.Value)
 			if authenticated {
-				ctx := context.WithValue(r.Context(), SessionKey, session)
+				ctx := utils.SetSessionInContext(r.Context(), session)
 				r = r.WithContext(ctx)
 				next.ServeHTTP(w, r)
 				return

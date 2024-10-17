@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"regexp"
 
@@ -98,8 +99,8 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	user, err = h.Service.Register(r.Context(), user)
 	if err != nil {
-		authErr, ok := err.(*models.AuthError)
-		if ok {
+		var authErr *models.AuthError
+		if errors.As(err, &authErr) {
 			utils.WriteResponse(w, http.StatusConflict, authErr)
 			return
 		}
