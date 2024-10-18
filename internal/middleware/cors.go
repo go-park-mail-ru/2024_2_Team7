@@ -1,29 +1,8 @@
-package auth
+package middleware
 
 import (
-	"log"
 	"net/http"
-	"strings"
 )
-
-func (h *Handler) AuthMiddleware(whitelist []string, authHandler *Handler, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		for _, path := range whitelist {
-			if strings.HasPrefix(r.URL.Path, path) {
-				next.ServeHTTP(w, r)
-				return
-			}
-		}
-
-		_, authenticated := authHandler.SessionDb.CheckSession(r)
-		if !authenticated {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
-}
 
 func CORSMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -55,13 +34,6 @@ func CORSMiddleware(next http.Handler) http.Handler {
 		}
 
 		// Передаем управление следующему обработчику
-		next.ServeHTTP(w, r)
-	})
-}
-
-func LoggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println("Запрос:", r.Method, r.URL.Path)
 		next.ServeHTTP(w, r)
 	})
 }
