@@ -62,6 +62,13 @@ func NewEventHandler(s EventService) *EventHandler {
 	}
 }
 
+// @Summary Получить все события
+// @Description Получить все существующие события
+// @Tags events
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} GetEventsResponse
+// @Router /events [get]
 func (h EventHandler) GetAllEvents(w http.ResponseWriter, r *http.Request) {
 	events := h.Service.GetAllEvents(r.Context())
 	resp := GetEventsResponse{}
@@ -73,6 +80,13 @@ func (h EventHandler) GetAllEvents(w http.ResponseWriter, r *http.Request) {
 	utils.WriteResponse(w, http.StatusOK, resp)
 }
 
+// @Summary Получение событий по тегу
+// @Description Возвращает события по тегу
+// @Tags events
+// @Produce  json
+// @Success 200 {object} GetEventsResponse
+// @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
+// @Router /events/{tag} [get]
 func (h EventHandler) GetEventsByTag(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	tag := vars["tag"]
@@ -93,6 +107,14 @@ func (h EventHandler) GetEventsByTag(w http.ResponseWriter, r *http.Request) {
 	utils.WriteResponse(w, http.StatusOK, resp)
 }
 
+// @Summary Получение события по ID
+// @Description Возвращает информацию о событии по его идентификатору
+// @Tags events
+// @Produce  json
+// @Success 200 {object} EventResponse
+// @Failure 404 {object} httpErrors.HttpError "Event Not Found"
+// @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
+// @Router /events/{id} [get]
 func (h EventHandler) GetEventByID(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
@@ -115,6 +137,16 @@ func (h EventHandler) GetEventByID(w http.ResponseWriter, r *http.Request) {
 	utils.WriteResponse(w, http.StatusOK, resp)
 }
 
+// @Summary Удаление события
+// @Description Удаляет существующее событие
+// @Tags events
+// @Produce  json
+// @Success 204
+// @Failure 401 {object} httpErrors.HttpError "Unauthorized"
+// @Failure 403 {object} httpErrors.HttpError "Access Denied"
+// @Failure 404 {object} httpErrors.HttpError "Event Not Found"
+// @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
+// @Router /events/{id} [delete]
 func (h EventHandler) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 	session, ok := utils.GetSessionFromContext(r.Context())
 
@@ -145,6 +177,16 @@ func (h EventHandler) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// @Summary Создание события
+// @Description Создает новое событие в системе
+// @Tags events
+// @Accept  json
+// @Produce  json
+// @Success 201 {object} EventResponse
+// @Failure 400 {object} httpErrors.HttpError "Invalid Data"
+// @Failure 401 {object} httpErrors.HttpError "Unauthorized"
+// @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
+// @Router /events [post]
 func (h EventHandler) AddEvent(w http.ResponseWriter, r *http.Request) {
 	session, ok := utils.GetSessionFromContext(r.Context())
 	if !ok {
@@ -187,6 +229,18 @@ func (h EventHandler) AddEvent(w http.ResponseWriter, r *http.Request) {
 	utils.WriteResponse(w, http.StatusOK, resp)
 }
 
+// @Summary Обновление события
+// @Description Обновляет данные существующего события
+// @Tags events
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} EventResponse
+// @Failure 400 {object} httpErrors.HttpError "Invalid Data"
+// @Failure 401 {object} httpErrors.HttpError "Unauthorized"
+// @Failure 403 {object} httpErrors.HttpError "Access Denied"
+// @Failure 404 {object} httpErrors.HttpError "Event Not Found"
+// @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
+// @Router /events/{id} [put]
 func (h EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 	session, ok := utils.GetSessionFromContext(r.Context())
 	if !ok {

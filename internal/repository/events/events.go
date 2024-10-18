@@ -58,6 +58,7 @@ func (db EventDB) GetEventByID(ctx context.Context, ID int) (models.Event, error
 func (db *EventDB) DeleteEvent(ctx context.Context, ID int) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
+
 	for i, event := range db.Events {
 		if event.ID == ID {
 			db.Events = slices.Delete(db.Events, i, i+1)

@@ -5,18 +5,28 @@ import (
 	"net/http"
 
 	"kudago/config"
+	_ "kudago/docs"
 	"kudago/internal/http/auth"
 	"kudago/internal/http/events"
 	"kudago/internal/middleware"
 	eventRepository "kudago/internal/repository/events"
 	sessionRepository "kudago/internal/repository/session"
 	userRepository "kudago/internal/repository/users"
-	"kudago/internal/service/auth"
-	"kudago/internal/service/events"
+	authService "kudago/internal/service/auth"
+	eventService "kudago/internal/service/events"
+
+	httpSwagger "github.com/swaggo/http-swagger"
 
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
+
+// swag init
+
+// @title           Swagger Vihodnoy API
+// @version         1.0
+// @description     This is a description of the Vihodnoy server.
+// @termsOfService  http://swagger.io/terms/
 
 func main() {
 	port := config.LoadConfig()
@@ -42,6 +52,8 @@ func main() {
 
 	fs := http.FileServer(http.Dir("./static/"))
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fs))
+	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
+	r.PathPrefix("/docs/").Handler(httpSwagger.WrapHandler)
 
 	r.HandleFunc("/register", authHandler.Register).Methods("POST")
 	r.HandleFunc("/login", authHandler.Login).Methods("POST")
@@ -63,6 +75,8 @@ func main() {
 		"/static",
 		"/session",
 		"/logout",
+		"/swagger",
+		"/docs",
 	}
 
 	handlerWithAuth := middleware.AuthMiddleware(whitelist, authHandler, r)

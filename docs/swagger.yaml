@@ -1,0 +1,319 @@
+definitions:
+  auth.AuthResponse:
+    properties:
+      user:
+        $ref: '#/definitions/auth.UserResponse'
+    type: object
+  auth.ProfileResponse:
+    properties:
+      email:
+        type: string
+      id:
+        type: integer
+      image:
+        type: string
+      username:
+        type: string
+    type: object
+  auth.UserResponse:
+    properties:
+      email:
+        type: string
+      id:
+        type: integer
+      image:
+        type: string
+      username:
+        type: string
+    type: object
+  events.EventResponse:
+    properties:
+      author:
+        type: integer
+      date_end:
+        type: string
+      date_start:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      tag:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+    type: object
+  events.GetEventsResponse:
+    properties:
+      events:
+        items:
+          $ref: '#/definitions/events.EventResponse'
+        type: array
+    type: object
+  httpErrors.HttpError:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
+  models.AuthError:
+    properties:
+      error:
+        type: string
+      field:
+        type: string
+    type: object
+  utils.ValidationErrResponse:
+    properties:
+      errors:
+        items:
+          $ref: '#/definitions/models.AuthError'
+        type: array
+    type: object
+info:
+  contact: {}
+  description: This is a description of the Vihodnoy server.
+  termsOfService: http://swagger.io/terms/
+  title: Swagger Vihodnoy API
+  version: "1.0"
+paths:
+  /events:
+    get:
+      consumes:
+      - application/json
+      description: Получить все существующие события
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/events.GetEventsResponse'
+      summary: Получить все события
+      tags:
+      - events
+    post:
+      consumes:
+      - application/json
+      description: Создает новое событие в системе
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/events.EventResponse'
+        "400":
+          description: Invalid Data
+          schema:
+            $ref: '#/definitions/httpErrors.HttpError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httpErrors.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpErrors.HttpError'
+      summary: Создание события
+      tags:
+      - events
+  /events/{id}:
+    delete:
+      description: Удаляет существующее событие
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httpErrors.HttpError'
+        "403":
+          description: Access Denied
+          schema:
+            $ref: '#/definitions/httpErrors.HttpError'
+        "404":
+          description: Event Not Found
+          schema:
+            $ref: '#/definitions/httpErrors.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpErrors.HttpError'
+      summary: Удаление события
+      tags:
+      - events
+    get:
+      description: Возвращает информацию о событии по его идентификатору
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/events.EventResponse'
+        "404":
+          description: Event Not Found
+          schema:
+            $ref: '#/definitions/httpErrors.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpErrors.HttpError'
+      summary: Получение события по ID
+      tags:
+      - events
+    put:
+      consumes:
+      - application/json
+      description: Обновляет данные существующего события
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/events.EventResponse'
+        "400":
+          description: Invalid Data
+          schema:
+            $ref: '#/definitions/httpErrors.HttpError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httpErrors.HttpError'
+        "403":
+          description: Access Denied
+          schema:
+            $ref: '#/definitions/httpErrors.HttpError'
+        "404":
+          description: Event Not Found
+          schema:
+            $ref: '#/definitions/httpErrors.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpErrors.HttpError'
+      summary: Обновление события
+      tags:
+      - events
+  /events/{tag}:
+    get:
+      description: Возвращает события по тегу
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/events.GetEventsResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpErrors.HttpError'
+      summary: Получение событий по тегу
+      tags:
+      - events
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Авторизует пользователя
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.UserResponse'
+        "400":
+          description: Wrong Credentials
+          schema:
+            $ref: '#/definitions/httpErrors.HttpError'
+        "401":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/utils.ValidationErrResponse'
+        "403":
+          description: User is alredy logged in
+          schema:
+            $ref: '#/definitions/httpErrors.HttpError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpErrors.HttpError'
+      summary: Авторизация пользователя
+      tags:
+      - auth
+  /logout:
+    post:
+      description: Выход из аккаунта
+      responses:
+        "200":
+          description: OK
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/httpErrors.HttpError'
+      summary: Выход из системы
+      tags:
+      - auth
+  /profile:
+    get:
+      description: Возвращает информацию о профиле текущего пользователя
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.ProfileResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httpErrors.HttpError'
+      summary: Профиль пользователя
+      tags:
+      - profile
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Создает нового пользователя
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/auth.UserResponse'
+        "400":
+          description: Invalid Data / Username or Email already taken
+          schema:
+            $ref: '#/definitions/httpErrors.HttpError'
+        "401":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/utils.ValidationErrResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpErrors.HttpError'
+      summary: Регистрация пользователя
+      tags:
+      - auth
+  /session:
+    get:
+      description: Возвращает информацию о пользователе, если сессия активна
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/auth.AuthResponse'
+      summary: Проверка сессии
+      tags:
+      - auth
+swagger: "2.0"

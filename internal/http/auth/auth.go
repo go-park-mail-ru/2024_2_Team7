@@ -71,6 +71,16 @@ func NewAuthHandler(s AuthService) *AuthHandler {
 	}
 }
 
+// @Summary Регистрация пользователя
+// @Description Создает нового пользователя
+// @Tags auth
+// @Accept  json
+// @Produce  json
+// @Success 201 {object} UserResponse
+// @Failure 400 {object} httpErrors.HttpError "Invalid Data / Username or Email already taken"
+// @Failure 401 {object} utils.ValidationErrResponse "Validation error"
+// @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
+// @Router /register [post]
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	_, ok := utils.GetSessionFromContext(r.Context())
 	if ok {
@@ -119,6 +129,17 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	utils.WriteResponse(w, http.StatusCreated, resp)
 }
 
+// @Summary Авторизация пользователя
+// @Description Авторизует пользователя
+// @Tags auth
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} UserResponse
+// @Failure 400 {object} httpErrors.HttpError "Wrong Credentials"
+// @Failure 401 {object} utils.ValidationErrResponse "Validation error"
+// @Failure 403 {object} httpErrors.HttpError "User is alredy logged in"
+// @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
+// @Router /login [post]
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	_, ok := utils.GetSessionFromContext(r.Context())
 	if ok {
@@ -158,6 +179,12 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrWrongCredentials)
 }
 
+// @Summary Выход из системы
+// @Description Выход из аккаунта
+// @Tags auth
+// @Success 200
+// @Failure 403 {object} httpErrors.HttpError "Forbidden"
+// @Router /logout [post]
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	session, ok := utils.GetSessionFromContext(r.Context())
 	if !ok {
@@ -175,6 +202,11 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// @Summary Проверка сессии
+// @Description Возвращает информацию о пользователе, если сессия активна
+// @Tags auth
+// @Success 200 {object} AuthResponse
+// @Router /session [get]
 func (h *AuthHandler) CheckSession(w http.ResponseWriter, r *http.Request) {
 	session, ok := utils.GetSessionFromContext(r.Context())
 	if !ok {
@@ -192,10 +224,16 @@ func (h *AuthHandler) CheckSession(w http.ResponseWriter, r *http.Request) {
 	utils.WriteResponse(w, http.StatusOK, resp)
 }
 
+// @Summary Профиль пользователя
+// @Description Возвращает информацию о профиле текущего пользователя
+// @Tags profile
+// @Success 200 {object} ProfileResponse
+// @Failure 401 {object} httpErrors.HttpError "Unauthorized"
+// @Router /profile [get]
 func (h *AuthHandler) Profile(w http.ResponseWriter, r *http.Request) {
 	session, ok := utils.GetSessionFromContext(r.Context())
 	if !ok {
-		utils.WriteResponse(w, http.StatusOK, httpErrors.ErrUnauthorized)
+		utils.WriteResponse(w, http.StatusUnauthorized, httpErrors.ErrUnauthorized)
 		return
 	}
 

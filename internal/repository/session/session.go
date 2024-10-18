@@ -35,6 +35,7 @@ func (db *SessionDB) CreateSession(ctx context.Context, ID int) *models.Session 
 		Token:   sessionToken,
 		Expires: expiration,
 	}
+
 	db.mu.Lock()
 	db.sessions[sessionToken] = session
 	db.mu.Unlock()
@@ -45,6 +46,7 @@ func (db SessionDB) CheckSession(ctx context.Context, cookie string) (*models.Se
 	db.mu.RLock()
 	session, exists := db.sessions[cookie]
 	db.mu.RUnlock()
+
 	if !exists || session.Expires.Before(time.Now()) {
 		return nil, false
 	}
