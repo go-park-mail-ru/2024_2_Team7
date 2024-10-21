@@ -3,108 +3,94 @@ package userRepository
 import (
 	"context"
 	"errors"
-	"strings"
-	"sync"
-
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"kudago/internal/db"
 	"kudago/internal/models"
+	"log"
 )
 
 var errEmailIsUsed = errors.New("Email is already used")
 
 type UserDB struct {
-	users map[string]models.User
-	mu    *sync.RWMutex
+	pool *pgxpool.Pool
 }
 
 func NewDB() *UserDB {
-	users := createUserMapWithDefaultValues()
-
 	return &UserDB{
-		users: users,
-		mu:    &sync.RWMutex{},
+		pool: db.GetDB(),
 	}
 }
 
 func (d *UserDB) AddUser(ctx context.Context, user *models.User) (models.User, error) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	for _, u := range d.users {
-		if strings.ToLower(user.Email) == strings.ToLower(u.Email) {
+	query := `
+        INSERT INTO "USER" (name, email, password, created_at)
+        VALUES ($1, $2, $3, CURRENT_DATE)
+        RETURNING id
+    `
+	err := d.pool.QueryRow(ctx, query, user.Username, user.Email, user.Password, user.ImageURL).Scan(&user.ID)
+	if err != nil {
+		if err.Error() == "unique_violation" {
 			return models.User{}, errEmailIsUsed
 		}
+		return models.User{}, err
 	}
-	user.ID = len(d.users)
-	d.users[user.Username] = *user
 	return *user, nil
 }
 
 func (d UserDB) CheckCredentials(ctx context.Context, username, password string) bool {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-
-	user, exists := d.users[username]
-	if !exists || user.Password != password {
-		return false
-	}
-	return true
+	query := `
+        SELECT COUNT(*) FROM "USER" WHERE name=$1 AND password=$2
+    `
+	var count int
+	err := d.pool.QueryRow(ctx, query, username, password).Scan(&count)
+	return err == nil && count > 0
 }
 
-func (d UserDB) GetUserByUsername(ctx context.Context, username string) models.User {
-	d.mu.RLock()
-	user, _ := d.users[username]
-	d.mu.RUnlock()
-	return user
+func (d UserDB) GetUserByUsername(ctx context.Context, username string) (models.User, error) {
+	var user models.User
+	query := `
+        SELECT id, name, email, password, URL_to_avatar FROM "USER" WHERE name=$1
+    `
+	err := d.pool.QueryRow(ctx, query, username).Scan(
+		&user.ID,
+		&user.Username,
+		&user.Email,
+		&user.Password,
+		&user.ImageURL,
+	)
+	if err == pgx.ErrNoRows {
+		return models.User{}, errors.New("user not found")
+	}
+	return user, err
 }
 
-func (d UserDB) GetUserByID(ctx context.Context, ID int) models.User {
-	d.mu.RLock()
-	defer d.mu.RUnlock()
-	for _, user := range d.users {
-		if user.ID == ID {
-			return user
-		}
+func (d UserDB) GetUserByID(ctx context.Context, ID int) (models.User, error) {
+	var user models.User
+	query := `
+        SELECT id, name, email, password, URL_to_avatar FROM "USER" WHERE id=$1
+    `
+	err := d.pool.QueryRow(ctx, query, ID).Scan(
+		&user.ID,
+		&user.Username,
+		&user.Email,
+		&user.Password,
+		&user.ImageURL,
+	)
+	if err == pgx.ErrNoRows {
+		return models.User{}, errors.New("user not found")
 	}
-	return models.User{}
+	return user, err
 }
 
 func (d UserDB) UserExists(ctx context.Context, username string) bool {
-	d.mu.RLock()
-	_, exists := d.users[username]
-	d.mu.RUnlock()
+	query := `
+        SELECT EXISTS(SELECT 1 FROM "USER" WHERE name=$1)
+    `
+	var exists bool
+	err := d.pool.QueryRow(ctx, query, username).Scan(&exists)
+	if err != nil {
+		log.Fatal("error in service/auth/userExists")
+	}
 	return exists
-}
-
-func createUserMapWithDefaultValues() map[string]models.User {
-	users := make(map[string]models.User)
-
-	users["rvasily"] = models.User{
-		ID:       0,
-		Username: "rvasily",
-		Email:    "rvasily@example.com",
-		ImageURL: "/static/images/profile1.jpeg",
-		Password: "123",
-	}
-
-	users["ivanov"] = models.User{
-		ID:       1,
-		Username: "ivanov",
-		Email:    "ivanov@example.com",
-		Password: "234",
-	}
-
-	users["petrov"] = models.User{
-		ID:       2,
-		Username: "petrov",
-		Email:    "petrov@example.com",
-		Password: "345",
-	}
-
-	users["semenov"] = models.User{
-		ID:       3,
-		Username: "semenov",
-		Email:    "semenov@example.com",
-		Password: "456",
-	}
-
-	return users
 }

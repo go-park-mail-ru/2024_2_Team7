@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"regexp"
 
@@ -20,8 +21,8 @@ type AuthHandler struct {
 
 type AuthService interface {
 	CheckSession(ctx context.Context, cookie string) (*models.Session, bool)
-	GetUserByUsername(ctx context.Context, username string) models.User
-	GetUserByID(ctx context.Context, ID int) models.User
+	GetUserByUsername(ctx context.Context, username string) (models.User, error)
+	GetUserByID(ctx context.Context, ID int) (models.User, error)
 	CheckCredentials(ctx context.Context, creds models.Credentials) bool
 	Register(ctx context.Context, user models.User) (models.User, error)
 	CreateSession(ctx context.Context, ID int) *models.Session
@@ -165,7 +166,10 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if h.Service.CheckCredentials(r.Context(), creds) {
-		user := h.Service.GetUserByUsername(r.Context(), creds.Username)
+		user, err := h.Service.GetUserByUsername(r.Context(), creds.Username)
+		if err != nil {
+			log.Fatalf("error in /repository/users/users.go in Loging %v", err)
+		}
 		h.setSessionCookie(w, r, user.ID)
 		userResponse := userToUserResponse(user)
 
@@ -214,7 +218,10 @@ func (h *AuthHandler) CheckSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := h.Service.GetUserByID(r.Context(), session.UserID)
+	user, err := h.Service.GetUserByID(r.Context(), session.UserID)
+	if err != nil {
+		log.Fatalf("error in /repository/users/users.go in CheckSession %v", err)
+	}
 	userResponse := userToUserResponse(user)
 
 	resp := AuthResponse{
@@ -237,7 +244,10 @@ func (h *AuthHandler) Profile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := h.Service.GetUserByID(r.Context(), session.UserID)
+	user, err := h.Service.GetUserByID(r.Context(), session.UserID)
+	if err != nil {
+		log.Fatalf("error in /repository/users/users.go in Profile %v", err)
+	}
 	userResponse := userToProfileResponse(user)
 
 	utils.WriteResponse(w, http.StatusOK, userResponse)

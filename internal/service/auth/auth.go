@@ -14,8 +14,8 @@ type authService struct {
 type UserDB interface {
 	UserExists(ctx context.Context, username string) bool
 	AddUser(ctx context.Context, user *models.User) (models.User, error)
-	GetUserByUsername(ctx context.Context, username string) models.User
-	GetUserByID(ctx context.Context, ID int) models.User
+	GetUserByUsername(ctx context.Context, username string) (models.User, error)
+	GetUserByID(ctx context.Context, ID int) (models.User, error)
 	CheckCredentials(ctx context.Context, username string, password string) bool
 }
 
@@ -41,11 +41,11 @@ func (a *authService) AddUser(ctx context.Context, user *models.User) (models.Us
 	return a.UserDB.AddUser(ctx, user)
 }
 
-func (a *authService) GetUserByUsername(ctx context.Context, username string) models.User {
+func (a *authService) GetUserByUsername(ctx context.Context, username string) (models.User, error) {
 	return a.UserDB.GetUserByUsername(ctx, username)
 }
 
-func (a *authService) GetUserByID(ctx context.Context, ID int) models.User {
+func (a *authService) GetUserByID(ctx context.Context, ID int) (models.User, error) {
 	return a.UserDB.GetUserByID(ctx, ID)
 }
 

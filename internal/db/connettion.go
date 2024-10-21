@@ -16,7 +16,7 @@ func InitDB() (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("error in loading .env: %v", err)
 	}
 
-	//захардкодил нестандартный порт 5445 чтобы ни у кого не конфликтовала с дефолтной postgres
+	//захардкодил нестандартный порт 5445, чтобы ни у кого не конфликтовала с дефолтной postgres
 	dbUrl := fmt.Sprintf("postgres://%s:%s@localhost:5445/%s",
 		os.Getenv("POSTGRES_USER"),
 		os.Getenv("POSTGRES_PASSWORD"),

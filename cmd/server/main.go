@@ -1,6 +1,7 @@
 package main
 
 import (
+	"kudago/internal/db"
 	"log"
 	"net/http"
 
@@ -37,6 +38,12 @@ func main() {
 	}
 	defer logger.Sync()
 	sugar := logger.Sugar()
+
+	_, err = db.InitDB()
+	if err != nil {
+		log.Fatalf("Failed to connect to the database: %v", err)
+	}
+	defer db.CloseDB()
 
 	userDB := userRepository.NewDB()
 	sessionDB := sessionRepository.NewDB()
