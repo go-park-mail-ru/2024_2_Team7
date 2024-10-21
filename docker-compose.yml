@@ -1,0 +1,36 @@
+version: '3.8'
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5431
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres123
+      - DB_NAME=kudago_db
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+
+  postgres:
+    image: postgres:latest
+    container_name: my_postgres_container
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "5445:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d
+
+volumes:
+    postgres_data:
+      driver: local

@@ -3,3 +3,4 @@ pkg
 coverage.out
 .vscode
 c.out
+.env
