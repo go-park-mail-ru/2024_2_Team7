@@ -1,10 +1,10 @@
 CREATE TABLE "USER" (
                         id SERIAL PRIMARY KEY,
-                        name TEXT NOT NULL,
+                        username TEXT NOT NULL,
                         email TEXT UNIQUE NOT NULL,
-                        password TEXT NOT NULL,
-                        created_at DATE NOT NULL DEFAULT CURRENT_DATE,
-                        URL_to_avatar TEXT
+                        password_hash TEXT NOT NULL,
+                        URL_to_avatar TEXT,
+                        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE CATEGORY (
@@ -20,9 +20,9 @@ CREATE TABLE EVENT (
                        event_finish DATE NOT NULL,
                        location TEXT,
                        capacity INT,
-                       created_at DATE NOT NULL DEFAULT CURRENT_DATE,
+                       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_DATE,
                        user_id INT NOT NULL,
-                       category_id INT NOT NULL,
+                       category_id INT,
                        FOREIGN KEY (user_id) REFERENCES "USER" (id) ON DELETE CASCADE,
                        FOREIGN KEY (category_id) REFERENCES CATEGORY (id) ON DELETE CASCADE
 );

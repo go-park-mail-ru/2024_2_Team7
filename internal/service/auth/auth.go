@@ -12,11 +12,11 @@ type authService struct {
 }
 
 type UserDB interface {
-	UserExists(ctx context.Context, username string) bool
 	AddUser(ctx context.Context, user *models.User) (models.User, error)
-	GetUserByUsername(ctx context.Context, username string) (models.User, error)
 	GetUserByID(ctx context.Context, ID int) (models.User, error)
-	CheckCredentials(ctx context.Context, username string, password string) bool
+	CheckCredentials(ctx context.Context, username string, password string) (models.User, error)
+	EmailExists(ctx context.Context, email string) (bool, error)
+	UsernameExists(ctx context.Context, email string) (bool, error)
 }
 
 type SessionDB interface {
@@ -33,37 +33,35 @@ func (a *authService) CheckSession(ctx context.Context, cookie string) (*models.
 	return a.SessionDB.CheckSession(ctx, cookie)
 }
 
-func (a *authService) UserExists(ctx context.Context, username string) bool {
-	return a.UserDB.UserExists(ctx, username)
-}
-
 func (a *authService) AddUser(ctx context.Context, user *models.User) (models.User, error) {
 	return a.UserDB.AddUser(ctx, user)
-}
-
-func (a *authService) GetUserByUsername(ctx context.Context, username string) (models.User, error) {
-	return a.UserDB.GetUserByUsername(ctx, username)
 }
 
 func (a *authService) GetUserByID(ctx context.Context, ID int) (models.User, error) {
 	return a.UserDB.GetUserByID(ctx, ID)
 }
 
-func (a *authService) CheckCredentials(ctx context.Context, creds models.Credentials) bool {
+func (a *authService) CheckCredentials(ctx context.Context, creds models.Credentials) (models.User, error) {
 	return a.UserDB.CheckCredentials(ctx, creds.Username, creds.Password)
 }
 
 func (a *authService) Register(ctx context.Context, user models.User) (models.User, error) {
-	if a.UserDB.UserExists(ctx, user.Username) {
+	usernameExists, err := a.UserDB.UsernameExists(ctx, user.Username)
+	if err != nil {
+		return models.User{}, err
+	}
+	if usernameExists {
 		return models.User{}, models.ErrUsernameIsUsed
 	}
 
-	user, err := a.UserDB.AddUser(ctx, &user)
+	emailExists, err := a.UserDB.EmailExists(ctx, user.Email)
 	if err != nil {
+		return models.User{}, err
+	}
+	if emailExists {
 		return models.User{}, models.ErrEmailIsUsed
 	}
-
-	return user, nil
+	return a.UserDB.AddUser(ctx, &user)
 }
 
 func (a *authService) CreateSession(ctx context.Context, ID int) *models.Session {

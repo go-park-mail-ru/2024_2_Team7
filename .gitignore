@@ -4,3 +4,4 @@ coverage.out
 .vscode
 c.out
 .env
+pgdata

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	httpErrors "kudago/internal/http/errors"
 	"kudago/internal/http/utils"
@@ -17,22 +18,30 @@ import (
 	"github.com/gorilla/mux"
 )
 
+const TimeLayout = "2006-01-02"
+
 type EventRequest struct {
 	Title       string   `json:"title" valid:"required,length(3|50)"`
 	Description string   `json:"description" valid:"required"`
+	Location    string   `json:"location"`
+	Category    string   `json:"category"`
+	Capacity    int      `json:"capacity"`
 	Tag         []string `json:"tag"`
-	DateStart   string   `json:"date_start"`
-	DateEnd     string   `json:"date_end"`
+	DateStart   string   `json:"event_start"`
+	DateEnd     string   `json:"event_end"`
 }
 
 type EventResponse struct {
 	ID          int      `json:"id"`
 	Title       string   `json:"title"`
 	Description string   `json:"description"`
+	Location    string   `json:"location"`
+	Category    string   `json:"category"`
+	Capacity    int      `json:"capacity"`
 	Tag         []string `json:"tag"`
 	AuthorID    int      `json:"author"`
-	DateStart   string   `json:"date_start"`
-	DateEnd     string   `json:"date_end"`
+	DateStart   string   `json:"event_start"`
+	DateEnd     string   `json:"event_end"`
 }
 
 type CreateEventResponse struct {
@@ -48,8 +57,8 @@ type EventHandler struct {
 }
 
 type EventService interface {
-	GetAllEvents(ctx context.Context) []models.Event
-	GetEventsByTag(ctx context.Context, tag string) []models.Event
+	GetAllEvents(ctx context.Context) ([]models.Event, error)
+	GetEventsByTag(ctx context.Context, tag string) ([]models.Event, error)
 	GetEventByID(ctx context.Context, ID int) (models.Event, error)
 	AddEvent(ctx context.Context, event models.Event) (models.Event, error)
 	DeleteEvent(ctx context.Context, ID int, authorID int) error
@@ -68,9 +77,14 @@ func NewEventHandler(s EventService) *EventHandler {
 // @Accept  json
 // @Produce  json
 // @Success 200 {object} GetEventsResponse
+// @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
 // @Router /events [get]
 func (h EventHandler) GetAllEvents(w http.ResponseWriter, r *http.Request) {
-	events := h.Service.GetAllEvents(r.Context())
+	events, err := h.Service.GetAllEvents(r.Context())
+	if err != nil {
+		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
+		return
+	}
 	resp := GetEventsResponse{}
 
 	for _, event := range events {
@@ -92,10 +106,9 @@ func (h EventHandler) GetEventsByTag(w http.ResponseWriter, r *http.Request) {
 	tag := vars["tag"]
 	tag = strings.ToLower(tag)
 
-	filteredEvents := h.Service.GetEventsByTag(r.Context(), tag)
-
-	if len(filteredEvents) == 0 {
-		w.WriteHeader(http.StatusNoContent)
+	filteredEvents, err := h.Service.GetEventsByTag(r.Context(), tag)
+	if err != nil {
+		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
 
@@ -201,6 +214,18 @@ func (h EventHandler) AddEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	eventStart, err := time.Parse(TimeLayout, req.DateStart)
+	if err != nil {
+		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidTime)
+		return
+	}
+
+	eventEnd, err := time.Parse(TimeLayout, req.DateEnd)
+	if err != nil {
+		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidTime)
+		return
+	}
+
 	_, err = govalidator.ValidateStruct(&req)
 	if err != nil {
 		utils.ProcessValidationErrors(w, err)
@@ -210,9 +235,12 @@ func (h EventHandler) AddEvent(w http.ResponseWriter, r *http.Request) {
 	event := models.Event{
 		Title:       req.Title,
 		Description: req.Description,
-		DateStart:   req.DateStart,
-		DateEnd:     req.DateEnd,
+		Location:    req.Location,
+		EventStart:  eventStart.Format(TimeLayout),
+		EventEnd:    eventEnd.Format(TimeLayout),
 		AuthorID:    session.UserID,
+		Category:    req.Category,
+		Capacity:    req.Capacity,
 		Tag:         req.Tag,
 	}
 
@@ -262,6 +290,18 @@ func (h EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	eventStart, err := time.Parse(TimeLayout, req.DateStart)
+	if err != nil {
+		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidTime)
+		return
+	}
+
+	eventEnd, err := time.Parse(TimeLayout, req.DateEnd)
+	if err != nil {
+		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidTime)
+		return
+	}
+
 	_, err = govalidator.ValidateStruct(&req)
 	if err != nil {
 		utils.ProcessValidationErrors(w, err)
@@ -272,10 +312,13 @@ func (h EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 		ID:          id,
 		Title:       req.Title,
 		Description: req.Description,
-		DateStart:   req.DateStart,
-		DateEnd:     req.DateEnd,
+		EventStart:  eventStart.Format(TimeLayout),
+		EventEnd:    eventEnd.Format(TimeLayout),
 		AuthorID:    session.UserID,
 		Tag:         req.Tag,
+		Location:    req.Location,
+		Category:    req.Category,
+		Capacity:    req.Capacity,
 	}
 
 	err = h.Service.UpdateEvent(r.Context(), event)
@@ -299,8 +342,8 @@ func eventToEventResponse(event models.Event) EventResponse {
 		ID:          event.ID,
 		Title:       event.Title,
 		Description: event.Description,
-		DateStart:   event.DateStart,
-		DateEnd:     event.DateEnd,
+		DateStart:   event.EventStart,
+		DateEnd:     event.EventEnd,
 		Tag:         event.Tag,
 		AuthorID:    event.AuthorID,
 	}

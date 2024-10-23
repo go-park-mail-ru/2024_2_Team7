@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
 	"regexp"
 
@@ -21,9 +20,8 @@ type AuthHandler struct {
 
 type AuthService interface {
 	CheckSession(ctx context.Context, cookie string) (*models.Session, bool)
-	GetUserByUsername(ctx context.Context, username string) (models.User, error)
 	GetUserByID(ctx context.Context, ID int) (models.User, error)
-	CheckCredentials(ctx context.Context, creds models.Credentials) bool
+	CheckCredentials(ctx context.Context, creds models.Credentials) (models.User, error)
 	Register(ctx context.Context, user models.User) (models.User, error)
 	CreateSession(ctx context.Context, ID int) *models.Session
 	DeleteSession(ctx context.Context, token string)
@@ -165,22 +163,21 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Password: req.Password,
 	}
 
-	if h.Service.CheckCredentials(r.Context(), creds) {
-		user, err := h.Service.GetUserByUsername(r.Context(), creds.Username)
-		if err != nil {
-			log.Fatalf("error in /repository/users/users.go in Loging %v", err)
-		}
-		h.setSessionCookie(w, r, user.ID)
-		userResponse := userToUserResponse(user)
-
-		resp := AuthResponse{
-			User: userResponse,
-		}
-
-		utils.WriteResponse(w, http.StatusOK, resp)
+	user, err := h.Service.CheckCredentials(r.Context(), creds)
+	if err != nil {
+		utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrWrongCredentials)
 		return
 	}
-	utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrWrongCredentials)
+
+	h.setSessionCookie(w, r, user.ID)
+	userResponse := userToUserResponse(user)
+
+	resp := AuthResponse{
+		User: userResponse,
+	}
+
+	utils.WriteResponse(w, http.StatusOK, resp)
+	return
 }
 
 // @Summary Выход из системы
@@ -220,7 +217,7 @@ func (h *AuthHandler) CheckSession(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.Service.GetUserByID(r.Context(), session.UserID)
 	if err != nil {
-		log.Fatalf("error in /repository/users/users.go in CheckSession %v", err)
+		utils.WriteResponse(w, http.StatusNotFound, httpErrors.ErrUserNotFound)
 	}
 	userResponse := userToUserResponse(user)
 
@@ -246,7 +243,7 @@ func (h *AuthHandler) Profile(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.Service.GetUserByID(r.Context(), session.UserID)
 	if err != nil {
-		log.Fatalf("error in /repository/users/users.go in Profile %v", err)
+		utils.WriteResponse(w, http.StatusNotFound, httpErrors.ErrUserNotFound)
 	}
 	userResponse := userToProfileResponse(user)
 

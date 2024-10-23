@@ -31,6 +31,11 @@ var (
 		Code:    "invalid_data",
 	}
 
+	ErrInvalidTime = &HttpError{
+		Message: "Can't decode time to JSON",
+		Code:    "invalid_time",
+	}
+
 	ErrUsernameIsAlredyTaken = &HttpError{
 		Message: "Username is already taken",
 		Code:    "already_taken",
@@ -48,6 +53,11 @@ var (
 
 	ErrEventNotFound = &HttpError{
 		Message: "Event not found",
+		Code:    "not_found",
+	}
+
+	ErrUserNotFound = &HttpError{
+		Message: "User not found",
 		Code:    "not_found",
 	}
 

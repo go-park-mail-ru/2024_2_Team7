@@ -11,8 +11,8 @@ type EventService struct {
 }
 
 type EventDB interface {
-	GetAllEvents(ctx context.Context) []models.Event
-	GetEventsByTag(ctx context.Context, tag string) []models.Event
+	GetAllEvents(ctx context.Context) ([]models.Event, error)
+	GetEventsByTag(ctx context.Context, tag string) ([]models.Event, error)
 	GetEventByID(ctx context.Context, ID int) (models.Event, error)
 	AddEvent(ctx context.Context, event models.Event) (models.Event, error)
 	DeleteEvent(ctx context.Context, ID int) error
@@ -23,11 +23,11 @@ func NewService(eventDB EventDB) EventService {
 	return EventService{EventDB: eventDB}
 }
 
-func (s *EventService) GetAllEvents(ctx context.Context) []models.Event {
+func (s *EventService) GetAllEvents(ctx context.Context) ([]models.Event, error) {
 	return s.EventDB.GetAllEvents(ctx)
 }
 
-func (s *EventService) GetEventsByTag(ctx context.Context, tag string) []models.Event {
+func (s *EventService) GetEventsByTag(ctx context.Context, tag string) ([]models.Event, error) {
 	return s.EventDB.GetEventsByTag(ctx, tag)
 }
 

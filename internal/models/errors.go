@@ -5,6 +5,7 @@ import "errors"
 var (
 	ErrEventNotFound = errors.New("event not found")
 	ErrAccessDenied  = errors.New("user has no access to event")
+	ErrUserNotFound  = errors.New("user not found")
 )
 
 type AuthError struct {

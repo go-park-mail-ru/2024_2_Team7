@@ -46,7 +46,7 @@ func ProcessValidationErrors(w http.ResponseWriter, err error) {
 		if errors.As(err, &validationErr) {
 			valErr := models.AuthError{
 				Field:   validationErr.Name,
-				Message: validationErr.Validator,
+				Message: validationErr.Err.Error(),
 			}
 			resp.Errors = append(resp.Errors, valErr)
 		}
