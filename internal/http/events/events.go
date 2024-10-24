@@ -59,6 +59,7 @@ type EventHandler struct {
 type EventService interface {
 	GetAllEvents(ctx context.Context) ([]models.Event, error)
 	GetEventsByTag(ctx context.Context, tag string) ([]models.Event, error)
+	GetEventsByCategory(ctx context.Context, category string) ([]models.Event, error)
 	GetEventByID(ctx context.Context, ID int) (models.Event, error)
 	AddEvent(ctx context.Context, event models.Event) (models.Event, error)
 	DeleteEvent(ctx context.Context, ID int, authorID int) error
@@ -109,6 +110,39 @@ func (h EventHandler) GetEventsByTag(w http.ResponseWriter, r *http.Request) {
 	filteredEvents, err := h.Service.GetEventsByTag(r.Context(), tag)
 	if err != nil {
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
+		return
+	}
+
+	resp := GetEventsResponse{}
+	for _, event := range filteredEvents {
+		eventResp := eventToEventResponse(event)
+		resp.Events = append(resp.Events, eventResp)
+	}
+	utils.WriteResponse(w, http.StatusOK, resp)
+}
+
+// @Summary Получение событий по категори
+// @Description Возвращает события по категории
+// @Tags events
+// @Produce  json
+// @Success 200 {object} GetEventsResponse
+// @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
+// @Router /events/{tag} [get]
+func (h EventHandler) GetEventsByCategory(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	category := vars["category"]
+	category = strings.ToLower(category)
+
+	filteredEvents, err := h.Service.GetEventsByCategory(r.Context(), category)
+	if err != nil {
+		switch err {
+		case models.ErrInvalidCategory:
+			utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidCategory)
+
+		///TODO пока оставлю так, когда будет более четкая бд и ошибки для обработки, поправлю
+		default:
+			utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
+		}
 		return
 	}
 
@@ -246,7 +280,10 @@ func (h EventHandler) AddEvent(w http.ResponseWriter, r *http.Request) {
 
 	event, err = h.Service.AddEvent(r.Context(), event)
 	if err != nil {
-		switch {
+		switch err {
+		case models.ErrInvalidCategory:
+			utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidCategory)
+
 		///TODO пока оставлю так, когда будет более четкая бд и ошибки для обработки, поправлю
 		default:
 			utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
@@ -346,5 +383,6 @@ func eventToEventResponse(event models.Event) EventResponse {
 		DateEnd:     event.EventEnd,
 		Tag:         event.Tag,
 		AuthorID:    event.AuthorID,
+		Category:    event.Category,
 	}
 }

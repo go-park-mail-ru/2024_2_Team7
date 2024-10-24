@@ -70,7 +70,8 @@ func main() {
 	r.HandleFunc("/profile", authHandler.Profile).Methods("GET")
 
 	r.HandleFunc("/events/{id:[0-9]+}", eventHandler.GetEventByID).Methods("GET")
-	r.HandleFunc("/events/{tag}", eventHandler.GetEventsByTag).Methods("GET")
+	r.HandleFunc("/events/tags/{tag}", eventHandler.GetEventsByTag).Methods("GET")
+	r.HandleFunc("/events/categories/{category}", eventHandler.GetEventsByCategory).Methods("GET")
 	r.HandleFunc("/events", eventHandler.GetAllEvents).Methods("GET")
 	r.HandleFunc("/events/{id:[0-9]+}", eventHandler.UpdateEvent).Methods("PUT")
 	r.HandleFunc("/events/{id:[0-9]+}", eventHandler.DeleteEvent).Methods("DELETE")

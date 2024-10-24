@@ -87,7 +87,6 @@ func (d UserDB) CheckCredentials(ctx context.Context, username, password string)
 		&userInfo.CreatedAt,
 		&userInfo.ImageURL,
 	)
-	fmt.Println(err, errors.Is(err, pgx.ErrNoRows))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return models.User{}, models.ErrUserNotFound

@@ -3,9 +3,11 @@ package models
 import "errors"
 
 var (
-	ErrEventNotFound = errors.New("event not found")
-	ErrAccessDenied  = errors.New("user has no access to event")
-	ErrUserNotFound  = errors.New("user not found")
+	ErrEventNotFound   = errors.New("event not found")
+	ErrAccessDenied    = errors.New("user has no access to event")
+	ErrUserNotFound    = errors.New("user not found")
+	ErrInternal        = errors.New("internal error")
+	ErrInvalidCategory = errors.New("invalid category")
 )
 
 type AuthError struct {

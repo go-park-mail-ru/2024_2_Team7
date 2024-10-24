@@ -36,6 +36,11 @@ var (
 		Code:    "invalid_time",
 	}
 
+	ErrInvalidCategory = &HttpError{
+		Message: "Wrong or empty category",
+		Code:    "invalid_category",
+	}
+
 	ErrUsernameIsAlredyTaken = &HttpError{
 		Message: "Username is already taken",
 		Code:    "already_taken",

@@ -1,11 +1,5 @@
-CREATE TABLE "USER" (
-                        id SERIAL PRIMARY KEY,
-                        username TEXT NOT NULL,
-                        email TEXT UNIQUE NOT NULL,
-                        password_hash TEXT NOT NULL,
-                        URL_to_avatar TEXT,
-                        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+-- +goose Up
+-- +goose StatementBegin
 
 CREATE TABLE CATEGORY (
                           id SERIAL PRIMARY KEY,
@@ -21,6 +15,7 @@ CREATE TABLE EVENT (
                        location TEXT,
                        capacity INT,
                        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_DATE,
+                        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_DATE,
                        user_id INT NOT NULL,
                        category_id INT,
                        FOREIGN KEY (user_id) REFERENCES "USER" (id) ON DELETE CASCADE,
@@ -68,3 +63,15 @@ CREATE TABLE ATTENDANCE (
                             FOREIGN KEY (user_id) REFERENCES "USER" (id) ON DELETE CASCADE,
                             FOREIGN KEY (event_id) REFERENCES EVENT (id) ON DELETE CASCADE
 );
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+DROP TABLE IF EXISTS ATTENDANCE;
+DROP TABLE IF EXISTS TICKET;
+DROP TABLE IF EXISTS EVENT_TAG;
+DROP TABLE IF EXISTS TAG;
+DROP TABLE IF EXISTS MEDIA_URL;
+DROP TABLE IF EXISTS EVENT;
+DROP TABLE IF EXISTS CATEGORY
+-- +goose StatementEnd
