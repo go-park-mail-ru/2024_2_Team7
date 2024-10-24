@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"regexp"
 
@@ -113,6 +114,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 			utils.WriteResponse(w, http.StatusConflict, authErr)
 			return
 		}
+		fmt.Println(err)
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
@@ -216,8 +218,10 @@ func (h *AuthHandler) CheckSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, err := h.Service.GetUserByID(r.Context(), session.UserID)
+	fmt.Println(user, err)
 	if err != nil {
 		utils.WriteResponse(w, http.StatusNotFound, httpErrors.ErrUserNotFound)
+		return
 	}
 	userResponse := userToUserResponse(user)
 
