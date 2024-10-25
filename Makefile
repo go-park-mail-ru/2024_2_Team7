@@ -4,7 +4,7 @@ build:
 	docker compose build
 
 up-all:
-	docker compose up -d postgres
+	docker compose up -d 
 
 down:
 	docker compose down

@@ -35,6 +35,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/events.GetEventsResponse"
                         }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
                     }
                 }
             },
@@ -67,6 +73,58 @@ const docTemplate = `{
                         "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/events/categories/{category}": {
+            "get": {
+                "description": "Возвращает события по категории",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "events"
+                ],
+                "summary": "Получение событий по категори",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/events.GetEventsResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/events/tags/{tag}": {
+            "get": {
+                "description": "Возвращает события по тегу",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "events"
+                ],
+                "summary": "Получение событий по тегу",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/events.GetEventsResponse"
                         }
                     },
                     "500": {
@@ -189,32 +247,6 @@ const docTemplate = `{
                         "description": "Event Not Found",
                         "schema": {
                             "$ref": "#/definitions/httpErrors.HttpError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/httpErrors.HttpError"
-                        }
-                    }
-                }
-            }
-        },
-        "/events/{tag}": {
-            "get": {
-                "description": "Возвращает события по тегу",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "events"
-                ],
-                "summary": "Получение событий по тегу",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/events.GetEventsResponse"
                         }
                     },
                     "500": {
@@ -424,17 +456,26 @@ const docTemplate = `{
                 "author": {
                     "type": "integer"
                 },
-                "date_end": {
-                    "type": "string"
+                "capacity": {
+                    "type": "integer"
                 },
-                "date_start": {
+                "category": {
                     "type": "string"
                 },
                 "description": {
                     "type": "string"
                 },
+                "event_end": {
+                    "type": "string"
+                },
+                "event_start": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
+                },
+                "location": {
+                    "type": "string"
                 },
                 "tag": {
                     "type": "array",

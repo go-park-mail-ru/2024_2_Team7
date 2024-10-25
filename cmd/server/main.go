@@ -40,14 +40,18 @@ func main() {
 	defer logger.Sync()
 	sugar := logger.Sugar()
 
-	pool, err := db.InitDB()
+	pool, err := db.InitDB(sugar)
 	if err != nil {
 		log.Fatalf("Failed to connect to the database: %v", err)
 	}
 	defer pool.Close()
+	redisClient, err := db.InitRedis()
+	if err != nil {
+		log.Fatalf("Failed to connect to the database: %v", err)
+	}
 
 	userDB := userRepository.NewDB(pool)
-	sessionDB := sessionRepository.NewDB()
+	sessionDB := sessionRepository.NewDB(redisClient)
 	eventDB := eventRepository.NewDB(pool)
 
 	authService := authService.NewService(userDB, sessionDB)

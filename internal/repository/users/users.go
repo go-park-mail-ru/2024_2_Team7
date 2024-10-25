@@ -3,18 +3,12 @@ package userRepository
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"kudago/internal/models"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
-)
-
-var (
-	userColumns = []string{"id", "username", "email", "password_hash", "created_at", "url_to_avatar"}
-	userTable   = `"USER"`
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type UserInfo struct {
@@ -64,9 +58,10 @@ func (d *UserDB) AddUser(ctx context.Context, user *models.User) (models.User, e
 
 func (d UserDB) CheckCredentials(ctx context.Context, username, password string) (models.User, error) {
 	query := `
-	SELECT id, username, email, password_hash, created_at, url_to_avatar
+	SELECT id, username, email, created_at, url_to_avatar
 	FROM "USER"
 	WHERE username = $1 AND password_hash = $2`
+
 	var userInfo UserInfo
 	err := d.pool.QueryRow(ctx, query, username, password).Scan(
 		&userInfo.ID,
@@ -75,7 +70,6 @@ func (d UserDB) CheckCredentials(ctx context.Context, username, password string)
 		&userInfo.CreatedAt,
 		&userInfo.ImageURL,
 	)
-	fmt.Println(err)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return models.User{}, models.ErrUserNotFound

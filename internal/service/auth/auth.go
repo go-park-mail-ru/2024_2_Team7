@@ -21,7 +21,7 @@ type UserDB interface {
 
 type SessionDB interface {
 	CheckSession(ctx context.Context, cookie string) (*models.Session, bool)
-	CreateSession(ctx context.Context, ID int) *models.Session
+	CreateSession(ctx context.Context, ID int) (*models.Session, error)
 	DeleteSession(ctx context.Context, token string)
 }
 
@@ -64,7 +64,7 @@ func (a *authService) Register(ctx context.Context, user models.User) (models.Us
 	return a.UserDB.AddUser(ctx, &user)
 }
 
-func (a *authService) CreateSession(ctx context.Context, ID int) *models.Session {
+func (a *authService) CreateSession(ctx context.Context, ID int) (*models.Session, error) {
 	return a.SessionDB.CreateSession(ctx, ID)
 }
 

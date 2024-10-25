@@ -7,16 +7,8 @@ import (
 
 	"kudago/internal/models"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
-)
-
-var (
-	eventColumns = []string{"id", "title", "description", "event_start", "event_finish", "location", "capacity", "created_at", "user_id", "category_id"}
-	eventTable   = `event`
-	// tagColumns   = []string{"id", "name"}
-	tagTable      = `tag`
-	categoryTable = `category`
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type EventDB struct {
@@ -43,7 +35,7 @@ func NewDB(pool *pgxpool.Pool) *EventDB {
 	}
 }
 
-func (db EventDB) GetAllEvents(ctx context.Context) ([]models.Event, error) {
+func (db *EventDB) GetAllEvents(ctx context.Context) ([]models.Event, error) {
 	rawQuery := `
 		SELECT event.id, event.title, event.description, event.event_start, event.event_finish, event.location, event.capacity, event.created_at, event.user_id, event.category_id, COALESCE(array_agg(COALESCE(tag.name, '')), '{}') AS tags
 		FROM event
@@ -86,7 +78,7 @@ func (db EventDB) GetAllEvents(ctx context.Context) ([]models.Event, error) {
 	return events, nil
 }
 
-func (db EventDB) GetEventsByTag(ctx context.Context, tag string) ([]models.Event, error) {
+func (db *EventDB) GetEventsByTag(ctx context.Context, tag string) ([]models.Event, error) {
 	rawQuery := `
 		SELECT event.id, event.title, event.description, event.event_start, event.event_finish, event.location, event.capacity, event.created_at, event.user_id, event.category_id, COALESCE(array_agg(COALESCE(tag.name, '')), '{}') AS tags
 		FROM event
@@ -131,7 +123,7 @@ func (db EventDB) GetEventsByTag(ctx context.Context, tag string) ([]models.Even
 	return events, nil
 }
 
-func (db EventDB) GetEventByID(ctx context.Context, ID int) (models.Event, error) {
+func (db *EventDB) GetEventByID(ctx context.Context, ID int) (models.Event, error) {
 	rawQuery := `
 		SELECT event.id, event.title, event.description, event.event_start, event.event_finish, event.location, event.capacity, event.created_at, event.user_id, event.category_id, COALESCE(array_agg(COALESCE(tag.name, '')), '{}') AS tags
 		FROM event
@@ -168,7 +160,7 @@ func (db EventDB) GetEventByID(ctx context.Context, ID int) (models.Event, error
 	return event, nil
 }
 
-func (db EventDB) GetEventsByCategory(ctx context.Context, category string) ([]models.Event, error) {
+func (db *EventDB) GetEventsByCategory(ctx context.Context, category string) ([]models.Event, error) {
 	ID, err := db.getCategoryID(ctx, category)
 	if err != nil {
 		return nil, err

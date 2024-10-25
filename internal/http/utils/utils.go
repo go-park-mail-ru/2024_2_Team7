@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
 	"kudago/internal/models"
 
 	"github.com/asaskevich/govalidator"
+	"go.uber.org/zap"
 )
 
 type ValidationErrResponse struct {
@@ -18,6 +20,10 @@ type ValidationErrResponse struct {
 type sessionKeyType struct{}
 
 var sessionKey sessionKeyType
+
+type requestIDKeyType struct{}
+
+var requestIDKey requestIDKeyType
 
 func WriteResponse(w http.ResponseWriter, status int, body interface{}) {
 	w.WriteHeader(status)
@@ -36,6 +42,15 @@ func SetSessionInContext(ctx context.Context, session *models.Session) context.C
 	return context.WithValue(ctx, sessionKey, session)
 }
 
+func GetRequestIDFromContext(ctx context.Context) (string, bool) {
+	ID, ok := ctx.Value(requestIDKey).(string)
+	return ID, ok
+}
+
+func SetRequestIDInContext(ctx context.Context, ID string) context.Context {
+	return context.WithValue(ctx, requestIDKey, ID)
+}
+
 func ProcessValidationErrors(w http.ResponseWriter, err error) {
 	resp := ValidationErrResponse{}
 	validationErrors := err.(govalidator.Errors)
@@ -52,4 +67,32 @@ func ProcessValidationErrors(w http.ResponseWriter, err error) {
 		}
 	}
 	WriteResponse(w, http.StatusUnauthorized, resp)
+}
+
+func LogRequestData(ctx context.Context, logger *zap.SugaredLogger, msg string, statusCode int, method, url, remoteAddr string, duration time.Duration, data map[string]interface{}) {
+	requestID, ok := GetRequestIDFromContext(ctx)
+	if !ok {
+		requestID = "unknown"
+	}
+
+	if data != nil {
+		logger.Infow(msg,
+			"request_id", requestID,
+			"method", method,
+			"url", url,
+			"remote_addr", remoteAddr,
+			"status_code", statusCode,
+			"work_time", duration,
+			"data", data,
+		)
+	} else {
+		logger.Infow(msg,
+			"request_id", requestID,
+			"method", method,
+			"url", url,
+			"remote_addr", remoteAddr,
+			"status_code", statusCode,
+			"work_time", duration,
+		)
+	}
 }

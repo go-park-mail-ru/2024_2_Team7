@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"regexp"
 
@@ -24,7 +23,7 @@ type AuthService interface {
 	GetUserByID(ctx context.Context, ID int) (models.User, error)
 	CheckCredentials(ctx context.Context, creds models.Credentials) (models.User, error)
 	Register(ctx context.Context, user models.User) (models.User, error)
-	CreateSession(ctx context.Context, ID int) *models.Session
+	CreateSession(ctx context.Context, ID int) (*models.Session, error)
 	DeleteSession(ctx context.Context, token string)
 }
 
@@ -114,7 +113,6 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 			utils.WriteResponse(w, http.StatusConflict, authErr)
 			return
 		}
-		fmt.Println(err)
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
@@ -218,7 +216,6 @@ func (h *AuthHandler) CheckSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, err := h.Service.GetUserByID(r.Context(), session.UserID)
-	fmt.Println(user, err)
 	if err != nil {
 		utils.WriteResponse(w, http.StatusNotFound, httpErrors.ErrUserNotFound)
 		return
@@ -255,7 +252,11 @@ func (h *AuthHandler) Profile(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) setSessionCookie(w http.ResponseWriter, r *http.Request, ID int) {
-	session := h.Service.CreateSession(r.Context(), ID)
+	session, err := h.Service.CreateSession(r.Context(), ID)
+	if err != nil {
+		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
+		return
+	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     models.SessionToken,
 		Value:    session.Token,

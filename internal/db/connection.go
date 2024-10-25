@@ -5,11 +5,16 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"kudago/internal/http/utils"
+
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/joho/godotenv"
+	"github.com/redis/go-redis/v9"
+	"go.uber.org/zap"
 )
 
-func InitDB() (*pgxpool.Pool, error) {
+func InitDB(logger *zap.SugaredLogger) (*pgxpool.Pool, error) {
 	err := godotenv.Load()
 	if err != nil {
 		return nil, fmt.Errorf("error in loading .env: %v", err)
@@ -26,11 +31,51 @@ func InitDB() (*pgxpool.Pool, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse db URL: %v", err)
 	}
-
-	pool, err := pgxpool.NewWithConfig(context.Background(), dbConf)
+	dbConf.ConnConfig.Logger = zapLogger{logger}
+	pool, err := pgxpool.ConnectConfig(context.Background(), dbConf)
 	if err != nil {
 		return nil, fmt.Errorf("unable to connect to db: %v", err)
 	}
 
 	return pool, nil
+}
+
+func InitRedis() (*redis.Client, error) {
+	err := godotenv.Load()
+	if err != nil {
+		return nil, fmt.Errorf("error in loading .env: %v", err)
+	}
+
+	redisPassword := os.Getenv("REDIS_PASSWORD")
+	redisHost := os.Getenv("REDIS_HOST")
+	redisPort := os.Getenv("REDIS_PORT")
+	redisURL := fmt.Sprintf("%s:%s", redisHost, redisPort)
+
+	return redis.NewClient(&redis.Options{
+		Addr:     redisURL,
+		Password: redisPassword,
+		DB:       0,
+	}), nil
+}
+
+type zapLogger struct {
+	logger *zap.SugaredLogger
+}
+
+func (z zapLogger) Log(ctx context.Context, level pgx.LogLevel, msg string, data map[string]interface{}) {
+	requestID, ok := utils.GetRequestIDFromContext(ctx)
+	if ok {
+		if len(data) > 0 {
+			z.logger.Infow(msg,
+				"request_id", requestID,
+				"level", level,
+				"data", data,
+			)
+		} else {
+			z.logger.Infow(msg,
+				"request_id", requestID,
+				"level", level,
+			)
+		}
+	}
 }

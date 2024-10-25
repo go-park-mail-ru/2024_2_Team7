@@ -30,14 +30,20 @@ definitions:
     properties:
       author:
         type: integer
-      date_end:
-        type: string
-      date_start:
+      capacity:
+        type: integer
+      category:
         type: string
       description:
         type: string
+      event_end:
+        type: string
+      event_start:
+        type: string
       id:
         type: integer
+      location:
+        type: string
       tag:
         items:
           type: string
@@ -92,6 +98,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/events.GetEventsResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpErrors.HttpError'
       summary: Получить все события
       tags:
       - events
@@ -202,7 +212,24 @@ paths:
       summary: Обновление события
       tags:
       - events
-  /events/{tag}:
+  /events/categories/{category}:
+    get:
+      description: Возвращает события по категории
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/events.GetEventsResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpErrors.HttpError'
+      summary: Получение событий по категори
+      tags:
+      - events
+  /events/tags/{tag}:
     get:
       description: Возвращает события по тегу
       produces:

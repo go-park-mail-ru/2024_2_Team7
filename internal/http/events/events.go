@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	httpErrors "kudago/internal/http/errors"
 	"kudago/internal/http/utils"
@@ -18,8 +17,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-const TimeLayout = "2006-01-02"
-
 type EventRequest struct {
 	Title       string   `json:"title" valid:"required,length(3|50)"`
 	Description string   `json:"description" valid:"required"`
@@ -27,8 +24,8 @@ type EventRequest struct {
 	Category    string   `json:"category"`
 	Capacity    int      `json:"capacity"`
 	Tag         []string `json:"tag"`
-	DateStart   string   `json:"event_start"`
-	DateEnd     string   `json:"event_end"`
+	EventStart  string   `json:"event_start" valid:"rfc3339"`
+	EventEnd    string   `json:"event_end" valid:"rfc3339"`
 }
 
 type EventResponse struct {
@@ -40,8 +37,8 @@ type EventResponse struct {
 	Capacity    int      `json:"capacity"`
 	Tag         []string `json:"tag"`
 	AuthorID    int      `json:"author"`
-	DateStart   string   `json:"event_start"`
-	DateEnd     string   `json:"event_end"`
+	EventStart  string   `json:"event_start"`
+	EventEnd    string   `json:"event_end"`
 }
 
 type CreateEventResponse struct {
@@ -95,13 +92,15 @@ func (h EventHandler) GetAllEvents(w http.ResponseWriter, r *http.Request) {
 	utils.WriteResponse(w, http.StatusOK, resp)
 }
 
+// пока просто ручка потом когда сделаем полноценный поиск поменяем
+
 // @Summary Получение событий по тегу
 // @Description Возвращает события по тегу
 // @Tags events
 // @Produce  json
 // @Success 200 {object} GetEventsResponse
 // @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
-// @Router /events/{tag} [get]
+// @Router /events/tags/{tag} [get]
 func (h EventHandler) GetEventsByTag(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	tag := vars["tag"]
@@ -127,7 +126,7 @@ func (h EventHandler) GetEventsByTag(w http.ResponseWriter, r *http.Request) {
 // @Produce  json
 // @Success 200 {object} GetEventsResponse
 // @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
-// @Router /events/{tag} [get]
+// @Router /events/categories/{category} [get]
 func (h EventHandler) GetEventsByCategory(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	category := vars["category"]
@@ -248,18 +247,6 @@ func (h EventHandler) AddEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	eventStart, err := time.Parse(TimeLayout, req.DateStart)
-	if err != nil {
-		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidTime)
-		return
-	}
-
-	eventEnd, err := time.Parse(TimeLayout, req.DateEnd)
-	if err != nil {
-		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidTime)
-		return
-	}
-
 	_, err = govalidator.ValidateStruct(&req)
 	if err != nil {
 		utils.ProcessValidationErrors(w, err)
@@ -270,8 +257,8 @@ func (h EventHandler) AddEvent(w http.ResponseWriter, r *http.Request) {
 		Title:       req.Title,
 		Description: req.Description,
 		Location:    req.Location,
-		EventStart:  eventStart.Format(TimeLayout),
-		EventEnd:    eventEnd.Format(TimeLayout),
+		EventStart:  req.EventStart,
+		EventEnd:    req.EventEnd,
 		AuthorID:    session.UserID,
 		Category:    req.Category,
 		Capacity:    req.Capacity,
@@ -327,18 +314,6 @@ func (h EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	eventStart, err := time.Parse(TimeLayout, req.DateStart)
-	if err != nil {
-		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidTime)
-		return
-	}
-
-	eventEnd, err := time.Parse(TimeLayout, req.DateEnd)
-	if err != nil {
-		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidTime)
-		return
-	}
-
 	_, err = govalidator.ValidateStruct(&req)
 	if err != nil {
 		utils.ProcessValidationErrors(w, err)
@@ -349,8 +324,8 @@ func (h EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 		ID:          id,
 		Title:       req.Title,
 		Description: req.Description,
-		EventStart:  eventStart.Format(TimeLayout),
-		EventEnd:    eventEnd.Format(TimeLayout),
+		EventStart:  req.EventStart,
+		EventEnd:    req.EventEnd,
 		AuthorID:    session.UserID,
 		Tag:         req.Tag,
 		Location:    req.Location,
@@ -379,8 +354,8 @@ func eventToEventResponse(event models.Event) EventResponse {
 		ID:          event.ID,
 		Title:       event.Title,
 		Description: event.Description,
-		DateStart:   event.EventStart,
-		DateEnd:     event.EventEnd,
+		EventStart:  event.EventStart,
+		EventEnd:    event.EventEnd,
 		Tag:         event.Tag,
 		AuthorID:    event.AuthorID,
 		Category:    event.Category,

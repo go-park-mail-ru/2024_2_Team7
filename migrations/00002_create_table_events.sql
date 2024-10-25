@@ -10,12 +10,12 @@ CREATE TABLE EVENT (
                        id SERIAL PRIMARY KEY,
                        title TEXT NOT NULL,
                        description TEXT,
-                       event_start DATE NOT NULL,
-                       event_finish DATE NOT NULL,
+                       event_start TIMESTAMP WITH TIME ZONE NOT NULL,
+                       event_finish TIMESTAMP WITH TIME ZONE NOT NULL,
                        location TEXT,
                        capacity INT,
-                       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_DATE,
-                        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_DATE,
+                       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                        user_id INT NOT NULL,
                        category_id INT,
                        FOREIGN KEY (user_id) REFERENCES "USER" (id) ON DELETE CASCADE,
@@ -73,5 +73,5 @@ DROP TABLE IF EXISTS EVENT_TAG;
 DROP TABLE IF EXISTS TAG;
 DROP TABLE IF EXISTS MEDIA_URL;
 DROP TABLE IF EXISTS EVENT;
-DROP TABLE IF EXISTS CATEGORY
+DROP TABLE IF EXISTS CATEGORY;
 -- +goose StatementEnd

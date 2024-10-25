@@ -4,8 +4,10 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"sync"
+	"strconv"
 	"time"
+
+	"github.com/redis/go-redis/v9"
 
 	"kudago/internal/models"
 )
@@ -15,18 +17,16 @@ const (
 )
 
 type SessionDB struct {
-	mu       *sync.RWMutex
-	sessions map[string]models.Session
+	client *redis.Client
 }
 
-func NewDB() *SessionDB {
+func NewDB(client *redis.Client) *SessionDB {
 	return &SessionDB{
-		sessions: make(map[string]models.Session),
-		mu:       &sync.RWMutex{},
+		client: client,
 	}
 }
 
-func (db *SessionDB) CreateSession(ctx context.Context, ID int) *models.Session {
+func (db *SessionDB) CreateSession(ctx context.Context, ID int) (*models.Session, error) {
 	sessionToken := generateSessionToken()
 	expiration := time.Now().Add(ExpirationTime)
 
@@ -36,27 +36,39 @@ func (db *SessionDB) CreateSession(ctx context.Context, ID int) *models.Session 
 		Expires: expiration,
 	}
 
-	db.mu.Lock()
-	db.sessions[sessionToken] = session
-	db.mu.Unlock()
-	return &session
+	err := db.client.Set(ctx, sessionToken, session.UserID, ExpirationTime).Err()
+	if err != nil {
+		return nil, err
+	}
+	return &session, nil
 }
 
-func (db SessionDB) CheckSession(ctx context.Context, cookie string) (*models.Session, bool) {
-	db.mu.RLock()
-	session, exists := db.sessions[cookie]
-	db.mu.RUnlock()
-
-	if !exists || session.Expires.Before(time.Now()) {
+func (db *SessionDB) CheckSession(ctx context.Context, cookie string) (*models.Session, bool) {
+	ID, err := db.client.Get(ctx, cookie).Result()
+	if err == redis.Nil {
 		return nil, false
 	}
-	return &session, true
+
+	if err != nil {
+		return nil, false
+	}
+
+	userID, err := strconv.Atoi(ID)
+	if err != nil {
+		return nil, false
+	}
+
+	session := &models.Session{
+		UserID:  userID,
+		Token:   cookie,
+		Expires: time.Now().Add(ExpirationTime),
+	}
+
+	return session, true
 }
 
 func (db *SessionDB) DeleteSession(ctx context.Context, token string) {
-	db.mu.Lock()
-	delete(db.sessions, token)
-	db.mu.Unlock()
+	db.client.Del(ctx, token)
 }
 
 func generateSessionToken() string {
