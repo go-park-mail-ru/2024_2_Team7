@@ -289,14 +289,6 @@ func (db *EventDB) LinkTagToEvent(ctx context.Context, eventID int, tagID int) e
 }
 
 func (db *EventDB) toDomainEvent(ctx context.Context, eventInfo EventInfo) (models.Event, error) {
-	var category string
-	query := `SELECT name FROM category WHERE id = $1`
-
-	err := db.pool.QueryRow(ctx, query, eventInfo.CategoryID).Scan(&category)
-	if err != nil {
-		return models.Event{}, err
-	}
-
 	return models.Event{
 		ID:          eventInfo.ID,
 		Title:       eventInfo.Title,
