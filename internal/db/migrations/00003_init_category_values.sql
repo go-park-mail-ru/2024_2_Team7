@@ -1,15 +1,14 @@
 -- +goose Up
 -- +goose StatementBegin
-SELECT 'up SQL query';
 INSERT INTO CATEGORY (name) VALUES
-('music'),
-('sport'),
-('exhibitions'),
-('education'),
-('theater'),
-('cinema'),
-('food'),
-('children');
+('Музыка'),
+('Спорт'),
+('Выставки'),
+('Образование'),
+('Театр'),
+('Кино'),
+('Еда'),
+('Для детей');
 -- +goose StatementEnd
 
 -- +goose Down

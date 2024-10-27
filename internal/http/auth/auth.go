@@ -1,9 +1,12 @@
+//go:generate mockgen -source ./auth.go -destination=./mocks/auth.go -package=mock_auth
+
 package auth
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"regexp"
 
@@ -15,15 +18,15 @@ import (
 )
 
 type AuthHandler struct {
-	Service AuthService
+	service AuthService
 }
 
 type AuthService interface {
-	CheckSession(ctx context.Context, cookie string) (*models.Session, bool)
+	CheckSession(ctx context.Context, cookie string) (models.Session, bool)
 	GetUserByID(ctx context.Context, ID int) (models.User, error)
 	CheckCredentials(ctx context.Context, creds models.Credentials) (models.User, error)
 	Register(ctx context.Context, user models.User) (models.User, error)
-	CreateSession(ctx context.Context, ID int) (*models.Session, error)
+	CreateSession(ctx context.Context, ID int) (models.Session, error)
 	DeleteSession(ctx context.Context, token string)
 }
 
@@ -66,7 +69,7 @@ func init() {
 
 func NewAuthHandler(s AuthService) *AuthHandler {
 	return &AuthHandler{
-		Service: s,
+		service: s,
 	}
 }
 
@@ -106,7 +109,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		Password: req.Password,
 	}
 
-	user, err = h.Service.Register(r.Context(), user)
+	user, err = h.service.Register(r.Context(), user)
 	if err != nil {
 		var authErr *models.AuthError
 		if errors.As(err, &authErr) {
@@ -119,7 +122,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	h.setSessionCookie(w, r, user.ID)
 
-	userResponse := userToUserResponse(user)
+	userResponse := UserToUserResponse(user)
 
 	resp := AuthResponse{
 		User: userResponse,
@@ -163,14 +166,15 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Password: req.Password,
 	}
 
-	user, err := h.Service.CheckCredentials(r.Context(), creds)
+	user, err := h.service.CheckCredentials(r.Context(), creds)
 	if err != nil {
 		utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrWrongCredentials)
 		return
 	}
 
 	h.setSessionCookie(w, r, user.ID)
-	userResponse := userToUserResponse(user)
+	fmt.Println()
+	userResponse := UserToUserResponse(user)
 
 	resp := AuthResponse{
 		User: userResponse,
@@ -193,7 +197,7 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.Service.DeleteSession(r.Context(), session.Token)
+	h.service.DeleteSession(r.Context(), session.Token)
 
 	http.SetCookie(w, &http.Cookie{
 		Name:   models.SessionToken,
@@ -215,12 +219,12 @@ func (h *AuthHandler) CheckSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.Service.GetUserByID(r.Context(), session.UserID)
+	user, err := h.service.GetUserByID(r.Context(), session.UserID)
 	if err != nil {
 		utils.WriteResponse(w, http.StatusNotFound, httpErrors.ErrUserNotFound)
 		return
 	}
-	userResponse := userToUserResponse(user)
+	userResponse := UserToUserResponse(user)
 
 	resp := AuthResponse{
 		User: userResponse,
@@ -242,7 +246,7 @@ func (h *AuthHandler) Profile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.Service.GetUserByID(r.Context(), session.UserID)
+	user, err := h.service.GetUserByID(r.Context(), session.UserID)
 	if err != nil {
 		utils.WriteResponse(w, http.StatusNotFound, httpErrors.ErrUserNotFound)
 	}
@@ -252,7 +256,8 @@ func (h *AuthHandler) Profile(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) setSessionCookie(w http.ResponseWriter, r *http.Request, ID int) {
-	session, err := h.Service.CreateSession(r.Context(), ID)
+	session, err := h.service.CreateSession(r.Context(), ID)
+	fmt.Println(session, err)
 	if err != nil {
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
@@ -265,7 +270,7 @@ func (h *AuthHandler) setSessionCookie(w http.ResponseWriter, r *http.Request, I
 	})
 }
 
-func userToUserResponse(user models.User) UserResponse {
+func UserToUserResponse(user models.User) UserResponse {
 	return UserResponse{
 		ID:       user.ID,
 		Username: user.Username,
@@ -281,4 +286,8 @@ func userToProfileResponse(user models.User) ProfileResponse {
 		Email:    user.Email,
 		ImageURL: user.ImageURL,
 	}
+}
+
+func (h *AuthHandler) CheckSessionMiddleware(ctx context.Context, cookie string) (models.Session, bool) {
+	return h.service.CheckSession(ctx, cookie)
 }

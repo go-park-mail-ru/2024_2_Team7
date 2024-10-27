@@ -7,8 +7,8 @@ import (
 
 	"kudago/internal/http/utils"
 
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
@@ -31,8 +31,8 @@ func InitDB(logger *zap.SugaredLogger) (*pgxpool.Pool, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse db URL: %v", err)
 	}
-	dbConf.ConnConfig.Logger = zapLogger{logger}
-	pool, err := pgxpool.ConnectConfig(context.Background(), dbConf)
+	dbConf.ConnConfig.Tracer = &zapLogger{logger}
+	pool, err := pgxpool.NewWithConfig(context.Background(), dbConf)
 	if err != nil {
 		return nil, fmt.Errorf("unable to connect to db: %v", err)
 	}
@@ -51,31 +51,41 @@ func InitRedis() (*redis.Client, error) {
 	redisPort := os.Getenv("REDIS_PORT")
 	redisURL := fmt.Sprintf("%s:%s", redisHost, redisPort)
 
-	return redis.NewClient(&redis.Options{
+	redisClient := redis.NewClient(&redis.Options{
 		Addr:     redisURL,
 		Password: redisPassword,
 		DB:       0,
-	}), nil
+		PoolSize: 10,
+	})
+
+	redisPing := redisClient.Ping(context.Background())
+	if redisPing.Err() != nil {
+		return nil, redisPing.Err()
+	}
+	return redisClient, nil
 }
 
 type zapLogger struct {
 	logger *zap.SugaredLogger
 }
 
-func (z zapLogger) Log(ctx context.Context, level pgx.LogLevel, msg string, data map[string]interface{}) {
-	requestID, ok := utils.GetRequestIDFromContext(ctx)
-	if ok {
-		if len(data) > 0 {
-			z.logger.Infow(msg,
-				"request_id", requestID,
-				"level", level,
-				"data", data,
-			)
-		} else {
-			z.logger.Infow(msg,
-				"request_id", requestID,
-				"level", level,
-			)
-		}
+func (z *zapLogger) TraceQueryStart(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
+	requestID := utils.GetRequestIDFromContext(ctx)
+	z.logger.Infow("Query",
+		"request_id", requestID,
+		"sql", data.SQL,
+		"args", data.Args,
+	)
+	return ctx
+}
+
+func (z *zapLogger) TraceQueryEnd(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryEndData) {
+	requestID := utils.GetRequestIDFromContext(ctx)
+	if data.Err != nil {
+		z.logger.Errorw("Query failed",
+			"request_id", requestID,
+			"commandTag", data.CommandTag,
+			"args", data.Err,
+		)
 	}
 }

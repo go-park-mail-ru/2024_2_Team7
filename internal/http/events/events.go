@@ -6,7 +6,6 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
-	"strings"
 
 	httpErrors "kudago/internal/http/errors"
 	"kudago/internal/http/utils"
@@ -21,7 +20,7 @@ type EventRequest struct {
 	Title       string   `json:"title" valid:"required,length(3|50)"`
 	Description string   `json:"description" valid:"required"`
 	Location    string   `json:"location"`
-	Category    string   `json:"category"`
+	Category    int      `json:"category_id"`
 	Capacity    int      `json:"capacity"`
 	Tag         []string `json:"tag"`
 	EventStart  string   `json:"event_start" valid:"rfc3339"`
@@ -33,12 +32,13 @@ type EventResponse struct {
 	Title       string   `json:"title"`
 	Description string   `json:"description"`
 	Location    string   `json:"location"`
-	Category    string   `json:"category"`
+	Category    int      `json:"category_id"`
 	Capacity    int      `json:"capacity"`
 	Tag         []string `json:"tag"`
 	AuthorID    int      `json:"author"`
 	EventStart  string   `json:"event_start"`
 	EventEnd    string   `json:"event_end"`
+	ImageURL    string   `json:"image"`
 }
 
 type CreateEventResponse struct {
@@ -50,22 +50,23 @@ type GetEventsResponse struct {
 }
 
 type EventHandler struct {
-	Service EventService
+	service EventService
 }
 
 type EventService interface {
-	GetAllEvents(ctx context.Context) ([]models.Event, error)
+	GetAllEvents(ctx context.Context, page, limit int) ([]models.Event, error)
 	GetEventsByTag(ctx context.Context, tag string) ([]models.Event, error)
-	GetEventsByCategory(ctx context.Context, category string) ([]models.Event, error)
+	GetEventsByCategory(ctx context.Context, categoryID int) ([]models.Event, error)
+	GetCategories(ctx context.Context) ([]models.Category, error)
 	GetEventByID(ctx context.Context, ID int) (models.Event, error)
 	AddEvent(ctx context.Context, event models.Event) (models.Event, error)
-	DeleteEvent(ctx context.Context, ID int, authorID int) error
+	DeleteEvent(ctx context.Context, ID, authorID int) error
 	UpdateEvent(ctx context.Context, event models.Event) error
 }
 
 func NewEventHandler(s EventService) *EventHandler {
 	return &EventHandler{
-		Service: s,
+		service: s,
 	}
 }
 
@@ -74,21 +75,22 @@ func NewEventHandler(s EventService) *EventHandler {
 // @Tags events
 // @Accept  json
 // @Produce  json
+// @Param page query int false "Номер страницы (по умолчанию 1)"
+// @Param limit query int false "Количество событий на странице (по умолчанию 30)"
 // @Success 200 {object} GetEventsResponse
 // @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
 // @Router /events [get]
 func (h EventHandler) GetAllEvents(w http.ResponseWriter, r *http.Request) {
-	events, err := h.Service.GetAllEvents(r.Context())
+	page := utils.GetQueryParamInt(r, "page", 1)
+	limit := utils.GetQueryParamInt(r, "limit", 30)
+
+	events, err := h.service.GetAllEvents(r.Context(), page, limit)
 	if err != nil {
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
-	resp := GetEventsResponse{}
+	resp := writeEventsResponse(events, limit)
 
-	for _, event := range events {
-		eventResp := eventToEventResponse(event)
-		resp.Events = append(resp.Events, eventResp)
-	}
 	utils.WriteResponse(w, http.StatusOK, resp)
 }
 
@@ -104,9 +106,8 @@ func (h EventHandler) GetAllEvents(w http.ResponseWriter, r *http.Request) {
 func (h EventHandler) GetEventsByTag(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	tag := vars["tag"]
-	tag = strings.ToLower(tag)
 
-	filteredEvents, err := h.Service.GetEventsByTag(r.Context(), tag)
+	filteredEvents, err := h.service.GetEventsByTag(r.Context(), tag)
 	if err != nil {
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
@@ -121,7 +122,7 @@ func (h EventHandler) GetEventsByTag(w http.ResponseWriter, r *http.Request) {
 }
 
 // @Summary Получение событий по категори
-// @Description Возвращает события по категории
+// @Description Возвращает события по ID категории
 // @Tags events
 // @Produce  json
 // @Success 200 {object} GetEventsResponse
@@ -130,9 +131,13 @@ func (h EventHandler) GetEventsByTag(w http.ResponseWriter, r *http.Request) {
 func (h EventHandler) GetEventsByCategory(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	category := vars["category"]
-	category = strings.ToLower(category)
+	categoryID, err := strconv.Atoi(category)
+	if err != nil {
+		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidCategory)
+		return
+	}
 
-	filteredEvents, err := h.Service.GetEventsByCategory(r.Context(), category)
+	filteredEvents, err := h.service.GetEventsByCategory(r.Context(), categoryID)
 	if err != nil {
 		switch err {
 		case models.ErrInvalidCategory:
@@ -169,7 +174,7 @@ func (h EventHandler) GetEventByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	event, err := h.Service.GetEventByID(r.Context(), id)
+	event, err := h.service.GetEventByID(r.Context(), id)
 	if err != nil {
 		switch {
 		case errors.Is(err, models.ErrEventNotFound):
@@ -209,7 +214,7 @@ func (h EventHandler) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	authorID := session.UserID
-	err = h.Service.DeleteEvent(r.Context(), id, authorID)
+	err = h.service.DeleteEvent(r.Context(), id, authorID)
 	if err != nil {
 		switch {
 		case errors.Is(err, models.ErrEventNotFound):
@@ -260,12 +265,12 @@ func (h EventHandler) AddEvent(w http.ResponseWriter, r *http.Request) {
 		EventStart:  req.EventStart,
 		EventEnd:    req.EventEnd,
 		AuthorID:    session.UserID,
-		Category:    req.Category,
+		CategoryID:  req.Category,
 		Capacity:    req.Capacity,
 		Tag:         req.Tag,
 	}
 
-	event, err = h.Service.AddEvent(r.Context(), event)
+	event, err = h.service.AddEvent(r.Context(), event)
 	if err != nil {
 		switch err {
 		case models.ErrInvalidCategory:
@@ -329,11 +334,11 @@ func (h EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 		AuthorID:    session.UserID,
 		Tag:         req.Tag,
 		Location:    req.Location,
-		Category:    req.Category,
+		CategoryID:  req.Category,
 		Capacity:    req.Capacity,
 	}
 
-	err = h.Service.UpdateEvent(r.Context(), event)
+	err = h.service.UpdateEvent(r.Context(), event)
 	if err != nil {
 		switch {
 		case errors.Is(err, models.ErrEventNotFound):
@@ -349,6 +354,24 @@ func (h EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 	utils.WriteResponse(w, http.StatusOK, resp)
 }
 
+// @Summary Получить все категории
+// @Description Получить список всех доступных категорий событий
+// @Tags categories
+// @Accept  json
+// @Produce  json
+// @Success 200 {array} models.Category "Список категорий"
+// @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
+// @Router /categories [get]
+func (h EventHandler) GetCategories(w http.ResponseWriter, r *http.Request) {
+	categories, err := h.service.GetCategories(r.Context())
+	if err != nil {
+		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
+		return
+	}
+
+	utils.WriteResponse(w, http.StatusOK, categories)
+}
+
 func eventToEventResponse(event models.Event) EventResponse {
 	return EventResponse{
 		ID:          event.ID,
@@ -358,6 +381,17 @@ func eventToEventResponse(event models.Event) EventResponse {
 		EventEnd:    event.EventEnd,
 		Tag:         event.Tag,
 		AuthorID:    event.AuthorID,
-		Category:    event.Category,
+		Category:    event.CategoryID,
+		ImageURL:    event.ImageURL,
 	}
+}
+
+func writeEventsResponse(events []models.Event, limit int) GetEventsResponse {
+	resp := GetEventsResponse{make([]EventResponse, 0, limit)}
+
+	for _, event := range events {
+		eventResp := eventToEventResponse(event)
+		resp.Events = append(resp.Events, eventResp)
+	}
+	return resp
 }

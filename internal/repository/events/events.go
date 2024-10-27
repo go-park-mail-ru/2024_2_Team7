@@ -7,8 +7,8 @@ import (
 
 	"kudago/internal/models"
 
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type EventDB struct {
@@ -25,7 +25,7 @@ type EventInfo struct {
 	Capacity    int       `db:"capacity"`
 	CreatedAt   time.Time `db:"created_at"`
 	UserID      int       `db:"user_id"`
-	CategoryID  *int      `db:"category_id"`
+	CategoryID  int       `db:"category_id"`
 	Tags        []string  `db:"tags"`
 }
 
@@ -35,15 +35,16 @@ func NewDB(pool *pgxpool.Pool) *EventDB {
 	}
 }
 
-func (db *EventDB) GetAllEvents(ctx context.Context) ([]models.Event, error) {
+func (db *EventDB) GetAllEvents(ctx context.Context, offset, limit int) ([]models.Event, error) {
 	rawQuery := `
 		SELECT event.id, event.title, event.description, event.event_start, event.event_finish, event.location, event.capacity, event.created_at, event.user_id, event.category_id, COALESCE(array_agg(COALESCE(tag.name, '')), '{}') AS tags
 		FROM event
 		LEFT JOIN event_tag ON event.id = event_tag.event_id
 		LEFT JOIN tag ON tag.id = event_tag.tag_id
-		GROUP BY event.id`
+		GROUP BY event.id
+		LIMIT $1 OFFSET $2`
 
-	rows, err := db.pool.Query(ctx, rawQuery)
+	rows, err := db.pool.Query(ctx, rawQuery, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -160,12 +161,7 @@ func (db *EventDB) GetEventByID(ctx context.Context, ID int) (models.Event, erro
 	return event, nil
 }
 
-func (db *EventDB) GetEventsByCategory(ctx context.Context, category string) ([]models.Event, error) {
-	ID, err := db.getCategoryID(ctx, category)
-	if err != nil {
-		return nil, err
-	}
-
+func (db *EventDB) GetEventsByCategory(ctx context.Context, categoryID int) ([]models.Event, error) {
 	rawQuery := `
 		SELECT event.id, event.title, event.description, event.event_start, event.event_finish, event.location, event.capacity, event.created_at, event.user_id, event.category_id, COALESCE(array_agg(COALESCE(tag.name, '')), '{}') AS tags
 		FROM event
@@ -174,7 +170,7 @@ func (db *EventDB) GetEventsByCategory(ctx context.Context, category string) ([]
 		WHERE event.category_id=$1
 		GROUP BY event.id`
 
-	rows, err := db.pool.Query(ctx, rawQuery, ID)
+	rows, err := db.pool.Query(ctx, rawQuery, categoryID)
 	if err != nil {
 		return nil, err
 	}
@@ -220,32 +216,28 @@ func (db *EventDB) DeleteEvent(ctx context.Context, ID int) error {
 func (db *EventDB) UpdateEvent(ctx context.Context, updatedEvent models.Event) error {
 	rawQuery := `
 		UPDATE event
-		SET title = $1, description = $2, event_start = $3, event_finish = $4
-		WHERE id = $5`
+		SET title = $1, description = $2, event_start = $3, event_finish = $4, updated_at=$5
+		WHERE id = $6`
 
 	_, err := db.pool.Exec(ctx, rawQuery,
 		updatedEvent.Title,
 		updatedEvent.Description,
 		updatedEvent.EventStart,
 		updatedEvent.EventEnd,
+		time.Now(),
 		updatedEvent.ID,
 	)
 	return err
 }
 
 func (db *EventDB) AddEvent(ctx context.Context, event models.Event) (models.Event, error) {
-	categoryID, err := db.getCategoryID(ctx, event.Category)
-	if err != nil {
-		return models.Event{}, err
-	}
-
 	query := `
 		INSERT INTO event (title, description, event_start, event_finish, location, capacity, user_id, category_id)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id`
 
 	var id int
-	err = db.pool.QueryRow(ctx, query, event.Title, event.Description, event.EventStart, event.EventEnd, event.Location, event.Capacity, event.AuthorID, categoryID).Scan(&id)
+	err := db.pool.QueryRow(ctx, query, event.Title, event.Description, event.EventStart, event.EventEnd, event.Location, event.Capacity, event.AuthorID, event.CategoryID).Scan(&id)
 	if err != nil {
 		return models.Event{}, err
 	}
@@ -299,6 +291,7 @@ func (db *EventDB) LinkTagToEvent(ctx context.Context, eventID int, tagID int) e
 func (db *EventDB) toDomainEvent(ctx context.Context, eventInfo EventInfo) (models.Event, error) {
 	var category string
 	query := `SELECT name FROM category WHERE id = $1`
+
 	err := db.pool.QueryRow(ctx, query, eventInfo.CategoryID).Scan(&category)
 	if err != nil {
 		return models.Event{}, err
@@ -314,17 +307,30 @@ func (db *EventDB) toDomainEvent(ctx context.Context, eventInfo EventInfo) (mode
 		Tag:         eventInfo.Tags,
 		Location:    eventInfo.Location,
 		Capacity:    eventInfo.Capacity,
-		Category:    category,
+		CategoryID:  eventInfo.CategoryID,
 	}, nil
 }
 
-func (db *EventDB) getCategoryID(ctx context.Context, category string) (int, error) {
-	var categoryID int
-	query := `SELECT id FROM category WHERE name = $1`
-
-	err := db.pool.QueryRow(ctx, query, category).Scan(&categoryID)
-	if err == pgx.ErrNoRows {
-		return 0, models.ErrInvalidCategory
+func (db *EventDB) GetCategories(ctx context.Context) ([]models.Category, error) {
+	query := `SELECT * FROM category`
+	rows, err := db.pool.Query(ctx, query)
+	if err != nil {
+		return nil, err
 	}
-	return categoryID, nil
+	defer rows.Close()
+
+	categories := make([]models.Category, 0, 10)
+	for rows.Next() {
+		var category models.Category
+		err = rows.Scan(
+			&category.ID,
+			&category.Name,
+		)
+		if err != nil {
+			return nil, err
+		}
+		categories = append(categories, category)
+	}
+
+	return categories, nil
 }

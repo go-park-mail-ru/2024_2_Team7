@@ -16,6 +16,38 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/categories": {
+            "get": {
+                "description": "Получить список всех доступных категорий событий",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "categories"
+                ],
+                "summary": "Получить все категории",
+                "responses": {
+                    "200": {
+                        "description": "Список категорий",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Category"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    }
+                }
+            }
+        },
         "/events": {
             "get": {
                 "description": "Получить все существующие события",
@@ -29,6 +61,20 @@ const docTemplate = `{
                     "events"
                 ],
                 "summary": "Получить все события",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Номер страницы (по умолчанию 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Количество событий на странице (по умолчанию 30)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -86,7 +132,7 @@ const docTemplate = `{
         },
         "/events/categories/{category}": {
             "get": {
-                "description": "Возвращает события по категории",
+                "description": "Возвращает события по ID категории",
                 "produces": [
                     "application/json"
                 ],
@@ -459,8 +505,8 @@ const docTemplate = `{
                 "capacity": {
                     "type": "integer"
                 },
-                "category": {
-                    "type": "string"
+                "category_id": {
+                    "type": "integer"
                 },
                 "description": {
                     "type": "string"
@@ -473,6 +519,9 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "integer"
+                },
+                "image": {
+                    "type": "string"
                 },
                 "location": {
                     "type": "string"
@@ -517,6 +566,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "field": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Category": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
                     "type": "string"
                 }
             }

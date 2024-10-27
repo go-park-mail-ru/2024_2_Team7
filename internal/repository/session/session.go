@@ -26,7 +26,7 @@ func NewDB(client *redis.Client) *SessionDB {
 	}
 }
 
-func (db *SessionDB) CreateSession(ctx context.Context, ID int) (*models.Session, error) {
+func (db *SessionDB) CreateSession(ctx context.Context, ID int) (models.Session, error) {
 	sessionToken := generateSessionToken()
 	expiration := time.Now().Add(ExpirationTime)
 
@@ -38,27 +38,27 @@ func (db *SessionDB) CreateSession(ctx context.Context, ID int) (*models.Session
 
 	err := db.client.Set(ctx, sessionToken, session.UserID, ExpirationTime).Err()
 	if err != nil {
-		return nil, err
+		return models.Session{}, err
 	}
-	return &session, nil
+	return session, nil
 }
 
-func (db *SessionDB) CheckSession(ctx context.Context, cookie string) (*models.Session, bool) {
+func (db *SessionDB) CheckSession(ctx context.Context, cookie string) (models.Session, bool) {
 	ID, err := db.client.Get(ctx, cookie).Result()
 	if err == redis.Nil {
-		return nil, false
+		return models.Session{}, false
 	}
 
 	if err != nil {
-		return nil, false
+		return models.Session{}, false
 	}
 
 	userID, err := strconv.Atoi(ID)
 	if err != nil {
-		return nil, false
+		return models.Session{}, false
 	}
 
-	session := &models.Session{
+	session := models.Session{
 		UserID:  userID,
 		Token:   cookie,
 		Expires: time.Now().Add(ExpirationTime),

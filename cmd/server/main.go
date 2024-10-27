@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 
@@ -41,13 +42,15 @@ func main() {
 	sugar := logger.Sugar()
 
 	pool, err := db.InitDB(sugar)
-	if err != nil {
-		log.Fatalf("Failed to connect to the database: %v", err)
+	postgresPing := pool.Ping(context.Background())
+	if err != nil || postgresPing != nil {
+		log.Fatalf("Failed to connect to the database")
 	}
 	defer pool.Close()
+
 	redisClient, err := db.InitRedis()
 	if err != nil {
-		log.Fatalf("Failed to connect to the database: %v", err)
+		log.Fatalf("Failed to connect to the redis database")
 	}
 
 	userDB := userRepository.NewDB(pool)
@@ -77,6 +80,7 @@ func main() {
 	r.HandleFunc("/events/tags/{tag}", eventHandler.GetEventsByTag).Methods("GET")
 	r.HandleFunc("/events/categories/{category}", eventHandler.GetEventsByCategory).Methods("GET")
 	r.HandleFunc("/events", eventHandler.GetAllEvents).Methods("GET")
+	r.HandleFunc("/categories", eventHandler.GetCategories).Methods("GET")
 	r.HandleFunc("/events/{id:[0-9]+}", eventHandler.UpdateEvent).Methods("PUT")
 	r.HandleFunc("/events/{id:[0-9]+}", eventHandler.DeleteEvent).Methods("DELETE")
 	r.HandleFunc("/events", eventHandler.AddEvent).Methods("POST")
@@ -88,8 +92,8 @@ func main() {
 		"/static",
 		"/session",
 		"/logout",
-		"/swagger",
 		"/docs",
+		"/categories",
 	}
 
 	handlerWithAuth := middleware.AuthMiddleware(whitelist, authHandler, r)

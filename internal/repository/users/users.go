@@ -3,12 +3,13 @@ package userRepository
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"kudago/internal/models"
 
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type UserInfo struct {
@@ -29,11 +30,11 @@ func NewDB(pool *pgxpool.Pool) *UserDB {
 	}
 }
 
-func (d *UserDB) AddUser(ctx context.Context, user *models.User) (models.User, error) {
+func (d *UserDB) AddUser(ctx context.Context, user models.User) (models.User, error) {
 	rawQuery := `
 		INSERT INTO "USER" (username, email, password_hash, url_to_avatar)
 		VALUES ($1, $2, $3, $4)
-		RETURNING id, username, email, url_to_avatar, created_at`
+		RETURNING id,  created_at`
 
 	var userInfo UserInfo
 	err := d.pool.QueryRow(ctx, rawQuery,
@@ -43,17 +44,16 @@ func (d *UserDB) AddUser(ctx context.Context, user *models.User) (models.User, e
 		user.ImageURL,
 	).Scan(
 		&userInfo.ID,
-		&userInfo.Username,
-		&userInfo.Email,
-		&userInfo.ImageURL,
 		&userInfo.CreatedAt,
 	)
 	if err != nil {
 		return models.User{}, err
 	}
-
+	userInfo.Username = user.Username
+	userInfo.Email = user.Email
+	userInfo.ImageURL = &user.ImageURL
 	newUser := toDomainUser(userInfo)
-	return *&newUser, nil
+	return newUser, nil
 }
 
 func (d UserDB) CheckCredentials(ctx context.Context, username, password string) (models.User, error) {
@@ -74,6 +74,7 @@ func (d UserDB) CheckCredentials(ctx context.Context, username, password string)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return models.User{}, models.ErrUserNotFound
 		}
+		fmt.Println(err)
 		return models.User{}, err
 	}
 	user := toDomainUser(userInfo)
@@ -115,11 +116,11 @@ func toDomainUser(user UserInfo) models.User {
 	}
 }
 
-func (d *UserDB) EmailExists(ctx context.Context, email string) (bool, error) {
-	query := `SELECT 1 FROM "USER" WHERE email=$1 LIMIT 1`
+func (d *UserDB) UserExists(ctx context.Context, username, email string) (bool, error) {
+	query := `SELECT 1 FROM "USER" WHERE email=$1 OR username = $2 LIMIT 1`
 
 	var exists int
-	err := d.pool.QueryRow(ctx, query, email).Scan(&exists)
+	err := d.pool.QueryRow(ctx, query, email, username).Scan(&exists)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return false, nil
@@ -127,20 +128,5 @@ func (d *UserDB) EmailExists(ctx context.Context, email string) (bool, error) {
 		return false, err
 	}
 
-	return exists > 0, nil
-}
-
-func (d *UserDB) UsernameExists(ctx context.Context, username string) (bool, error) {
-	rawQuery := `SELECT 1 FROM "USER" WHERE username = $1 LIMIT 1`
-
-	var exists int
-	err := d.pool.QueryRow(ctx, rawQuery, username).Scan(&exists)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return false, nil
-		}
-		return false, err
-	}
-
-	return exists > 0, nil
+	return true, nil
 }

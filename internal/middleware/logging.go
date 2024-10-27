@@ -17,7 +17,7 @@ type responseWriter struct {
 
 func NewResponseWriter(w http.ResponseWriter, requestID string) *responseWriter {
 	rw := responseWriter{w, http.StatusOK}
-	rw.Header().Add("request", requestID)
+	rw.Header().Add("X-Request-ID", requestID)
 	return &rw
 }
 

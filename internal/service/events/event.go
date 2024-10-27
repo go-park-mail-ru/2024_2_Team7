@@ -2,6 +2,7 @@ package eventService
 
 import (
 	"context"
+	"strings"
 
 	"kudago/internal/models"
 )
@@ -11,9 +12,10 @@ type EventService struct {
 }
 
 type EventDB interface {
-	GetAllEvents(ctx context.Context) ([]models.Event, error)
+	GetAllEvents(ctx context.Context, offset, limit int) ([]models.Event, error)
+	GetCategories(ctx context.Context) ([]models.Category, error)
 	GetEventsByTag(ctx context.Context, tag string) ([]models.Event, error)
-	GetEventsByCategory(ctx context.Context, category string) ([]models.Event, error)
+	GetEventsByCategory(ctx context.Context, categoryID int) ([]models.Event, error)
 	GetEventByID(ctx context.Context, ID int) (models.Event, error)
 	AddEvent(ctx context.Context, event models.Event) (models.Event, error)
 	DeleteEvent(ctx context.Context, ID int) error
@@ -24,16 +26,23 @@ func NewService(eventDB EventDB) EventService {
 	return EventService{EventDB: eventDB}
 }
 
-func (s *EventService) GetAllEvents(ctx context.Context) ([]models.Event, error) {
-	return s.EventDB.GetAllEvents(ctx)
+func (s *EventService) GetAllEvents(ctx context.Context, page, limit int) ([]models.Event, error) {
+	offset := (page - 1) * limit
+	return s.EventDB.GetAllEvents(ctx, offset, limit)
 }
 
 func (s *EventService) GetEventsByTag(ctx context.Context, tag string) ([]models.Event, error) {
+	tag = strings.ToLower(tag)
+
 	return s.EventDB.GetEventsByTag(ctx, tag)
 }
 
-func (s *EventService) GetEventsByCategory(ctx context.Context, category string) ([]models.Event, error) {
-	return s.EventDB.GetEventsByCategory(ctx, category)
+func (s *EventService) GetEventsByCategory(ctx context.Context, categoryID int) ([]models.Event, error) {
+	return s.EventDB.GetEventsByCategory(ctx, categoryID)
+}
+
+func (s *EventService) GetCategories(ctx context.Context) ([]models.Category, error) {
+	return s.EventDB.GetCategories(ctx)
 }
 
 func (s *EventService) AddEvent(ctx context.Context, event models.Event) (models.Event, error) {

@@ -17,7 +17,7 @@ func AuthMiddleware(whitelist []string, authHandler *auth.AuthHandler, next http
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie(SessionToken)
 		if err == nil {
-			session, authenticated := authHandler.Service.CheckSession(r.Context(), cookie.Value)
+			session, authenticated := authHandler.CheckSessionMiddleware(r.Context(), cookie.Value)
 			if authenticated {
 				ctx := utils.SetSessionInContext(r.Context(), session)
 				r = r.WithContext(ctx)

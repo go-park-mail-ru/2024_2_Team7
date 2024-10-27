@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
 	"kudago/internal/models"
@@ -30,21 +31,21 @@ func WriteResponse(w http.ResponseWriter, status int, body interface{}) {
 	json.NewEncoder(w).Encode(body)
 }
 
-func GetSessionFromContext(ctx context.Context) (*models.Session, bool) {
-	session, ok := ctx.Value(sessionKey).(*models.Session)
-	if session == nil {
+func GetSessionFromContext(ctx context.Context) (models.Session, bool) {
+	session, ok := ctx.Value(sessionKey).(models.Session)
+	if !ok {
 		return session, false
 	}
-	return session, ok
+	return session, true
 }
 
-func SetSessionInContext(ctx context.Context, session *models.Session) context.Context {
+func SetSessionInContext(ctx context.Context, session models.Session) context.Context {
 	return context.WithValue(ctx, sessionKey, session)
 }
 
-func GetRequestIDFromContext(ctx context.Context) (string, bool) {
-	ID, ok := ctx.Value(requestIDKey).(string)
-	return ID, ok
+func GetRequestIDFromContext(ctx context.Context) string {
+	ID, _ := ctx.Value(requestIDKey).(string)
+	return ID
 }
 
 func SetRequestIDInContext(ctx context.Context, ID string) context.Context {
@@ -66,14 +67,21 @@ func ProcessValidationErrors(w http.ResponseWriter, err error) {
 			resp.Errors = append(resp.Errors, valErr)
 		}
 	}
-	WriteResponse(w, http.StatusUnauthorized, resp)
+	WriteResponse(w, http.StatusBadRequest, resp)
+}
+
+func GetQueryParamInt(r *http.Request, key string, defaultValue int) int {
+	valueStr := r.URL.Query().Get(key)
+	value, err := strconv.Atoi(valueStr)
+
+	if err != nil || value <= 0 {
+		return defaultValue
+	}
+	return value
 }
 
 func LogRequestData(ctx context.Context, logger *zap.SugaredLogger, msg string, statusCode int, method, url, remoteAddr string, duration time.Duration, data map[string]interface{}) {
-	requestID, ok := GetRequestIDFromContext(ctx)
-	if !ok {
-		requestID = "unknown"
-	}
+	requestID := GetRequestIDFromContext(ctx)
 
 	if data != nil {
 		logger.Infow(msg,

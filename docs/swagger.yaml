@@ -32,8 +32,8 @@ definitions:
         type: integer
       capacity:
         type: integer
-      category:
-        type: string
+      category_id:
+        type: integer
       description:
         type: string
       event_end:
@@ -42,6 +42,8 @@ definitions:
         type: string
       id:
         type: integer
+      image:
+        type: string
       location:
         type: string
       tag:
@@ -72,6 +74,13 @@ definitions:
       field:
         type: string
     type: object
+  models.Category:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
   utils.ValidationErrResponse:
     properties:
       errors:
@@ -86,11 +95,41 @@ info:
   title: Swagger Vihodnoy API
   version: "1.0"
 paths:
+  /categories:
+    get:
+      consumes:
+      - application/json
+      description: Получить список всех доступных категорий событий
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список категорий
+          schema:
+            items:
+              $ref: '#/definitions/models.Category'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpErrors.HttpError'
+      summary: Получить все категории
+      tags:
+      - categories
   /events:
     get:
       consumes:
       - application/json
       description: Получить все существующие события
+      parameters:
+      - description: Номер страницы (по умолчанию 1)
+        in: query
+        name: page
+        type: integer
+      - description: Количество событий на странице (по умолчанию 30)
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
@@ -214,7 +253,7 @@ paths:
       - events
   /events/categories/{category}:
     get:
-      description: Возвращает события по категории
+      description: Возвращает события по ID категории
       produces:
       - application/json
       responses:

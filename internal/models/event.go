@@ -11,7 +11,7 @@ type Event struct {
 	Location    string    `json:"location"`
 	Capacity    int       `json:"capacity"`
 	CreatedAt   time.Time `json:"created_at"`
-	Category    string    `json:"category"`
+	CategoryID  int       `json:"category_id"`
 	AuthorID    int       `json:"author"`
 	Tag         []string  `json:"tag"`
 	ImageURL    string    `json:"image"`
