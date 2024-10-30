@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"kudago/internal/http/auth"
+	httpErrors "kudago/internal/http/errors"
 	"kudago/internal/http/utils"
 )
 
@@ -17,8 +18,8 @@ func AuthMiddleware(whitelist []string, authHandler *auth.AuthHandler, next http
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie(SessionToken)
 		if err == nil {
-			session, authenticated := authHandler.CheckSessionMiddleware(r.Context(), cookie.Value)
-			if authenticated {
+			session, err := authHandler.CheckSessionMiddleware(r.Context(), cookie.Value)
+			if err == nil {
 				ctx := utils.SetSessionInContext(r.Context(), session)
 				r = r.WithContext(ctx)
 				next.ServeHTTP(w, r)
@@ -33,7 +34,7 @@ func AuthMiddleware(whitelist []string, authHandler *auth.AuthHandler, next http
 			}
 		}
 
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		utils.WriteResponse(w, http.StatusUnauthorized, httpErrors.ErrUnauthorized)
 		return
 	})
 }

@@ -1,27 +1,26 @@
 package main
 
 import (
-	"context"
 	"log"
 	"net/http"
-
-	"kudago/internal/db"
 
 	"kudago/config"
 	_ "kudago/docs"
 	"kudago/internal/http/auth"
 	"kudago/internal/http/events"
+	"kudago/internal/logger"
 	"kudago/internal/middleware"
-	eventRepository "kudago/internal/repository/events"
+	"kudago/internal/repository/postgres"
+	eventRepository "kudago/internal/repository/postgres/events"
+	userRepository "kudago/internal/repository/postgres/users"
 	sessionRepository "kudago/internal/repository/session"
-	userRepository "kudago/internal/repository/users"
+
 	authService "kudago/internal/service/auth"
 	eventService "kudago/internal/service/events"
 
 	httpSwagger "github.com/swaggo/http-swagger"
 
 	"github.com/gorilla/mux"
-	"go.uber.org/zap"
 )
 
 // swag init
@@ -34,27 +33,25 @@ import (
 func main() {
 	port := config.LoadConfig()
 
-	logger, err := zap.NewProduction()
+	appLogger, err := logger.NewLogger()
 	if err != nil {
 		log.Fatalf("Server failed to start logger: %v", err)
 	}
-	defer logger.Sync()
-	sugar := logger.Sugar()
+	defer appLogger.Logger.Sync()
 
-	pool, err := db.InitDB(sugar)
-	postgresPing := pool.Ping(context.Background())
-	if err != nil || postgresPing != nil {
-		log.Fatalf("Failed to connect to the database")
-	}
-	defer pool.Close()
-
-	redisClient, err := db.InitRedis()
+	redisConfig, err := sessionRepository.GetRedisConfig()
 	if err != nil {
 		log.Fatalf("Failed to connect to the redis database")
 	}
+	postgresConfig, err := postgres.GetPostgresConfig()
+	pool, err := postgres.InitPostgres(postgresConfig, appLogger)
+	if err != nil {
+		log.Fatalf("Failed to connect to the postgres database")
+	}
+	defer pool.Close()
 
 	userDB := userRepository.NewDB(pool)
-	sessionDB := sessionRepository.NewDB(redisClient)
+	sessionDB := sessionRepository.NewDB(redisConfig)
 	eventDB := eventRepository.NewDB(pool)
 
 	authService := authService.NewService(userDB, sessionDB)
@@ -77,7 +74,7 @@ func main() {
 	r.HandleFunc("/profile", authHandler.Profile).Methods("GET")
 
 	r.HandleFunc("/events/{id:[0-9]+}", eventHandler.GetEventByID).Methods("GET")
-	r.HandleFunc("/events/tags/{tag}", eventHandler.GetEventsByTag).Methods("GET")
+	r.HandleFunc("/events/tags", eventHandler.GetEventsByTags).Methods("GET")
 	r.HandleFunc("/events/categories/{category}", eventHandler.GetEventsByCategory).Methods("GET")
 	r.HandleFunc("/events", eventHandler.GetAllEvents).Methods("GET")
 	r.HandleFunc("/categories", eventHandler.GetCategories).Methods("GET")
@@ -98,7 +95,7 @@ func main() {
 
 	handlerWithAuth := middleware.AuthMiddleware(whitelist, authHandler, r)
 	handlerWithCORS := middleware.CORSMiddleware(handlerWithAuth)
-	handlerWithLogging := middleware.LoggingMiddleware(handlerWithCORS, sugar)
+	handlerWithLogging := middleware.LoggingMiddleware(handlerWithCORS, appLogger.Logger)
 	handler := middleware.PanicMiddleware(handlerWithLogging)
 
 	err = http.ListenAndServe(":"+port, handler)

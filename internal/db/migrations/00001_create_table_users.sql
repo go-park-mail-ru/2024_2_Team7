@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 CREATE TABLE "USER" (
                         id SERIAL PRIMARY KEY,
-                        username TEXT NOT NULL,
+                        username TEXT UNIQUE NOT NULL,
                         email TEXT UNIQUE NOT NULL,
                         password_hash TEXT NOT NULL,
                         URL_to_avatar TEXT,

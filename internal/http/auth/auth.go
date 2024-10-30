@@ -22,12 +22,12 @@ type AuthHandler struct {
 }
 
 type AuthService interface {
-	CheckSession(ctx context.Context, cookie string) (models.Session, bool)
+	CheckSession(ctx context.Context, cookie string) (models.Session, error)
 	GetUserByID(ctx context.Context, ID int) (models.User, error)
 	CheckCredentials(ctx context.Context, creds models.Credentials) (models.User, error)
 	Register(ctx context.Context, user models.User) (models.User, error)
 	CreateSession(ctx context.Context, ID int) (models.Session, error)
-	DeleteSession(ctx context.Context, token string)
+	DeleteSession(ctx context.Context, token string) error
 }
 
 type RegisterRequest struct {
@@ -111,9 +111,8 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	user, err = h.service.Register(r.Context(), user)
 	if err != nil {
-		var authErr *models.AuthError
-		if errors.As(err, &authErr) {
-			utils.WriteResponse(w, http.StatusConflict, authErr)
+		if errors.Is(err, &models.AuthError{}) {
+			utils.WriteResponse(w, http.StatusConflict, err)
 			return
 		}
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
@@ -173,7 +172,6 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.setSessionCookie(w, r, user.ID)
-	fmt.Println()
 	userResponse := UserToUserResponse(user)
 
 	resp := AuthResponse{
@@ -197,7 +195,12 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.service.DeleteSession(r.Context(), session.Token)
+	err := h.service.DeleteSession(r.Context(), session.Token)
+	if err != nil {
+		fmt.Println(err)
+		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
+		return
+	}
 
 	http.SetCookie(w, &http.Cookie{
 		Name:   models.SessionToken,
@@ -245,10 +248,10 @@ func (h *AuthHandler) Profile(w http.ResponseWriter, r *http.Request) {
 		utils.WriteResponse(w, http.StatusUnauthorized, httpErrors.ErrUnauthorized)
 		return
 	}
-
 	user, err := h.service.GetUserByID(r.Context(), session.UserID)
 	if err != nil {
 		utils.WriteResponse(w, http.StatusNotFound, httpErrors.ErrUserNotFound)
+		return
 	}
 	userResponse := userToProfileResponse(user)
 
@@ -288,6 +291,6 @@ func userToProfileResponse(user models.User) ProfileResponse {
 	}
 }
 
-func (h *AuthHandler) CheckSessionMiddleware(ctx context.Context, cookie string) (models.Session, bool) {
+func (h *AuthHandler) CheckSessionMiddleware(ctx context.Context, cookie string) (models.Session, error) {
 	return h.service.CheckSession(ctx, cookie)
 }

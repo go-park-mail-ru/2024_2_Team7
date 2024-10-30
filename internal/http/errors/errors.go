@@ -41,6 +41,10 @@ var (
 		Code:    "invalid_category",
 	}
 
+	ErrInvalidCapacity = &HttpError{
+		Message: "Wrong or empty capacity",
+		Code:    "invalid_capacity",
+	}
 	ErrUsernameIsAlredyTaken = &HttpError{
 		Message: "Username is already taken",
 		Code:    "already_taken",

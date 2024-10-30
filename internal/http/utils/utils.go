@@ -33,7 +33,7 @@ func WriteResponse(w http.ResponseWriter, status int, body interface{}) {
 
 func GetSessionFromContext(ctx context.Context) (models.Session, bool) {
 	session, ok := ctx.Value(sessionKey).(models.Session)
-	if !ok {
+	if !ok || session.Token == "" {
 		return session, false
 	}
 	return session, true

@@ -14,7 +14,7 @@ type EventService struct {
 type EventDB interface {
 	GetAllEvents(ctx context.Context, offset, limit int) ([]models.Event, error)
 	GetCategories(ctx context.Context) ([]models.Category, error)
-	GetEventsByTag(ctx context.Context, tag string) ([]models.Event, error)
+	GetEventsByTags(ctx context.Context, tags []string) ([]models.Event, error)
 	GetEventsByCategory(ctx context.Context, categoryID int) ([]models.Event, error)
 	GetEventByID(ctx context.Context, ID int) (models.Event, error)
 	AddEvent(ctx context.Context, event models.Event) (models.Event, error)
@@ -31,10 +31,11 @@ func (s *EventService) GetAllEvents(ctx context.Context, page, limit int) ([]mod
 	return s.EventDB.GetAllEvents(ctx, offset, limit)
 }
 
-func (s *EventService) GetEventsByTag(ctx context.Context, tag string) ([]models.Event, error) {
-	tag = strings.ToLower(tag)
-
-	return s.EventDB.GetEventsByTag(ctx, tag)
+func (s *EventService) GetEventsByTags(ctx context.Context, tags []string) ([]models.Event, error) {
+	for i, tag := range tags {
+		tags[i] = strings.ToLower(tag)
+	}
+	return s.EventDB.GetEventsByTags(ctx, tags)
 }
 
 func (s *EventService) GetEventsByCategory(ctx context.Context, categoryID int) ([]models.Event, error) {

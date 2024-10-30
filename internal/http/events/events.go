@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	httpErrors "kudago/internal/http/errors"
 	"kudago/internal/http/utils"
@@ -55,7 +57,7 @@ type EventHandler struct {
 
 type EventService interface {
 	GetAllEvents(ctx context.Context, page, limit int) ([]models.Event, error)
-	GetEventsByTag(ctx context.Context, tag string) ([]models.Event, error)
+	GetEventsByTags(ctx context.Context, tags []string) ([]models.Event, error)
 	GetEventsByCategory(ctx context.Context, categoryID int) ([]models.Event, error)
 	GetCategories(ctx context.Context) ([]models.Category, error)
 	GetEventByID(ctx context.Context, ID int) (models.Event, error)
@@ -103,12 +105,14 @@ func (h EventHandler) GetAllEvents(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {object} GetEventsResponse
 // @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
 // @Router /events/tags/{tag} [get]
-func (h EventHandler) GetEventsByTag(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	tag := vars["tag"]
+func (h EventHandler) GetEventsByTags(w http.ResponseWriter, r *http.Request) {
+	tagsParam := r.URL.Query().Get("tags")
+	tags := strings.Split(tagsParam, ",")
 
-	filteredEvents, err := h.service.GetEventsByTag(r.Context(), tag)
+	filteredEvents, err := h.service.GetEventsByTags(r.Context(), tags)
 	if err != nil {
+		fmt.Println(err)
+
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
@@ -248,6 +252,7 @@ func (h EventHandler) AddEvent(w http.ResponseWriter, r *http.Request) {
 	var req EventRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
+		fmt.Println(err)
 		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
 		return
 	}
@@ -278,6 +283,7 @@ func (h EventHandler) AddEvent(w http.ResponseWriter, r *http.Request) {
 
 		///TODO пока оставлю так, когда будет более четкая бд и ошибки для обработки, поправлю
 		default:
+			fmt.Println(err)
 			utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		}
 		return
@@ -383,6 +389,7 @@ func eventToEventResponse(event models.Event) EventResponse {
 		AuthorID:    event.AuthorID,
 		Category:    event.CategoryID,
 		ImageURL:    event.ImageURL,
+		Capacity:    event.Capacity,
 	}
 }
 

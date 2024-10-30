@@ -15,7 +15,7 @@ CREATE TABLE EVENT (
                        location TEXT,
                        capacity INT,
                        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                        user_id INT NOT NULL,
                        category_id INT,
                        FOREIGN KEY (user_id) REFERENCES "USER" (id) ON DELETE CASCADE,
@@ -31,7 +31,7 @@ CREATE TABLE MEDIA_URL (
 
 CREATE TABLE TAG (
                      id SERIAL PRIMARY KEY,
-                     name TEXT NOT NULL,
+                     name TEXT NOT NULL UNIQUE,
                      created_at DATE NOT NULL DEFAULT CURRENT_DATE
 );
 

@@ -9,6 +9,9 @@ up-all:
 down:
 	docker compose down
 
+test:
+	go test -coverprofile=c.out ./... -coverpkg="./..." && go tool cover -func c.out | grep total
+
 up-db:
 	docker compose up -d postgres
 

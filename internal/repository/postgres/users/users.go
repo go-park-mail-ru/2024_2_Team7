@@ -3,13 +3,28 @@ package userRepository
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"kudago/internal/models"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+const (
+	addUserQuery = `
+	INSERT INTO "USER" (username, email, password_hash, url_to_avatar)
+	VALUES ($1, $2, $3, $4)
+	RETURNING id,  created_at`
+
+	checkCredentialsQuery = `
+	SELECT id, username, email, created_at, url_to_avatar
+	FROM "USER"
+	WHERE username = $1 AND password_hash = $2`
+
+	getUserByIDQuery = `SELECT id, username, email, url_to_avatar FROM "USER" WHERE id=$1`
+
+	getUserByEmailOrUsernameQuery = `SELECT 1 FROM "USER" WHERE email=$1 OR username = $2 LIMIT 1`
 )
 
 type UserInfo struct {
@@ -31,13 +46,8 @@ func NewDB(pool *pgxpool.Pool) *UserDB {
 }
 
 func (d *UserDB) AddUser(ctx context.Context, user models.User) (models.User, error) {
-	rawQuery := `
-		INSERT INTO "USER" (username, email, password_hash, url_to_avatar)
-		VALUES ($1, $2, $3, $4)
-		RETURNING id,  created_at`
-
 	var userInfo UserInfo
-	err := d.pool.QueryRow(ctx, rawQuery,
+	err := d.pool.QueryRow(ctx, addUserQuery,
 		user.Username,
 		user.Email,
 		user.Password,
@@ -57,13 +67,8 @@ func (d *UserDB) AddUser(ctx context.Context, user models.User) (models.User, er
 }
 
 func (d UserDB) CheckCredentials(ctx context.Context, username, password string) (models.User, error) {
-	query := `
-	SELECT id, username, email, created_at, url_to_avatar
-	FROM "USER"
-	WHERE username = $1 AND password_hash = $2`
-
 	var userInfo UserInfo
-	err := d.pool.QueryRow(ctx, query, username, password).Scan(
+	err := d.pool.QueryRow(ctx, checkCredentialsQuery, username, password).Scan(
 		&userInfo.ID,
 		&userInfo.Username,
 		&userInfo.Email,
@@ -74,7 +79,6 @@ func (d UserDB) CheckCredentials(ctx context.Context, username, password string)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return models.User{}, models.ErrUserNotFound
 		}
-		fmt.Println(err)
 		return models.User{}, err
 	}
 	user := toDomainUser(userInfo)
@@ -83,9 +87,8 @@ func (d UserDB) CheckCredentials(ctx context.Context, username, password string)
 
 func (d UserDB) GetUserByID(ctx context.Context, ID int) (models.User, error) {
 	var userInfo UserInfo
-	query := `SELECT id, username, email, url_to_avatar FROM "USER" WHERE id=$1`
 
-	err := d.pool.QueryRow(ctx, query, ID).Scan(
+	err := d.pool.QueryRow(ctx, getUserByIDQuery, ID).Scan(
 		&userInfo.ID,
 		&userInfo.Username,
 		&userInfo.Email,
@@ -117,10 +120,8 @@ func toDomainUser(user UserInfo) models.User {
 }
 
 func (d *UserDB) UserExists(ctx context.Context, username, email string) (bool, error) {
-	query := `SELECT 1 FROM "USER" WHERE email=$1 OR username = $2 LIMIT 1`
-
 	var exists int
-	err := d.pool.QueryRow(ctx, query, email, username).Scan(&exists)
+	err := d.pool.QueryRow(ctx, getUserByEmailOrUsernameQuery, email, username).Scan(&exists)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return false, nil
