@@ -2,10 +2,15 @@ package utils
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"mime/multipart"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"kudago/internal/models"
@@ -13,6 +18,8 @@ import (
 	"github.com/asaskevich/govalidator"
 	"go.uber.org/zap"
 )
+
+const uploadPath = "./static/images"
 
 type ValidationErrResponse struct {
 	Errors []models.AuthError `json:"errors"`
@@ -103,4 +110,37 @@ func LogRequestData(ctx context.Context, logger *zap.SugaredLogger, msg string, 
 			"work_time", duration,
 		)
 	}
+}
+
+func GenerateFilename(header *multipart.FileHeader) error {
+	bytes := make([]byte, 12)
+	_, err := rand.Read(bytes)
+	if err != nil {
+		return models.ErrInvalidImage
+	}
+	token := base64.URLEncoding.EncodeToString(bytes)
+	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
+
+	filename := fmt.Sprintf("%s_%d", token, timestamp)
+	extension := getFileExtension(header.Filename)
+
+	switch extension {
+	case "jpeg", "jpg", "gif", "png":
+	default:
+		return models.ErrInvalidImageFormat
+	}
+	header.Filename = fmt.Sprintf("%s.%s", filename, extension)
+	return nil
+}
+
+func getFileExtension(fileName string) string {
+	parts := strings.Split(fileName, ".")
+	extension := parts[1]
+
+	if extension == "" {
+		return ""
+	}
+
+	extension = strings.ToLower(strings.TrimSpace(extension))
+	return extension
 }

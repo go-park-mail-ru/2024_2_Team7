@@ -10,6 +10,7 @@ import (
 	"kudago/internal/http/events"
 	"kudago/internal/logger"
 	"kudago/internal/middleware"
+	imageRepository "kudago/internal/repository/images"
 	"kudago/internal/repository/postgres"
 	eventRepository "kudago/internal/repository/postgres/events"
 	userRepository "kudago/internal/repository/postgres/users"
@@ -31,7 +32,7 @@ import (
 // @termsOfService  http://swagger.io/terms/
 
 func main() {
-	port := config.LoadConfig()
+	conf, err := config.LoadConfig()
 
 	appLogger, err := logger.NewLogger()
 	if err != nil {
@@ -39,23 +40,18 @@ func main() {
 	}
 	defer appLogger.Logger.Sync()
 
-	redisConfig, err := sessionRepository.GetRedisConfig()
-	if err != nil {
-		log.Fatalf("Failed to connect to the redis database")
-	}
-	postgresConfig, err := postgres.GetPostgresConfig()
-	pool, err := postgres.InitPostgres(postgresConfig, appLogger)
+	pool, err := postgres.InitPostgres(conf.PostgresConfig, appLogger)
 	if err != nil {
 		log.Fatalf("Failed to connect to the postgres database")
 	}
 	defer pool.Close()
 
 	userDB := userRepository.NewDB(pool)
-	sessionDB := sessionRepository.NewDB(redisConfig)
+	sessionDB := sessionRepository.NewDB(&conf.RedisConfig)
 	eventDB := eventRepository.NewDB(pool)
-
-	authService := authService.NewService(userDB, sessionDB)
-	eventService := eventService.NewService(eventDB)
+	imageDB := imageRepository.NewDB(conf.ImageConfig)
+	authService := authService.NewService(userDB, sessionDB, imageDB)
+	eventService := eventService.NewService(eventDB, imageDB)
 
 	authHandler := auth.NewAuthHandler(&authService)
 	eventHandler := events.NewEventHandler(&eventService)
@@ -72,12 +68,16 @@ func main() {
 	r.HandleFunc("/logout", authHandler.Logout).Methods("POST")
 	r.HandleFunc("/session", authHandler.CheckSession).Methods("GET")
 	r.HandleFunc("/profile", authHandler.Profile).Methods("GET")
+	r.HandleFunc("/profile", authHandler.UpdateUser).Methods("PUT")
 
 	r.HandleFunc("/events/{id:[0-9]+}", eventHandler.GetEventByID).Methods("GET")
 	r.HandleFunc("/events/tags", eventHandler.GetEventsByTags).Methods("GET")
 	r.HandleFunc("/events/categories/{category}", eventHandler.GetEventsByCategory).Methods("GET")
-	r.HandleFunc("/events", eventHandler.GetAllEvents).Methods("GET")
+	r.HandleFunc("/events", eventHandler.GetUpcomingEvents).Methods("GET")
+	r.HandleFunc("/pastevents", eventHandler.GetPastEvents).Methods("GET")
+
 	r.HandleFunc("/categories", eventHandler.GetCategories).Methods("GET")
+	r.HandleFunc("/events/my", eventHandler.GetEventsByUser).Methods("GET")
 	r.HandleFunc("/events/{id:[0-9]+}", eventHandler.UpdateEvent).Methods("PUT")
 	r.HandleFunc("/events/{id:[0-9]+}", eventHandler.DeleteEvent).Methods("DELETE")
 	r.HandleFunc("/events", eventHandler.AddEvent).Methods("POST")
@@ -98,7 +98,7 @@ func main() {
 	handlerWithLogging := middleware.LoggingMiddleware(handlerWithCORS, appLogger.Logger)
 	handler := middleware.PanicMiddleware(handlerWithLogging)
 
-	err = http.ListenAndServe(":"+port, handler)
+	err = http.ListenAndServe(":"+conf.Port, handler)
 	if err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}

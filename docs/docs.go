@@ -50,7 +50,7 @@ const docTemplate = `{
         },
         "/events": {
             "get": {
-                "description": "Получить все существующие события",
+                "description": "Получить все прошедшие события",
                 "consumes": [
                     "application/json"
                 ],
@@ -60,7 +60,7 @@ const docTemplate = `{
                 "tags": [
                     "events"
                 ],
-                "summary": "Получить все события",
+                "summary": "Получить все прошедшие события",
                 "parameters": [
                     {
                         "type": "integer",
@@ -140,6 +140,32 @@ const docTemplate = `{
                     "events"
                 ],
                 "summary": "Получение событий по категори",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/events.GetEventsResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/events/my": {
+            "get": {
+                "description": "Возвращает события пользователя",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "events"
+                ],
+                "summary": "Получение событий пользователя",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -374,6 +400,27 @@ const docTemplate = `{
         "/profile": {
             "get": {
                 "description": "Возвращает информацию о профиле текущего пользователя",
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Профиль пользователя",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/auth.ProfileResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Обновление информации о профиле текущего пользователя(обновление аватарки)",
                 "tags": [
                     "profile"
                 ],

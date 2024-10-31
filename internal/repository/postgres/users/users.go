@@ -11,28 +11,13 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-const (
-	addUserQuery = `
-	INSERT INTO "USER" (username, email, password_hash, url_to_avatar)
-	VALUES ($1, $2, $3, $4)
-	RETURNING id,  created_at`
-
-	checkCredentialsQuery = `
-	SELECT id, username, email, created_at, url_to_avatar
-	FROM "USER"
-	WHERE username = $1 AND password_hash = $2`
-
-	getUserByIDQuery = `SELECT id, username, email, url_to_avatar FROM "USER" WHERE id=$1`
-
-	getUserByEmailOrUsernameQuery = `SELECT 1 FROM "USER" WHERE email=$1 OR username = $2 LIMIT 1`
-)
-
 type UserInfo struct {
-	ID        int       `db:"id"`
-	Username  string    `db:"username"`
-	Email     string    `db:"email"`
-	ImageURL  *string   `db:"url_to_avatar"`
-	CreatedAt time.Time `db:"created_at"`
+	ID         int       `db:"id"`
+	Username   string    `db:"username"`
+	Email      string    `db:"email"`
+	ImageURL   *string   `db:"url_to_avatar"`
+	CreatedAt  time.Time `db:"created_at"`
+	ModifiedAt time.Time `db:"modified_at"`
 }
 
 type UserDB struct {
@@ -44,6 +29,11 @@ func NewDB(pool *pgxpool.Pool) *UserDB {
 		pool: pool,
 	}
 }
+
+const addUserQuery = `
+INSERT INTO "USER" (username, email, password_hash, url_to_avatar)
+VALUES ($1, $2, $3, $4)
+RETURNING id,  created_at`
 
 func (d *UserDB) AddUser(ctx context.Context, user models.User) (models.User, error) {
 	var userInfo UserInfo
@@ -66,6 +56,11 @@ func (d *UserDB) AddUser(ctx context.Context, user models.User) (models.User, er
 	return newUser, nil
 }
 
+const checkCredentialsQuery = `
+SELECT id, username, email, created_at, url_to_avatar
+FROM "USER"
+WHERE username = $1 AND password_hash = $2`
+
 func (d UserDB) CheckCredentials(ctx context.Context, username, password string) (models.User, error) {
 	var userInfo UserInfo
 	err := d.pool.QueryRow(ctx, checkCredentialsQuery, username, password).Scan(
@@ -84,6 +79,8 @@ func (d UserDB) CheckCredentials(ctx context.Context, username, password string)
 	user := toDomainUser(userInfo)
 	return user, nil
 }
+
+const getUserByIDQuery = `SELECT id, username, email, url_to_avatar FROM "USER" WHERE id=$1`
 
 func (d UserDB) GetUserByID(ctx context.Context, ID int) (models.User, error) {
 	var userInfo UserInfo
@@ -119,6 +116,8 @@ func toDomainUser(user UserInfo) models.User {
 	}
 }
 
+const getUserByEmailOrUsernameQuery = `SELECT 1 FROM "USER" WHERE email=$1 OR username = $2 LIMIT 1`
+
 func (d *UserDB) UserExists(ctx context.Context, username, email string) (bool, error) {
 	var exists int
 	err := d.pool.QueryRow(ctx, getUserByEmailOrUsernameQuery, email, username).Scan(&exists)
@@ -130,4 +129,18 @@ func (d *UserDB) UserExists(ctx context.Context, username, email string) (bool, 
 	}
 
 	return true, nil
+}
+
+const updateUserQuery = `
+UPDATE "USER"
+SET IMAGE_URL=$1, modified_at=$2
+WHERE id = $3`
+
+func (db *UserDB) UpdateUser(ctx context.Context, updatedUser models.User) error {
+	_, err := db.pool.Exec(ctx, updateUserQuery,
+		updatedUser.ImageURL,
+		time.Now(),
+		updatedUser.ID,
+	)
+	return err
 }

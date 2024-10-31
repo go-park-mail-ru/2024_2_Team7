@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type EventsConfig struct {
+type PostgresConfig struct {
 	User     string
 	Password string
 	Host     string
@@ -19,8 +19,8 @@ type EventsConfig struct {
 	URL      string
 }
 
-func GetPostgresConfig() (EventsConfig, error) {
-	var config EventsConfig
+func GetPostgresConfig() (PostgresConfig, error) {
+	var config PostgresConfig
 	config.User = os.Getenv("POSTGRES_USER")
 	config.Password = os.Getenv("POSTGRES_PASSWORD")
 	config.Host = os.Getenv("POSTGRES_HOST")
@@ -31,7 +31,7 @@ func GetPostgresConfig() (EventsConfig, error) {
 	return config, nil
 }
 
-func InitPostgres(config EventsConfig, logger *logger.Logger) (*pgxpool.Pool, error) {
+func InitPostgres(config PostgresConfig, logger *logger.Logger) (*pgxpool.Pool, error) {
 	dbConf, err := pgxpool.ParseConfig(config.URL)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse db URL: %v", err)
@@ -44,7 +44,7 @@ func InitPostgres(config EventsConfig, logger *logger.Logger) (*pgxpool.Pool, er
 	}
 
 	postgresPing := pool.Ping(context.Background())
-	if err != nil || postgresPing != nil {
+	if postgresPing != nil {
 		return nil, fmt.Errorf("unable to connect to db: %v", err)
 	}
 	return pool, nil

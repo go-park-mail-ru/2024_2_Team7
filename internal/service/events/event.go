@@ -2,6 +2,7 @@ package eventService
 
 import (
 	"context"
+	"mime/multipart"
 	"strings"
 
 	"kudago/internal/models"
@@ -9,26 +10,39 @@ import (
 
 type EventService struct {
 	EventDB EventDB
+	ImageDB ImageDB
 }
 
 type EventDB interface {
-	GetAllEvents(ctx context.Context, offset, limit int) ([]models.Event, error)
+	GetUpcomingEvents(ctx context.Context, offset, limit int) ([]models.Event, error)
+	GetPastEvents(ctx context.Context, offset, limit int) ([]models.Event, error)
 	GetCategories(ctx context.Context) ([]models.Category, error)
 	GetEventsByTags(ctx context.Context, tags []string) ([]models.Event, error)
 	GetEventsByCategory(ctx context.Context, categoryID int) ([]models.Event, error)
+	GetEventsByUser(ctx context.Context, userID int) ([]models.Event, error)
 	GetEventByID(ctx context.Context, ID int) (models.Event, error)
 	AddEvent(ctx context.Context, event models.Event) (models.Event, error)
 	DeleteEvent(ctx context.Context, ID int) error
 	UpdateEvent(ctx context.Context, event models.Event) error
 }
 
-func NewService(eventDB EventDB) EventService {
-	return EventService{EventDB: eventDB}
+type ImageDB interface {
+	SaveImage(ctx context.Context, header multipart.FileHeader, file multipart.File) (string, error)
+	DeleteImage(ctx context.Context, path string)
 }
 
-func (s *EventService) GetAllEvents(ctx context.Context, page, limit int) ([]models.Event, error) {
+func NewService(eventDB EventDB, imageDB ImageDB) EventService {
+	return EventService{EventDB: eventDB, ImageDB: imageDB}
+}
+
+func (s *EventService) GetUpcomingEvents(ctx context.Context, page, limit int) ([]models.Event, error) {
 	offset := (page - 1) * limit
-	return s.EventDB.GetAllEvents(ctx, offset, limit)
+	return s.EventDB.GetUpcomingEvents(ctx, offset, limit)
+}
+
+func (s *EventService) GetPastEvents(ctx context.Context, page, limit int) ([]models.Event, error) {
+	offset := (page - 1) * limit
+	return s.EventDB.GetPastEvents(ctx, offset, limit)
 }
 
 func (s *EventService) GetEventsByTags(ctx context.Context, tags []string) ([]models.Event, error) {
@@ -42,12 +56,27 @@ func (s *EventService) GetEventsByCategory(ctx context.Context, categoryID int) 
 	return s.EventDB.GetEventsByCategory(ctx, categoryID)
 }
 
+func (s *EventService) GetEventsByUser(ctx context.Context, userID int) ([]models.Event, error) {
+	return s.EventDB.GetEventsByUser(ctx, userID)
+}
+
 func (s *EventService) GetCategories(ctx context.Context) ([]models.Category, error) {
 	return s.EventDB.GetCategories(ctx)
 }
 
-func (s *EventService) AddEvent(ctx context.Context, event models.Event) (models.Event, error) {
-	return s.EventDB.AddEvent(ctx, event)
+func (s *EventService) AddEvent(ctx context.Context, event models.Event, header *multipart.FileHeader, file multipart.File) (models.Event, error) {
+	path, err := s.ImageDB.SaveImage(ctx, *header, file)
+	if err != nil {
+		return models.Event{}, err
+	}
+
+	event.ImageURL = path
+	event, err = s.EventDB.AddEvent(ctx, event)
+	if err != nil {
+		s.ImageDB.DeleteImage(ctx, path)
+		return models.Event{}, err
+	}
+	return event, err
 }
 
 func (s *EventService) DeleteEvent(ctx context.Context, ID, AuthorID int) error {

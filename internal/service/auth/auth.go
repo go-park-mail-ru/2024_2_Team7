@@ -2,6 +2,7 @@ package authService
 
 import (
 	"context"
+	"mime/multipart"
 
 	"kudago/internal/models"
 )
@@ -9,6 +10,7 @@ import (
 type authService struct {
 	UserDB    UserDB
 	SessionDB SessionDB
+	ImageDB   ImageDB
 }
 
 type UserDB interface {
@@ -16,6 +18,7 @@ type UserDB interface {
 	GetUserByID(ctx context.Context, ID int) (models.User, error)
 	CheckCredentials(ctx context.Context, username string, password string) (models.User, error)
 	UserExists(ctx context.Context, username, email string) (bool, error)
+	UpdateUser(ctx context.Context, user models.User) error
 }
 
 type SessionDB interface {
@@ -24,16 +27,20 @@ type SessionDB interface {
 	DeleteSession(ctx context.Context, token string) error
 }
 
-func NewService(userDB UserDB, sessionDB SessionDB) authService {
-	return authService{UserDB: userDB, SessionDB: sessionDB}
+type ImageDB interface {
+	SaveImage(ctx context.Context, header multipart.FileHeader, file multipart.File) (string, error)
+}
+
+func NewService(userDB UserDB, sessionDB SessionDB, imageDB ImageDB) authService {
+	return authService{UserDB: userDB, SessionDB: sessionDB, ImageDB: imageDB}
 }
 
 func (a *authService) CheckSession(ctx context.Context, cookie string) (models.Session, error) {
 	return a.SessionDB.CheckSession(ctx, cookie)
 }
 
-func (a *authService) AddUser(ctx context.Context, user models.User) (models.User, error) {
-	return a.UserDB.AddUser(ctx, user)
+func (a *authService) UpdateUser(ctx context.Context, user models.User) error {
+	return a.UserDB.UpdateUser(ctx, user)
 }
 
 func (a *authService) GetUserByID(ctx context.Context, ID int) (models.User, error) {
@@ -44,11 +51,19 @@ func (a *authService) CheckCredentials(ctx context.Context, creds models.Credent
 	return a.UserDB.CheckCredentials(ctx, creds.Username, creds.Password)
 }
 
-func (a *authService) Register(ctx context.Context, user models.User) (models.User, error) {
+func (a *authService) Register(ctx context.Context, registerDTO models.RegisterDTO) (models.User, error) {
+	path, err := a.ImageDB.SaveImage(ctx, registerDTO.Header, registerDTO.File)
+	if err != nil {
+		return models.User{}, err
+	}
+
+	user := registerDTO.User
+	user.ImageURL = path
 	userExists, err := a.UserDB.UserExists(ctx, user.Username, user.Email)
 	if err != nil {
 		return models.User{}, err
 	}
+
 	if userExists {
 		return models.User{}, models.ErrEmailIsUsed
 	}

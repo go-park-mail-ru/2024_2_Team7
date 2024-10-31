@@ -24,8 +24,9 @@ type AuthHandler struct {
 type AuthService interface {
 	CheckSession(ctx context.Context, cookie string) (models.Session, error)
 	GetUserByID(ctx context.Context, ID int) (models.User, error)
+	UpdateUser(ctx context.Context, user models.User) error
 	CheckCredentials(ctx context.Context, creds models.Credentials) (models.User, error)
-	Register(ctx context.Context, user models.User) (models.User, error)
+	Register(ctx context.Context, registerDTO models.RegisterDTO) (models.User, error)
 	CreateSession(ctx context.Context, ID int) (models.Session, error)
 	DeleteSession(ctx context.Context, token string) error
 }
@@ -34,6 +35,11 @@ type RegisterRequest struct {
 	Username string `json:"username" valid:"required,alphanum,length(3|50)"`
 	Email    string `json:"email" valid:"email,required"`
 	Password string `json:"password" valid:"password,required,length(3|50)"`
+}
+
+type UpdateRequest struct {
+	Username string `json:"username" valid:"alphanum,length(3|50)"`
+	Email    string `json:"email" valid:"email"`
 }
 
 type AuthRequest struct {
@@ -91,7 +97,8 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req RegisterRequest
-	err := json.NewDecoder(r.Body).Decode(&req)
+	jsonData := r.FormValue("json")
+	err := json.Unmarshal([]byte(jsonData), &req)
 	if err != nil {
 		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
 		return
@@ -103,13 +110,32 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO errors
+	r.ParseMultipartForm(1 << 20)
+	file, header, err := r.FormFile("image")
+	if err != nil {
+		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
+		return
+	}
+	err = utils.GenerateFilename(header)
+	if err != nil {
+		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidImage)
+		return
+	}
+
 	user := models.User{
 		Username: req.Username,
 		Email:    req.Email,
 		Password: req.Password,
 	}
 
-	user, err = h.service.Register(r.Context(), user)
+	registerDTO := models.RegisterDTO{
+		User:   user,
+		Header: *header,
+		File:   file,
+	}
+
+	user, err = h.service.Register(r.Context(), registerDTO)
 	if err != nil {
 		if errors.Is(err, &models.AuthError{}) {
 			utils.WriteResponse(w, http.StatusConflict, err)
@@ -253,18 +279,70 @@ func (h *AuthHandler) Profile(w http.ResponseWriter, r *http.Request) {
 		utils.WriteResponse(w, http.StatusNotFound, httpErrors.ErrUserNotFound)
 		return
 	}
+
 	userResponse := userToProfileResponse(user)
 
 	utils.WriteResponse(w, http.StatusOK, userResponse)
 }
 
+// @Summary Профиль пользователя
+// @Description Обновление информации о профиле текущего пользователя(обновление аватарки)
+// @Tags profile
+// @Success 200 {object} ProfileResponse
+// @Failure 401 {object} httpErrors.HttpError "Unauthorized"
+// @Router /profile [put]
+func (h *AuthHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	// session, ok := utils.GetSessionFromContext(r.Context())
+	// if !ok {
+	// 	utils.WriteResponse(w, http.StatusUnauthorized, httpErrors.ErrUnauthorized)
+	// 	return
+	// }
+
+	// var req UpdateRequest
+	// err := json.NewDecoder(r.Body).Decode(&req)
+	// if err != nil {
+	// 	fmt.Println(err, req)
+	// 	utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
+	// 	return
+	// }
+
+	// _, err = govalidator.ValidateStruct(&req)
+	// if err != nil {
+	// 	utils.ProcessValidationErrors(w, err)
+	// 	return
+	// }
+
+	// ImageURL, err := utils.SaveImage(r)
+	// //TODO errors
+	// if err != nil {
+	// 	utils.WriteResponse(w, http.StatusBadRequest, err)
+	// 	return
+	// }
+
+	// user := models.User{
+	// 	ID: session.UserID,
+	// 	Username: req.Username,
+	// 	Email:    req.Email,
+	// 	ImageURL: ImageURL,
+	// }
+
+	// err = h.service.UpdateUser(r.Context(), user)
+	// if err != nil {
+	// 	utils.WriteResponse(w, http.StatusNotFound, httpErrors.ErrUserNotFound)
+	// 	return
+	// }
+	// userResponse := userToProfileResponse(user)
+
+	// utils.WriteResponse(w, http.StatusOK, userResponse)
+}
+
 func (h *AuthHandler) setSessionCookie(w http.ResponseWriter, r *http.Request, ID int) {
 	session, err := h.service.CreateSession(r.Context(), ID)
-	fmt.Println(session, err)
 	if err != nil {
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     models.SessionToken,
 		Value:    session.Token,

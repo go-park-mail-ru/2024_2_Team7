@@ -7,6 +7,7 @@ CREATE TABLE "USER" (
                         password_hash TEXT NOT NULL,
                         URL_to_avatar TEXT,
                         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                        modified_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 -- +goose StatementEnd
 

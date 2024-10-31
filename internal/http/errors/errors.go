@@ -41,6 +41,11 @@ var (
 		Code:    "invalid_category",
 	}
 
+	ErrInvalidImage = &HttpError{
+		Message: "Wrong or empty image format",
+		Code:    "invalid_image",
+	}
+
 	ErrInvalidCapacity = &HttpError{
 		Message: "Wrong or empty capacity",
 		Code:    "invalid_capacity",
