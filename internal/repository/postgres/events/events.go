@@ -37,7 +37,9 @@ func NewDB(pool *pgxpool.Pool) *EventDB {
 }
 
 const selectUpcomingEventsQuery = `
-	SELECT event.id, event.title, event.description, event.event_start, event.event_finish, event.location, event.capacity, event.created_at, event.user_id, event.category_id, COALESCE(array_agg(DISTINCT COALESCE(tag.name, '')), '{}') AS tags, media_url.url AS media_link
+	SELECT event.id, event.title, event.description, event.event_start, event.event_finish, 
+		event.location, event.capacity, event.created_at, event.user_id, event.category_id, 
+		COALESCE(array_agg(DISTINCT COALESCE(tag.name, '')), '{}') AS tags, media_url.url AS media_link
 	FROM event
 	LEFT JOIN event_tag ON event.id = event_tag.event_id
 	LEFT JOIN tag ON tag.id = event_tag.tag_id
@@ -85,29 +87,20 @@ func (db *EventDB) GetUpcomingEvents(ctx context.Context, offset, limit int) ([]
 }
 
 const getEventsByTagsQuery = `
-	WITH matching_events AS (
-		SELECT event.id
-		FROM event
-		JOIN event_tag ON event.id = event_tag.event_id
-		JOIN tag ON tag.id = event_tag.tag_id
-		WHERE tag.name = ANY($1)
-		GROUP BY event.id
-		HAVING COUNT(DISTINCT CASE WHEN tag.name = ANY($1) THEN tag.name END) = $2
-	)
 	SELECT event.id, event.title, event.description, event.event_start, event.event_finish, 
 		event.location, event.capacity, event.created_at, event.user_id, event.category_id,
 		COALESCE(array_agg(DISTINCT tag.name), '{}') AS tags, media_url.url AS media_link
 	FROM event
-	JOIN matching_events ON event.id = matching_events.id
 	JOIN event_tag ON event.id = event_tag.event_id
 	JOIN tag ON tag.id = event_tag.tag_id
 	LEFT JOIN media_url ON event.id = media_url.event_id
 	WHERE event.event_finish >= NOW()
 	GROUP BY event.id, media_url.url
+	HAVING array_agg(DISTINCT tag.name) @> $1
 	ORDER BY event.event_finish ASC`
 
 func (db *EventDB) GetEventsByTags(ctx context.Context, tags []string) ([]models.Event, error) {
-	rows, err := db.pool.Query(ctx, getEventsByTagsQuery, tags, len(tags))
+	rows, err := db.pool.Query(ctx, getEventsByTagsQuery, tags)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +138,9 @@ func (db *EventDB) GetEventsByTags(ctx context.Context, tags []string) ([]models
 }
 
 const getEventByIDQuery = `
-	SELECT event.id, event.title, event.description, event.event_start, event.event_finish, event.location, event.capacity, event.created_at, event.user_id, event.category_id, COALESCE(array_agg(COALESCE(tag.name, '')), '{}') AS tags, media_url.url AS media_link
+	SELECT event.id, event.title, event.description, event.event_start, event.event_finish, 
+	event.location, event.capacity, event.created_at, event.user_id, event.category_id, 
+	COALESCE(array_agg(COALESCE(tag.name, '')), '{}') AS tags, media_url.url AS media_link
 	FROM event
 	LEFT JOIN event_tag ON event.id = event_tag.event_id
 	LEFT JOIN tag ON tag.id = event_tag.tag_id
@@ -184,7 +179,9 @@ func (db *EventDB) GetEventByID(ctx context.Context, ID int) (models.Event, erro
 }
 
 const getEventsByCategoryQuery = `
-	SELECT event.id, event.title, event.description, event.event_start, event.event_finish, event.location, event.capacity, event.created_at, event.user_id, event.category_id, COALESCE(array_agg(COALESCE(tag.name, '')), '{}') AS tags, media_url.url AS media_link
+	SELECT event.id, event.title, event.description, event.event_start, event.event_finish,
+		event.location, event.capacity, event.created_at, event.user_id, event.category_id,
+		COALESCE(array_agg(COALESCE(tag.name, '')), '{}') AS tags, media_url.url AS media_link
 	FROM event
 	LEFT JOIN event_tag ON event.id = event_tag.event_id
 	LEFT JOIN tag ON tag.id = event_tag.tag_id
@@ -240,19 +237,100 @@ func (db *EventDB) DeleteEvent(ctx context.Context, ID int) error {
 
 const updateEventQuery = `
 	UPDATE event
-	SET title = $1, description = $2, event_start = $3, event_finish = $4, updated_at=$5
-	WHERE id = $6`
+	SET 
+		title = COALESCE($2, title), 
+		description = COALESCE($3, description), 
+		event_start = COALESCE($4, event_start), 
+		event_finish = COALESCE($5, event_finish), 
+		location = COALESCE($6, location), 
+		capacity = COALESCE($7, capacity), 
+		category_id = COALESCE($8, category_id), 
+		updated_at = $9
+	WHERE id = $1
+	RETURNING id, title, description, event_start, event_finish, location, capacity, category_id, user_id
+`
 
-func (db *EventDB) UpdateEvent(ctx context.Context, updatedEvent models.Event) error {
-	_, err := db.pool.Exec(ctx, updateEventQuery,
-		updatedEvent.Title,
-		updatedEvent.Description,
-		updatedEvent.EventStart,
-		updatedEvent.EventEnd,
-		time.Now(),
+func (db *EventDB) UpdateEvent(ctx context.Context, updatedEvent models.Event) (models.Event, error) {
+	tx, err := db.pool.Begin(ctx)
+	if err != nil {
+		return models.Event{}, err
+	}
+	defer tx.Rollback(ctx)
+
+	var eventInfo EventInfo
+	err = tx.QueryRow(ctx, updateEventQuery,
 		updatedEvent.ID,
+		nilIfEmpty(updatedEvent.Title),
+		nilIfEmpty(updatedEvent.Description),
+		nilIfEmpty(updatedEvent.EventStart),
+		nilIfEmpty(updatedEvent.EventEnd),
+		nilIfEmpty(updatedEvent.Location),
+		nilIfZero(updatedEvent.Capacity),
+		nilIfZero(updatedEvent.CategoryID),
+		time.Now(),
+	).Scan(
+		&eventInfo.ID,
+		&eventInfo.Title,
+		&eventInfo.Description,
+		&eventInfo.EventStart,
+		&eventInfo.EventFinish,
+		&eventInfo.Location,
+		&eventInfo.Capacity,
+		&eventInfo.CategoryID,
+		&eventInfo.UserID,
 	)
-	return err
+	if err != nil {
+		return models.Event{}, err
+	}
+
+	if len(updatedEvent.Tag) > 0 {
+		err = db.updateTagsForEvent(ctx, tx, updatedEvent.ID, updatedEvent.Tag)
+		if err != nil {
+			return models.Event{}, err
+		}
+	}
+
+	if updatedEvent.ImageURL != "" {
+		err = db.updateMediaURL(ctx, tx, updatedEvent.ID, updatedEvent.ImageURL)
+		if err != nil {
+			return models.Event{}, err
+		}
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		return models.Event{}, err
+	}
+
+	event, err := db.toDomainEvent(ctx, eventInfo)
+	if err != nil {
+		return models.Event{}, err
+	}
+	event.Tag = updatedEvent.Tag
+	event.ImageURL = updatedEvent.ImageURL
+	return event, nil
+}
+
+const deleteEventTagsQuery = `DELETE FROM event_tag WHERE event_id = $1`
+
+func (db *EventDB) updateTagsForEvent(ctx context.Context, tx pgx.Tx, eventID int, tags []string) error {
+	_, err := tx.Exec(ctx, deleteEventTagsQuery, eventID)
+	if err != nil {
+		return err
+	}
+
+	return db.addTagsToEvent(ctx, tx, eventID, tags)
+}
+
+const deleteMediaURLQuery = `DELETE FROM media_url WHERE event_id = $1`
+
+func (db *EventDB) updateMediaURL(ctx context.Context, tx pgx.Tx, eventID int, imageURL string) error {
+	_, err := tx.Exec(ctx, deleteMediaURLQuery, eventID)
+	if err != nil {
+		return err
+	}
+
+	return db.addMediaURL(ctx, tx, eventID, imageURL)
 }
 
 const addEventQuery = `
@@ -410,7 +488,9 @@ func (db *EventDB) GetCategories(ctx context.Context) ([]models.Category, error)
 }
 
 const selectPastEventsQuery = `
-	SELECT event.id, event.title, event.description, event.event_start, event.event_finish, event.location, event.capacity, event.created_at, event.user_id, event.category_id, COALESCE(array_agg(DISTINCT COALESCE(tag.name, '')), '{}') AS tags, media_url.url AS media_link
+	SELECT event.id, event.title, event.description, event.event_start, event.event_finish,
+		event.location, event.capacity, event.created_at, event.user_id, event.category_id, 
+		COALESCE(array_agg(DISTINCT COALESCE(tag.name, '')), '{}') AS tags, media_url.url AS media_link
 	FROM event
 	LEFT JOIN event_tag ON event.id = event_tag.event_id
 	LEFT JOIN tag ON tag.id = event_tag.tag_id
@@ -458,7 +538,9 @@ func (db *EventDB) GetPastEvents(ctx context.Context, offset, limit int) ([]mode
 }
 
 const getEventsByUserQuery = `
-	SELECT event.id, event.title, event.description, event.event_start, event.event_finish, event.location, event.capacity, event.created_at, event.user_id, event.category_id, COALESCE(array_agg(COALESCE(tag.name, '')), '{}') AS tags, media_url.url AS media_link
+	SELECT event.id, event.title, event.description, event.event_start, event.event_finish, 
+	event.location, event.capacity, event.created_at, event.user_id, event.category_id, 
+	COALESCE(array_agg(COALESCE(tag.name, '')), '{}') AS tags, media_url.url AS media_link
 	FROM event
 	LEFT JOIN event_tag ON event.id = event_tag.event_id
 	LEFT JOIN tag ON tag.id = event_tag.tag_id
@@ -503,4 +585,93 @@ func (db *EventDB) GetEventsByUser(ctx context.Context, userID int) ([]models.Ev
 	}
 
 	return events, nil
+}
+
+const baseSearchQuery = `
+	SELECT event.id, event.title, event.description, event.event_start, event.event_finish, 
+		event.location, event.capacity, event.created_at, event.user_id, event.category_id,
+		COALESCE(array_agg(DISTINCT tag.name), '{}') AS tags, media_url.url AS media_link
+	FROM event
+	LEFT JOIN event_tag ON event.id = event_tag.event_id
+	LEFT JOIN tag ON tag.id = event_tag.tag_id
+	LEFT JOIN media_url ON event.id = media_url.event_id
+	WHERE
+		($1::TEXT IS NULL OR event.title ILIKE '%' || $1 || '%' OR event.description ILIKE '%' || $1 || '%')
+		AND ($2::INT IS NULL OR event.category_id = $2)
+		AND ($3::TIMESTAMP IS NULL OR event.event_start >= $3)
+		AND ($4::TIMESTAMP IS NULL OR event.event_finish <= $4)
+	GROUP BY event.id, media_url.url
+	HAVING (array_length($5::TEXT[], 1) = 0 OR array_agg(DISTINCT LOWER(tag.name)) @> $5::TEXT[])
+	ORDER BY event.event_finish ASC
+	LIMIT $6 OFFSET $7;
+`
+
+func (db *EventDB) SearchEvents(ctx context.Context, params models.SearchParams, limit, offset int) ([]models.Event, error) {
+	args := []interface{}{
+		nilIfEmpty(params.Str),
+		nilIfZero(params.Category),
+		nilIfEmpty(params.EventStart),
+		nilIfEmpty(params.EventEnd),
+		tagsToArray(params.Tags),
+		limit,
+		offset,
+	}
+
+	rows, err := db.pool.Query(ctx, baseSearchQuery, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	events := make([]models.Event, 0, limit)
+	for rows.Next() {
+		var eventInfo EventInfo
+		err = rows.Scan(
+			&eventInfo.ID,
+			&eventInfo.Title,
+			&eventInfo.Description,
+			&eventInfo.EventStart,
+			&eventInfo.EventFinish,
+			&eventInfo.Location,
+			&eventInfo.Capacity,
+			&eventInfo.CreatedAt,
+			&eventInfo.UserID,
+			&eventInfo.CategoryID,
+			&eventInfo.Tags,
+			&eventInfo.ImageURL,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		event, err := db.toDomainEvent(ctx, eventInfo)
+		if err != nil {
+			continue
+		}
+		events = append(events, event)
+	}
+
+	return events, nil
+}
+
+func nilIfZero(value int) interface{} {
+	if value == 0 {
+		return nil
+	}
+	return value
+}
+
+func nilIfEmpty(value string) interface{} {
+	if value == "" {
+		return nil
+	}
+	return value
+}
+
+func tagsToArray(tags []string) interface{} {
+	if len(tags) == 0 {
+		return nil
+	}
+
+	return tags
 }

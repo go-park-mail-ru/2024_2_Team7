@@ -31,9 +31,9 @@ func NewDB(pool *pgxpool.Pool) *UserDB {
 }
 
 const addUserQuery = `
-INSERT INTO "USER" (username, email, password_hash, url_to_avatar)
-VALUES ($1, $2, $3, $4)
-RETURNING id,  created_at`
+	INSERT INTO "USER" (username, email, password_hash, url_to_avatar)
+	VALUES ($1, $2, $3, $4)
+	RETURNING id,  created_at`
 
 func (d *UserDB) AddUser(ctx context.Context, user models.User) (models.User, error) {
 	var userInfo UserInfo
@@ -57,9 +57,9 @@ func (d *UserDB) AddUser(ctx context.Context, user models.User) (models.User, er
 }
 
 const checkCredentialsQuery = `
-SELECT id, username, email, created_at, url_to_avatar
-FROM "USER"
-WHERE username = $1 AND password_hash = $2`
+	SELECT id, username, email, created_at, url_to_avatar
+	FROM "USER"
+	WHERE username = $1 AND password_hash = $2`
 
 func (d UserDB) CheckCredentials(ctx context.Context, username, password string) (models.User, error) {
 	var userInfo UserInfo
@@ -100,22 +100,6 @@ func (d UserDB) GetUserByID(ctx context.Context, ID int) (models.User, error) {
 	return user, err
 }
 
-func toDomainUser(user UserInfo) models.User {
-	var imageURL string
-	if user.ImageURL == nil {
-		imageURL = ""
-	} else {
-		imageURL = *user.ImageURL
-	}
-
-	return models.User{
-		ID:       user.ID,
-		Username: user.Username,
-		Email:    user.Email,
-		ImageURL: imageURL,
-	}
-}
-
 const getUserByEmailOrUsernameQuery = `SELECT 1 FROM "USER" WHERE email=$1 OR username = $2 LIMIT 1`
 
 func (d *UserDB) UserExists(ctx context.Context, username, email string) (bool, error) {
@@ -133,14 +117,66 @@ func (d *UserDB) UserExists(ctx context.Context, username, email string) (bool, 
 
 const updateUserQuery = `
 UPDATE "USER"
-SET IMAGE_URL=$1, modified_at=$2
-WHERE id = $3`
+SET 
+username = COALESCE($2, username), 
+email = COALESCE($3, email), 
+URL_to_avatar = COALESCE($4, URL_to_avatar), 
+modified_at = NOW()
+WHERE id = $1 
+RETURNING id, username, email, URL_to_avatar
+`
 
-func (db *UserDB) UpdateUser(ctx context.Context, updatedUser models.User) error {
-	_, err := db.pool.Exec(ctx, updateUserQuery,
-		updatedUser.ImageURL,
-		time.Now(),
+// TODO проверка какой из полей уже занят пока вот это
+const checkDuplicateQuery = `
+	SELECT id 
+	FROM "USER"
+	WHERE (username = $1 OR email = $2) AND id != $3
+`
+
+func (db *UserDB) UpdateUser(ctx context.Context, updatedUser models.User) (models.User, error) {
+	row := db.pool.QueryRow(ctx, checkDuplicateQuery, updatedUser.Username, updatedUser.Email, updatedUser.ID)
+	var existingID int
+	if err := row.Scan(&existingID); err != pgx.ErrNoRows && err != nil {
+		return models.User{}, err
+	}
+
+	if existingID != 0 {
+		return models.User{}, models.ErrEmailIsUsed
+	}
+
+	var user models.User
+	err := db.pool.QueryRow(ctx, updateUserQuery,
 		updatedUser.ID,
-	)
-	return err
+		nilIfEmpty(updatedUser.Username),
+		nilIfEmpty(updatedUser.Email),
+		nilIfEmpty(updatedUser.ImageURL),
+	).Scan(&user.ID, &user.Username, &user.Email, &user.ImageURL)
+	if err != nil {
+		return models.User{}, err
+	}
+
+	return user, nil
+}
+
+func nilIfEmpty(value string) *string {
+	if value == "" {
+		return nil
+	}
+	return &value
+}
+
+func toDomainUser(user UserInfo) models.User {
+	var imageURL string
+	if user.ImageURL == nil {
+		imageURL = ""
+	} else {
+		imageURL = *user.ImageURL
+	}
+
+	return models.User{
+		ID:       user.ID,
+		Username: user.Username,
+		Email:    user.Email,
+		ImageURL: imageURL,
+	}
 }

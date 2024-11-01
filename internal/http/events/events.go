@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"mime/multipart"
 	"net/http"
 	"strconv"
@@ -24,6 +23,17 @@ type EventRequest struct {
 	Description string   `json:"description" valid:"required"`
 	Location    string   `json:"location"`
 	Category    int      `json:"category_id" valid:"required"`
+	Capacity    int      `json:"capacity"`
+	Tag         []string `json:"tag"`
+	EventStart  string   `json:"event_start" valid:"rfc3339,required"`
+	EventEnd    string   `json:"event_end" valid:"rfc3339,required"`
+}
+
+type UpdateEventRequest struct {
+	Title       string   `json:"title" valid:"length(3|50), omitempty"`
+	Description string   `json:"description"`
+	Location    string   `json:"location"`
+	Category    int      `json:"category_id"`
 	Capacity    int      `json:"capacity"`
 	Tag         []string `json:"tag"`
 	EventStart  string   `json:"event_start" valid:"rfc3339"`
@@ -56,6 +66,14 @@ type EventHandler struct {
 	service EventService
 }
 
+type SearchRequest struct {
+	Str        string   `json:"str"`
+	EventStart string   `json:"event_start"`
+	EventEnd   string   `json:"event_end"`
+	Tags       []string `json:"tags"`
+	CategoryID int      `json:"category_id"`
+}
+
 type EventService interface {
 	GetUpcomingEvents(ctx context.Context, page, limit int) ([]models.Event, error)
 	GetPastEvents(ctx context.Context, page, limit int) ([]models.Event, error)
@@ -64,9 +82,10 @@ type EventService interface {
 	GetEventsByUser(ctx context.Context, userID int) ([]models.Event, error)
 	GetCategories(ctx context.Context) ([]models.Category, error)
 	GetEventByID(ctx context.Context, ID int) (models.Event, error)
-	AddEvent(ctx context.Context, event models.Event, header *multipart.FileHeader, file multipart.File) (models.Event, error)
+	AddEvent(ctx context.Context, event models.Event, header *multipart.FileHeader, file *multipart.File) (models.Event, error)
 	DeleteEvent(ctx context.Context, ID, authorID int) error
-	UpdateEvent(ctx context.Context, event models.Event) error
+	UpdateEvent(ctx context.Context, event models.Event, header *multipart.FileHeader, file *multipart.File) (models.Event, error)
+	SearchEvents(ctx context.Context, params models.SearchParams, page, limit int) ([]models.Event, error)
 }
 
 func NewEventHandler(s EventService) *EventHandler {
@@ -90,6 +109,46 @@ func (h EventHandler) GetUpcomingEvents(w http.ResponseWriter, r *http.Request) 
 	limit := utils.GetQueryParamInt(r, "limit", 30)
 
 	events, err := h.service.GetUpcomingEvents(r.Context(), page, limit)
+	if err != nil {
+		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
+		return
+	}
+	resp := writeEventsResponse(events, limit)
+
+	utils.WriteResponse(w, http.StatusOK, resp)
+}
+
+// @Summary Поиск событий
+// @Description Поиск событий по ключевым словам, датам, тегам и категории
+// @Tags events
+// @Accept json
+// @Produce json
+// @Param page query int false "Номер страницы (по умолчанию 1)"
+// @Param limit query int false "Количество событий на странице (по умолчанию 30)"
+// @Param SearchRequest body SearchRequest false "Фильтры для поиска событий"
+// @Success 200 {object} GetEventsResponse "Список событий"
+// @Failure 400 {object} httpErrors.HttpError "Invalid Data"
+// @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
+// @Router /events [get]
+func (h EventHandler) SearchEvents(w http.ResponseWriter, r *http.Request) {
+	page := utils.GetQueryParamInt(r, "page", 1)
+	limit := utils.GetQueryParamInt(r, "limit", 30)
+
+	var req SearchRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
+		return
+	}
+
+	params := models.SearchParams{
+		Str:        req.Str,
+		EventStart: req.EventStart,
+		EventEnd:   req.EventEnd,
+		Tags:       req.Tags,
+		Category:   req.CategoryID,
+	}
+
+	events, err := h.service.SearchEvents(r.Context(), params, page, limit)
 	if err != nil {
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
@@ -138,8 +197,6 @@ func (h EventHandler) GetEventsByTags(w http.ResponseWriter, r *http.Request) {
 
 	filteredEvents, err := h.service.GetEventsByTags(r.Context(), tags)
 	if err != nil {
-		fmt.Println(err)
-
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
@@ -324,15 +381,18 @@ func (h EventHandler) AddEvent(w http.ResponseWriter, r *http.Request) {
 
 	r.ParseMultipartForm(1 << 20)
 	file, header, err := r.FormFile("image")
-	if err != nil {
-		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
-		return
-	}
 
-	err = utils.GenerateFilename(header)
 	if err != nil {
-		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidImage)
-		return
+		if err != http.ErrMissingFile {
+			utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
+			return
+		}
+	} else {
+		err = utils.GenerateFilename(header)
+		if err != nil {
+			utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidImage)
+			return
+		}
 	}
 
 	event := models.Event{
@@ -347,7 +407,7 @@ func (h EventHandler) AddEvent(w http.ResponseWriter, r *http.Request) {
 		Tag:         req.Tag,
 	}
 
-	event, err = h.service.AddEvent(r.Context(), event, header, file)
+	event, err = h.service.AddEvent(r.Context(), event, header, &file)
 	if err != nil {
 		switch err {
 		case models.ErrInvalidCategory:
@@ -389,8 +449,9 @@ func (h EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req EventRequest
-	err = json.NewDecoder(r.Body).Decode(&req)
+	var req UpdateEventRequest
+	jsonData := r.FormValue("json")
+	err = json.Unmarshal([]byte(jsonData), &req)
 	if err != nil {
 		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
 		return
@@ -400,6 +461,22 @@ func (h EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		utils.ProcessValidationErrors(w, err)
 		return
+	}
+
+	r.ParseMultipartForm(1 << 20)
+	file, header, err := r.FormFile("image")
+
+	if err != nil {
+		if err != http.ErrMissingFile {
+			utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
+			return
+		}
+	} else {
+		err = utils.GenerateFilename(header)
+		if err != nil {
+			utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidImage)
+			return
+		}
 	}
 
 	event := models.Event{
@@ -415,7 +492,7 @@ func (h EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 		Capacity:    req.Capacity,
 	}
 
-	err = h.service.UpdateEvent(r.Context(), event)
+	event, err = h.service.UpdateEvent(r.Context(), event, header, &file)
 	if err != nil {
 		switch {
 		case errors.Is(err, models.ErrEventNotFound):

@@ -14,7 +14,7 @@ import (
 	"kudago/internal/repository/postgres"
 	eventRepository "kudago/internal/repository/postgres/events"
 	userRepository "kudago/internal/repository/postgres/users"
-	sessionRepository "kudago/internal/repository/session"
+	sessionRepository "kudago/internal/repository/redis/session"
 
 	authService "kudago/internal/service/auth"
 	eventService "kudago/internal/service/events"
@@ -61,7 +61,6 @@ func main() {
 	fs := http.FileServer(http.Dir("./static/"))
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fs))
 	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
-	r.PathPrefix("/docs/").Handler(httpSwagger.WrapHandler)
 
 	r.HandleFunc("/register", authHandler.Register).Methods("POST")
 	r.HandleFunc("/login", authHandler.Login).Methods("POST")
@@ -81,6 +80,7 @@ func main() {
 	r.HandleFunc("/events/{id:[0-9]+}", eventHandler.UpdateEvent).Methods("PUT")
 	r.HandleFunc("/events/{id:[0-9]+}", eventHandler.DeleteEvent).Methods("DELETE")
 	r.HandleFunc("/events", eventHandler.AddEvent).Methods("POST")
+	r.HandleFunc("/search", eventHandler.SearchEvents).Methods("GET")
 
 	whitelist := []string{
 		"/login",

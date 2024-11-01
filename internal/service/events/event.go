@@ -23,12 +23,13 @@ type EventDB interface {
 	GetEventByID(ctx context.Context, ID int) (models.Event, error)
 	AddEvent(ctx context.Context, event models.Event) (models.Event, error)
 	DeleteEvent(ctx context.Context, ID int) error
-	UpdateEvent(ctx context.Context, event models.Event) error
+	UpdateEvent(ctx context.Context, event models.Event) (models.Event, error)
+	SearchEvents(ctx context.Context, paras models.SearchParams, offset, limit int) ([]models.Event, error)
 }
 
 type ImageDB interface {
 	SaveImage(ctx context.Context, header multipart.FileHeader, file multipart.File) (string, error)
-	DeleteImage(ctx context.Context, path string)
+	DeleteImage(ctx context.Context, path string) error
 }
 
 func NewService(eventDB EventDB, imageDB ImageDB) EventService {
@@ -64,16 +65,22 @@ func (s *EventService) GetCategories(ctx context.Context) ([]models.Category, er
 	return s.EventDB.GetCategories(ctx)
 }
 
-func (s *EventService) AddEvent(ctx context.Context, event models.Event, header *multipart.FileHeader, file multipart.File) (models.Event, error) {
-	path, err := s.ImageDB.SaveImage(ctx, *header, file)
-	if err != nil {
-		return models.Event{}, err
+func (s *EventService) AddEvent(ctx context.Context, event models.Event, header *multipart.FileHeader, file *multipart.File) (models.Event, error) {
+	path := ""
+	if header != nil && file != nil {
+		path, err := s.ImageDB.SaveImage(ctx, *header, *file)
+		if err != nil {
+			return models.Event{}, err
+		}
+
+		event.ImageURL = path
 	}
 
-	event.ImageURL = path
-	event, err = s.EventDB.AddEvent(ctx, event)
+	event, err := s.EventDB.AddEvent(ctx, event)
 	if err != nil {
-		s.ImageDB.DeleteImage(ctx, path)
+		if path != "" {
+			s.ImageDB.DeleteImage(ctx, path)
+		}
 		return models.Event{}, err
 	}
 	return event, err
@@ -95,14 +102,44 @@ func (s *EventService) GetEventByID(ctx context.Context, ID int) (models.Event, 
 	return s.EventDB.GetEventByID(ctx, ID)
 }
 
-func (s *EventService) UpdateEvent(ctx context.Context, event models.Event) error {
+func (s *EventService) SearchEvents(ctx context.Context, params models.SearchParams, page, limit int) ([]models.Event, error) {
+	offset := (page - 1) * limit
+
+	for i, tag := range params.Tags {
+		params.Tags[i] = strings.ToLower(tag)
+	}
+	return s.EventDB.SearchEvents(ctx, params, limit, offset)
+}
+
+func (s *EventService) UpdateEvent(ctx context.Context, event models.Event, header *multipart.FileHeader, file *multipart.File) (models.Event, error) {
 	dbEvent, err := s.EventDB.GetEventByID(ctx, event.ID)
 	if err != nil {
-		return err
+		return models.Event{}, err
 	}
 
 	if dbEvent.AuthorID != event.AuthorID {
-		return models.ErrAccessDenied
+		return models.Event{}, models.ErrAccessDenied
 	}
-	return s.EventDB.UpdateEvent(ctx, event)
+	path := ""
+	if header != nil && file != nil {
+		path, err := s.ImageDB.SaveImage(ctx, *header, *file)
+		if err != nil {
+			return models.Event{}, err
+		}
+
+		event.ImageURL = path
+	}
+
+	event, err = s.EventDB.UpdateEvent(ctx, event)
+	if err != nil {
+		if path != "" {
+			s.ImageDB.DeleteImage(ctx, path)
+		}
+		return models.Event{}, err
+	}
+
+	if dbEvent.ImageURL != "" && file != nil {
+		err = s.ImageDB.DeleteImage(ctx, dbEvent.ImageURL)
+	}
+	return event, nil
 }

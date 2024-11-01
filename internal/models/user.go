@@ -10,8 +10,8 @@ type User struct {
 	ImageURL string `json:"image"`
 }
 
-type RegisterDTO struct {
+type NewUserData struct {
 	User   User
-	Header multipart.FileHeader
-	File   multipart.File
+	Header *multipart.FileHeader
+	File   *multipart.File
 }

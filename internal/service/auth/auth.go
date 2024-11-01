@@ -18,7 +18,7 @@ type UserDB interface {
 	GetUserByID(ctx context.Context, ID int) (models.User, error)
 	CheckCredentials(ctx context.Context, username string, password string) (models.User, error)
 	UserExists(ctx context.Context, username, email string) (bool, error)
-	UpdateUser(ctx context.Context, user models.User) error
+	UpdateUser(ctx context.Context, user models.User) (models.User, error)
 }
 
 type SessionDB interface {
@@ -29,6 +29,7 @@ type SessionDB interface {
 
 type ImageDB interface {
 	SaveImage(ctx context.Context, header multipart.FileHeader, file multipart.File) (string, error)
+	DeleteImage(ctx context.Context, imagePath string) error
 }
 
 func NewService(userDB UserDB, sessionDB SessionDB, imageDB ImageDB) authService {
@@ -39,8 +40,33 @@ func (a *authService) CheckSession(ctx context.Context, cookie string) (models.S
 	return a.SessionDB.CheckSession(ctx, cookie)
 }
 
-func (a *authService) UpdateUser(ctx context.Context, user models.User) error {
-	return a.UserDB.UpdateUser(ctx, user)
+func (a *authService) UpdateUser(ctx context.Context, data models.NewUserData) (models.User, error) {
+	user := data.User
+	oldData, err := a.UserDB.GetUserByID(ctx, user.ID)
+	if err != nil {
+		return models.User{}, err
+	}
+
+	if data.File != nil && data.Header != nil {
+		path, err := a.ImageDB.SaveImage(ctx, *data.Header, *data.File)
+		if err != nil {
+			return models.User{}, err
+		}
+		user.ImageURL = path
+	}
+
+	user, err = a.UserDB.UpdateUser(ctx, user)
+	if err != nil {
+		if user.ImageURL != "" {
+			a.ImageDB.DeleteImage(ctx, user.ImageURL)
+		}
+		return models.User{}, err
+	}
+
+	if oldData.ImageURL != "" && data.File != nil {
+		err = a.ImageDB.DeleteImage(ctx, oldData.ImageURL)
+	}
+	return user, nil
 }
 
 func (a *authService) GetUserByID(ctx context.Context, ID int) (models.User, error) {
@@ -51,14 +77,17 @@ func (a *authService) CheckCredentials(ctx context.Context, creds models.Credent
 	return a.UserDB.CheckCredentials(ctx, creds.Username, creds.Password)
 }
 
-func (a *authService) Register(ctx context.Context, registerDTO models.RegisterDTO) (models.User, error) {
-	path, err := a.ImageDB.SaveImage(ctx, registerDTO.Header, registerDTO.File)
-	if err != nil {
-		return models.User{}, err
-	}
+func (a *authService) Register(ctx context.Context, data models.NewUserData) (models.User, error) {
+	user := data.User
 
-	user := registerDTO.User
-	user.ImageURL = path
+	if data.Header != nil && data.File != nil {
+		path, err := a.ImageDB.SaveImage(ctx, *data.Header, *data.File)
+		if err != nil {
+			return models.User{}, err
+		}
+
+		user.ImageURL = path
+	}
 	userExists, err := a.UserDB.UserExists(ctx, user.Username, user.Email)
 	if err != nil {
 		return models.User{}, err
@@ -67,7 +96,16 @@ func (a *authService) Register(ctx context.Context, registerDTO models.RegisterD
 	if userExists {
 		return models.User{}, models.ErrEmailIsUsed
 	}
-	return a.UserDB.AddUser(ctx, user)
+
+	user, err = a.UserDB.AddUser(ctx, user)
+	if err != nil {
+		if user.ImageURL != "" {
+			a.ImageDB.DeleteImage(ctx, user.ImageURL)
+		}
+		return models.User{}, err
+	}
+
+	return user, nil
 }
 
 func (a *authService) CreateSession(ctx context.Context, ID int) (models.Session, error) {

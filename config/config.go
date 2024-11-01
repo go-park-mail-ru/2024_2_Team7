@@ -7,7 +7,7 @@ import (
 	"kudago/internal/repository/postgres"
 
 	imageRepository "kudago/internal/repository/images"
-	sessionRepository "kudago/internal/repository/session"
+	sessionRepository "kudago/internal/repository/redis"
 )
 
 const (

@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"regexp"
 
@@ -24,9 +23,9 @@ type AuthHandler struct {
 type AuthService interface {
 	CheckSession(ctx context.Context, cookie string) (models.Session, error)
 	GetUserByID(ctx context.Context, ID int) (models.User, error)
-	UpdateUser(ctx context.Context, user models.User) error
+	UpdateUser(ctx context.Context, data models.NewUserData) (models.User, error)
 	CheckCredentials(ctx context.Context, creds models.Credentials) (models.User, error)
-	Register(ctx context.Context, registerDTO models.RegisterDTO) (models.User, error)
+	Register(ctx context.Context, registerDTO models.NewUserData) (models.User, error)
 	CreateSession(ctx context.Context, ID int) (models.Session, error)
 	DeleteSession(ctx context.Context, token string) error
 }
@@ -114,13 +113,16 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	r.ParseMultipartForm(1 << 20)
 	file, header, err := r.FormFile("image")
 	if err != nil {
-		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
-		return
-	}
-	err = utils.GenerateFilename(header)
-	if err != nil {
-		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidImage)
-		return
+		if err != http.ErrMissingFile {
+			utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
+			return
+		}
+	} else {
+		err = utils.GenerateFilename(header)
+		if err != nil {
+			utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidImage)
+			return
+		}
 	}
 
 	user := models.User{
@@ -129,10 +131,10 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		Password: req.Password,
 	}
 
-	registerDTO := models.RegisterDTO{
+	registerDTO := models.NewUserData{
 		User:   user,
-		Header: *header,
-		File:   file,
+		Header: header,
+		File:   &file,
 	}
 
 	user, err = h.service.Register(r.Context(), registerDTO)
@@ -223,7 +225,6 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 
 	err := h.service.DeleteSession(r.Context(), session.Token)
 	if err != nil {
-		fmt.Println(err)
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
@@ -292,48 +293,62 @@ func (h *AuthHandler) Profile(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} httpErrors.HttpError "Unauthorized"
 // @Router /profile [put]
 func (h *AuthHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	// session, ok := utils.GetSessionFromContext(r.Context())
-	// if !ok {
-	// 	utils.WriteResponse(w, http.StatusUnauthorized, httpErrors.ErrUnauthorized)
-	// 	return
-	// }
+	session, ok := utils.GetSessionFromContext(r.Context())
+	if !ok {
+		utils.WriteResponse(w, http.StatusUnauthorized, httpErrors.ErrUnauthorized)
+		return
+	}
 
-	// var req UpdateRequest
-	// err := json.NewDecoder(r.Body).Decode(&req)
-	// if err != nil {
-	// 	fmt.Println(err, req)
-	// 	utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
-	// 	return
-	// }
+	var req UpdateRequest
+	jsonData := r.FormValue("json")
+	err := json.Unmarshal([]byte(jsonData), &req)
+	if err != nil {
+		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
+		return
+	}
 
-	// _, err = govalidator.ValidateStruct(&req)
-	// if err != nil {
-	// 	utils.ProcessValidationErrors(w, err)
-	// 	return
-	// }
+	_, err = govalidator.ValidateStruct(&req)
+	if err != nil {
+		utils.ProcessValidationErrors(w, err)
+		return
+	}
 
-	// ImageURL, err := utils.SaveImage(r)
-	// //TODO errors
-	// if err != nil {
-	// 	utils.WriteResponse(w, http.StatusBadRequest, err)
-	// 	return
-	// }
+	// TODO errors
+	r.ParseMultipartForm(1 << 20)
+	file, header, err := r.FormFile("image")
+	if err != nil {
+		if err != http.ErrMissingFile {
+			utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
+			return
+		}
+	} else {
+		err = utils.GenerateFilename(header)
+		if err != nil {
+			utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidImage)
+			return
+		}
+	}
 
-	// user := models.User{
-	// 	ID: session.UserID,
-	// 	Username: req.Username,
-	// 	Email:    req.Email,
-	// 	ImageURL: ImageURL,
-	// }
+	user := models.User{
+		ID:       session.UserID,
+		Username: req.Username,
+		Email:    req.Email,
+	}
 
-	// err = h.service.UpdateUser(r.Context(), user)
-	// if err != nil {
-	// 	utils.WriteResponse(w, http.StatusNotFound, httpErrors.ErrUserNotFound)
-	// 	return
-	// }
-	// userResponse := userToProfileResponse(user)
+	data := models.NewUserData{
+		User:   user,
+		Header: header,
+		File:   &file,
+	}
 
-	// utils.WriteResponse(w, http.StatusOK, userResponse)
+	newUserData, err := h.service.UpdateUser(r.Context(), data)
+	if err != nil {
+		utils.WriteResponse(w, http.StatusNotFound, httpErrors.ErrUserNotFound)
+		return
+	}
+	userResponse := userToProfileResponse(newUserData)
+
+	utils.WriteResponse(w, http.StatusOK, userResponse)
 }
 
 func (h *AuthHandler) setSessionCookie(w http.ResponseWriter, r *http.Request, ID int) {
