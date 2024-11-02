@@ -2,16 +2,16 @@ package main
 
 import (
 	"context"
+	"kudago/internal/db"
 	"log"
 	"net/http"
-
-	"kudago/internal/db"
 
 	"kudago/config"
 	_ "kudago/docs"
 	"kudago/internal/http/auth"
 	"kudago/internal/http/events"
 	"kudago/internal/middleware"
+	csrfRepository "kudago/internal/repository/csrf"
 	eventRepository "kudago/internal/repository/events"
 	sessionRepository "kudago/internal/repository/session"
 	userRepository "kudago/internal/repository/users"
@@ -33,6 +33,7 @@ import (
 
 func main() {
 	port := config.LoadConfig()
+	encryptionKey := config.LoadEncriptionKey()
 
 	logger, err := zap.NewProduction()
 	if err != nil {
@@ -55,9 +56,10 @@ func main() {
 
 	userDB := userRepository.NewDB(pool)
 	sessionDB := sessionRepository.NewDB(redisClient)
+	csrfDB := csrfRepository.NewDB(redisClient)
 	eventDB := eventRepository.NewDB(pool)
 
-	authService := authService.NewService(userDB, sessionDB)
+	authService := authService.NewService(userDB, sessionDB, csrfDB)
 	eventService := eventService.NewService(eventDB)
 
 	authHandler := auth.NewAuthHandler(&authService)
@@ -98,7 +100,8 @@ func main() {
 
 	handlerWithAuth := middleware.AuthMiddleware(whitelist, authHandler, r)
 	handlerWithCORS := middleware.CORSMiddleware(handlerWithAuth)
-	handlerWithLogging := middleware.LoggingMiddleware(handlerWithCORS, sugar)
+	handlerWithCSRF := middleware.CSRFMiddleware(handlerWithCORS, authHandler, encryptionKey)
+	handlerWithLogging := middleware.LoggingMiddleware(handlerWithCSRF, sugar)
 	handler := middleware.PanicMiddleware(handlerWithLogging)
 
 	err = http.ListenAndServe(":"+port, handler)

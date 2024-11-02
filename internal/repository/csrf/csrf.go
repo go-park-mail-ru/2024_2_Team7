@@ -1,6 +1,7 @@
-package authService
+package csrf
 
 import (
+	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
@@ -8,25 +9,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"kudago/internal/models"
 	"time"
+
+	"github.com/redis/go-redis/v9"
+	"kudago/internal/models"
 )
 
-type CryptToken struct {
-	encryptionKey []byte
+const CSRFTokenExpTime = 15 * time.Minute
+
+type csrfDB struct {
+	client *redis.Client
 }
 
-func NewAesCryptHashToken(secret string) (*CryptToken, error) {
-	key := []byte(secret)
-	_, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, fmt.Errorf("cypher problem %v", err)
-	}
-	return &CryptToken{encryptionKey: key}, nil
+func NewDB(client *redis.Client) *csrfDB {
+	return &csrfDB{client: client}
 }
 
-func (tk *CryptToken) Create(s *models.Session, tokenExpTime int64) (string, error) {
-	block, err := aes.NewCipher(tk.encryptionKey)
+func (db *csrfDB) CreateCSRF(ctx context.Context, encryptionKey []byte, s *models.Session) (string, error) {
+	block, err := aes.NewCipher(encryptionKey)
 	if err != nil {
 		return "", err
 	}
@@ -41,33 +41,56 @@ func (tk *CryptToken) Create(s *models.Session, tokenExpTime int64) (string, err
 		return "", err
 	}
 
-	td := &models.TokenData{SessionToken: s.Token, UserID: s.UserID, Exp: tokenExpTime}
+	tokenExpTime := time.Now().Add(CSRFTokenExpTime)
+	td := models.TokenData{
+		SessionToken: s.Token,
+		UserID:       s.UserID,
+		Exp:          tokenExpTime,
+	}
 	data, _ := json.Marshal(td)
 	ciphertext := aesgcm.Seal(nil, nonce, data, nil)
 
-	res := append([]byte(nil), nonce...)
-	res = append(res, ciphertext...)
-
+	res := append(nonce, ciphertext...)
 	token := base64.StdEncoding.EncodeToString(res)
+
+	err = db.client.Set(ctx, PrefixedKey(s.Token), token, CSRFTokenExpTime).Err()
+	if err != nil {
+		return "", fmt.Errorf("failed to store token in Redis: %v", err)
+	}
+
 	return token, nil
 }
 
-func (tk *CryptToken) Check(s *models.Session, inputToken string) (bool, error) {
-	block, err := aes.NewCipher(tk.encryptionKey)
+func (db *csrfDB) CheckCSRF(ctx context.Context, encryptionKey []byte, s *models.Session, inputToken string) (bool, error) {
+	storedToken, err := db.client.Get(ctx, PrefixedKey(s.Token)).Result()
+	if err == redis.Nil {
+		return false, fmt.Errorf("token not found in Redis")
+	} else if err != nil {
+		return false, fmt.Errorf("failed to get token from Redis: %v", err)
+	}
+
+	if storedToken != inputToken {
+		return false, fmt.Errorf("invalid token")
+	}
+
+	block, err := aes.NewCipher(encryptionKey)
 	if err != nil {
 		return false, err
 	}
+
 	aesgcm, err := cipher.NewGCM(block)
 	if err != nil {
 		return false, err
 	}
+
 	ciphertext, err := base64.StdEncoding.DecodeString(inputToken)
 	if err != nil {
 		return false, err
 	}
+
 	nonceSize := aesgcm.NonceSize()
 	if len(ciphertext) < nonceSize {
-		return false, fmt.Errorf("ciphertext too short")
+		return false, fmt.Errorf("short ciphertext")
 	}
 
 	nonce, ciphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
@@ -82,9 +105,13 @@ func (tk *CryptToken) Check(s *models.Session, inputToken string) (bool, error) 
 		return false, fmt.Errorf("bad json: %v", err)
 	}
 
-	if td.Exp < time.Now().Unix() {
+	if td.Exp.Unix() < time.Now().Unix() {
 		return false, fmt.Errorf("token expired")
 	}
 
 	return s.Token == td.SessionToken && s.UserID == td.UserID, nil
+}
+
+func PrefixedKey(key string) string {
+	return fmt.Sprintf("%s:%s", key, "csrf")
 }

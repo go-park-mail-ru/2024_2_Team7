@@ -9,6 +9,7 @@ import (
 type authService struct {
 	UserDB    UserDB
 	SessionDB SessionDB
+	CsrfDB    CsrfDB
 }
 
 type UserDB interface {
@@ -24,8 +25,13 @@ type SessionDB interface {
 	DeleteSession(ctx context.Context, token string)
 }
 
-func NewService(userDB UserDB, sessionDB SessionDB) authService {
-	return authService{UserDB: userDB, SessionDB: sessionDB}
+type CsrfDB interface {
+	CreateCSRF(ctx context.Context, encryptionKey []byte, s *models.Session) (string, error)
+	CheckCSRF(ctx context.Context, encryptionKey []byte, s *models.Session, inputToken string) (bool, error)
+}
+
+func NewService(userDB UserDB, sessionDB SessionDB, csrfDB CsrfDB) authService {
+	return authService{UserDB: userDB, SessionDB: sessionDB, CsrfDB: csrfDB}
 }
 
 func (a *authService) CheckSession(ctx context.Context, cookie string) (models.Session, bool) {
@@ -61,4 +67,11 @@ func (a *authService) CreateSession(ctx context.Context, ID int) (models.Session
 
 func (a *authService) DeleteSession(ctx context.Context, token string) {
 	a.SessionDB.DeleteSession(ctx, token)
+}
+func (a *authService) CreateCSRF(ctx context.Context, encryptionKey []byte, s *models.Session) (string, error) {
+	return a.CsrfDB.CreateCSRF(ctx, encryptionKey, s)
+}
+
+func (a *authService) CheckCSRF(ctx context.Context, encryptionKey []byte, s *models.Session, inputToken string) (bool, error) {
+	return a.CsrfDB.CheckCSRF(ctx, encryptionKey, s, inputToken)
 }

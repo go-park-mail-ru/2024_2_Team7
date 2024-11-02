@@ -28,6 +28,8 @@ type AuthService interface {
 	Register(ctx context.Context, user models.User) (models.User, error)
 	CreateSession(ctx context.Context, ID int) (models.Session, error)
 	DeleteSession(ctx context.Context, token string)
+	CreateCSRF(ctx context.Context, encryptionKey []byte, s *models.Session) (string, error)
+	CheckCSRF(ctx context.Context, encryptionKey []byte, s *models.Session, inputToken string) (bool, error)
 }
 
 type RegisterRequest struct {
@@ -290,4 +292,11 @@ func userToProfileResponse(user models.User) ProfileResponse {
 
 func (h *AuthHandler) CheckSessionMiddleware(ctx context.Context, cookie string) (models.Session, bool) {
 	return h.service.CheckSession(ctx, cookie)
+}
+func (h *AuthHandler) CheckCSRFMiddleware(ctx context.Context, encryptionKey []byte, s *models.Session, inputToken string) (bool, error) {
+	return h.service.CheckCSRF(ctx, encryptionKey, s, inputToken)
+}
+
+func (h *AuthHandler) CreateCSRFMiddleware(ctx context.Context, encryptionKey []byte, s *models.Session) (string, error) {
+	return h.service.CreateCSRF(ctx, encryptionKey, s)
 }

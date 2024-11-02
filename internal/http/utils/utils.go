@@ -22,6 +22,10 @@ type sessionKeyType struct{}
 
 var sessionKey sessionKeyType
 
+type csrfKeyType struct{}
+
+var csrfKey sessionKeyType
+
 type requestIDKeyType struct{}
 
 var requestIDKey requestIDKeyType
@@ -41,6 +45,18 @@ func GetSessionFromContext(ctx context.Context) (models.Session, bool) {
 
 func SetSessionInContext(ctx context.Context, session models.Session) context.Context {
 	return context.WithValue(ctx, sessionKey, session)
+}
+
+func GetCSRFFromContext(ctx context.Context) (models.TokenData, bool) {
+	csrfKey, ok := ctx.Value(csrfKey).(models.TokenData)
+	if !ok {
+		return csrfKey, false
+	}
+	return csrfKey, true
+}
+
+func SetCSRFInContext(ctx context.Context, token models.TokenData) context.Context {
+	return context.WithValue(ctx, csrfKey, token)
 }
 
 func GetRequestIDFromContext(ctx context.Context) string {

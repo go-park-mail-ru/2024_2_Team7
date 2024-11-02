@@ -18,3 +18,8 @@ func LoadConfig() string {
 	log.Printf("Используется порт: %s", port)
 	return port
 }
+
+func LoadEncriptionKey() []byte {
+	key := os.Getenv("ENCRYPTION_KEY")
+	return []byte(key)
+}
