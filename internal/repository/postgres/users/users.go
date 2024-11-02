@@ -2,8 +2,9 @@ package userRepository
 
 import (
 	"context"
-	"errors"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"kudago/internal/models"
 
@@ -47,7 +48,7 @@ func (d *UserDB) AddUser(ctx context.Context, user models.User) (models.User, er
 		&userInfo.CreatedAt,
 	)
 	if err != nil {
-		return models.User{}, err
+		return models.User{}, errors.Wrap(err, models.LevelDB)
 	}
 	userInfo.Username = user.Username
 	userInfo.Email = user.Email
@@ -72,9 +73,9 @@ func (d UserDB) CheckCredentials(ctx context.Context, username, password string)
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return models.User{}, models.ErrUserNotFound
+			return models.User{}, errors.Wrap(models.ErrUserNotFound, models.LevelDB)
 		}
-		return models.User{}, err
+		return models.User{}, errors.Wrap(err, models.LevelDB)
 	}
 	user := toDomainUser(userInfo)
 	return user, nil
@@ -93,7 +94,7 @@ func (d UserDB) GetUserByID(ctx context.Context, ID int) (models.User, error) {
 	)
 
 	if err == pgx.ErrNoRows {
-		return models.User{}, models.ErrUserNotFound
+		return models.User{}, errors.Wrap(models.ErrUserNotFound, models.LevelDB)
 	}
 
 	user := toDomainUser(userInfo)
@@ -109,35 +110,66 @@ func (d *UserDB) UserExists(ctx context.Context, username, email string) (bool, 
 		if errors.Is(err, pgx.ErrNoRows) {
 			return false, nil
 		}
-		return false, err
+		return false, errors.Wrap(err, models.LevelDB)
+	}
+
+	return true, nil
+}
+
+const checkUsernameDuplicateQuery = `
+	SELECT id 
+	FROM "USER"
+	WHERE username = $1  AND id != $2
+`
+
+func (db *UserDB) CheckUsername(ctx context.Context, username string, ID int) (bool, error) {
+	var exists int
+	err := db.pool.QueryRow(ctx, checkUsernameDuplicateQuery, username, ID).Scan(&exists)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return false, nil
+		}
+		return false, errors.Wrap(err, models.LevelDB)
+	}
+
+	return true, nil
+}
+
+const checkEmailDuplicateQuery = `
+	SELECT id 
+	FROM "USER"
+	WHERE email = $1  AND id != $2
+`
+
+func (db *UserDB) CheckEmail(ctx context.Context, email string, ID int) (bool, error) {
+	var exists int
+	err := db.pool.QueryRow(ctx, checkEmailDuplicateQuery, email, ID).Scan(&exists)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return false, nil
+		}
+		return false, errors.Wrap(err, models.LevelDB)
 	}
 
 	return true, nil
 }
 
 const updateUserQuery = `
-UPDATE "USER"
-SET 
-username = COALESCE($2, username), 
-email = COALESCE($3, email), 
-URL_to_avatar = COALESCE($4, URL_to_avatar), 
-modified_at = NOW()
-WHERE id = $1 
-RETURNING id, username, email, URL_to_avatar
-`
-
-// TODO проверка какой из полей уже занят пока вот это
-const checkDuplicateQuery = `
-	SELECT id 
-	FROM "USER"
-	WHERE (username = $1 OR email = $2) AND id != $3
+	UPDATE "USER"
+	SET 
+		username = COALESCE($2, username), 
+		email = COALESCE($3, email), 
+		URL_to_avatar = COALESCE($4, URL_to_avatar), 
+		modified_at = NOW()
+	WHERE id = $1 
+	RETURNING id, username, email, URL_to_avatar
 `
 
 func (db *UserDB) UpdateUser(ctx context.Context, updatedUser models.User) (models.User, error) {
-	row := db.pool.QueryRow(ctx, checkDuplicateQuery, updatedUser.Username, updatedUser.Email, updatedUser.ID)
 	var existingID int
+	row := db.pool.QueryRow(ctx, checkEmailDuplicateQuery, updatedUser.Email, updatedUser.ID)
 	if err := row.Scan(&existingID); err != pgx.ErrNoRows && err != nil {
-		return models.User{}, err
+		return models.User{}, errors.Wrap(err, models.LevelDB)
 	}
 
 	if existingID != 0 {
@@ -152,7 +184,7 @@ func (db *UserDB) UpdateUser(ctx context.Context, updatedUser models.User) (mode
 		nilIfEmpty(updatedUser.ImageURL),
 	).Scan(&user.ID, &user.Username, &user.Email, &user.ImageURL)
 	if err != nil {
-		return models.User{}, err
+		return models.User{}, errors.Wrap(err, models.LevelDB)
 	}
 
 	return user, nil

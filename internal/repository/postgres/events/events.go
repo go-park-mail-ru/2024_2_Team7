@@ -2,9 +2,9 @@ package eventRepository
 
 import (
 	"context"
-	"errors"
 	"time"
 
+	"github.com/pkg/errors"
 	"kudago/internal/models"
 
 	"github.com/jackc/pgx/v5"
@@ -52,7 +52,7 @@ const selectUpcomingEventsQuery = `
 func (db *EventDB) GetUpcomingEvents(ctx context.Context, offset, limit int) ([]models.Event, error) {
 	rows, err := db.pool.Query(ctx, selectUpcomingEventsQuery, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, models.LevelDB)
 	}
 	defer rows.Close()
 
@@ -74,7 +74,7 @@ func (db *EventDB) GetUpcomingEvents(ctx context.Context, offset, limit int) ([]
 			&eventInfo.ImageURL,
 		)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, models.LevelDB)
 		}
 		event, err := db.toDomainEvent(ctx, eventInfo)
 		if err != nil {
@@ -102,7 +102,7 @@ const getEventsByTagsQuery = `
 func (db *EventDB) GetEventsByTags(ctx context.Context, tags []string) ([]models.Event, error) {
 	rows, err := db.pool.Query(ctx, getEventsByTagsQuery, tags)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, models.LevelDB)
 	}
 	defer rows.Close()
 
@@ -124,7 +124,7 @@ func (db *EventDB) GetEventsByTags(ctx context.Context, tags []string) ([]models
 			&eventInfo.ImageURL,
 		)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, models.LevelDB)
 		}
 
 		event, err := db.toDomainEvent(ctx, eventInfo)
@@ -166,9 +166,9 @@ func (db *EventDB) GetEventByID(ctx context.Context, ID int) (models.Event, erro
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return models.Event{}, models.ErrEventNotFound
+			return models.Event{}, errors.Wrap(models.ErrEventNotFound, models.LevelDB)
 		}
-		return models.Event{}, err
+		return models.Event{}, errors.Wrap(err, models.LevelDB)
 	}
 
 	event, err := db.toDomainEvent(ctx, eventInfo)
@@ -215,7 +215,7 @@ func (db *EventDB) GetEventsByCategory(ctx context.Context, categoryID int) ([]m
 			&eventInfo.ImageURL,
 		)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, models.LevelDB)
 		}
 
 		event, err := db.toDomainEvent(ctx, eventInfo)
@@ -232,7 +232,7 @@ const deleteEventQuery = `DELETE FROM event WHERE id=$1`
 
 func (db *EventDB) DeleteEvent(ctx context.Context, ID int) error {
 	_, err := db.pool.Exec(ctx, deleteEventQuery, ID)
-	return err
+	return errors.Wrap(err, models.LevelDB)
 }
 
 const updateEventQuery = `
@@ -253,7 +253,7 @@ const updateEventQuery = `
 func (db *EventDB) UpdateEvent(ctx context.Context, updatedEvent models.Event) (models.Event, error) {
 	tx, err := db.pool.Begin(ctx)
 	if err != nil {
-		return models.Event{}, err
+		return models.Event{}, errors.Wrap(err, models.LevelDB)
 	}
 	defer tx.Rollback(ctx)
 
@@ -280,31 +280,31 @@ func (db *EventDB) UpdateEvent(ctx context.Context, updatedEvent models.Event) (
 		&eventInfo.UserID,
 	)
 	if err != nil {
-		return models.Event{}, err
+		return models.Event{}, errors.Wrap(err, models.LevelDB)
 	}
 
 	if len(updatedEvent.Tag) > 0 {
 		err = db.updateTagsForEvent(ctx, tx, updatedEvent.ID, updatedEvent.Tag)
 		if err != nil {
-			return models.Event{}, err
+			return models.Event{}, errors.Wrap(err, models.LevelDB)
 		}
 	}
 
 	if updatedEvent.ImageURL != "" {
 		err = db.updateMediaURL(ctx, tx, updatedEvent.ID, updatedEvent.ImageURL)
 		if err != nil {
-			return models.Event{}, err
+			return models.Event{}, errors.Wrap(err, models.LevelDB)
 		}
 	}
 
 	err = tx.Commit(ctx)
 	if err != nil {
-		return models.Event{}, err
+		return models.Event{}, errors.Wrap(err, models.LevelDB)
 	}
 
 	event, err := db.toDomainEvent(ctx, eventInfo)
 	if err != nil {
-		return models.Event{}, err
+		return models.Event{}, errors.Wrap(err, models.LevelDB)
 	}
 	event.Tag = updatedEvent.Tag
 	event.ImageURL = updatedEvent.ImageURL
@@ -316,7 +316,7 @@ const deleteEventTagsQuery = `DELETE FROM event_tag WHERE event_id = $1`
 func (db *EventDB) updateTagsForEvent(ctx context.Context, tx pgx.Tx, eventID int, tags []string) error {
 	_, err := tx.Exec(ctx, deleteEventTagsQuery, eventID)
 	if err != nil {
-		return err
+		return errors.Wrap(err, models.LevelDB)
 	}
 
 	return db.addTagsToEvent(ctx, tx, eventID, tags)
@@ -327,7 +327,7 @@ const deleteMediaURLQuery = `DELETE FROM media_url WHERE event_id = $1`
 func (db *EventDB) updateMediaURL(ctx context.Context, tx pgx.Tx, eventID int, imageURL string) error {
 	_, err := tx.Exec(ctx, deleteMediaURLQuery, eventID)
 	if err != nil {
-		return err
+		return errors.Wrap(err, models.LevelDB)
 	}
 
 	return db.addMediaURL(ctx, tx, eventID, imageURL)
@@ -341,14 +341,14 @@ const addEventQuery = `
 func (db *EventDB) AddEvent(ctx context.Context, event models.Event) (models.Event, error) {
 	tx, err := db.pool.Begin(ctx)
 	if err != nil {
-		return models.Event{}, err
+		return models.Event{}, errors.Wrap(err, models.LevelDB)
 	}
 	defer tx.Rollback(ctx)
 
 	var id int
 	err = db.pool.QueryRow(ctx, addEventQuery, event.Title, event.Description, event.EventStart, event.EventEnd, event.Location, event.Capacity, event.AuthorID, event.CategoryID).Scan(&id)
 	if err != nil {
-		return models.Event{}, err
+		return models.Event{}, errors.Wrap(err, models.LevelDB)
 	}
 
 	event.ID = id
@@ -364,7 +364,7 @@ func (db *EventDB) AddEvent(ctx context.Context, event models.Event) (models.Eve
 
 	err = tx.Commit(ctx)
 	if err != nil {
-		return models.Event{}, err
+		return models.Event{}, errors.Wrap(err, models.LevelDB)
 	}
 	return db.GetEventByID(ctx, id)
 }
@@ -382,20 +382,20 @@ func (db *EventDB) addTagsToEvent(ctx context.Context, tx pgx.Tx, eventID int, t
 	for _, tag := range tags {
 		_, err := tx.Exec(ctx, insertTagsQuery, tag)
 		if err != nil {
-			return err
+			return errors.Wrap(err, models.LevelDB)
 		}
 	}
 
 	rows, err := tx.Query(ctx, selectTagIDsQuery, tags)
 	if err != nil {
-		return err
+		return errors.Wrap(err, models.LevelDB)
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		var id int
 		if err := rows.Scan(&id); err != nil {
-			return err
+			return errors.Wrap(err, models.LevelDB)
 		}
 		tagIDs = append(tagIDs, id)
 	}
@@ -422,7 +422,7 @@ func (db *EventDB) linkTagsToEvent(ctx context.Context, tx pgx.Tx, eventID int, 
 	for range tagIDs {
 		_, err := br.Exec()
 		if err != nil {
-			return err
+			return errors.Wrap(err, models.LevelDB)
 		}
 	}
 
@@ -436,7 +436,7 @@ const insertMediaURL = `
 func (db *EventDB) addMediaURL(ctx context.Context, tx pgx.Tx, eventID int, imageURL string) error {
 	_, err := tx.Exec(ctx, insertMediaURL, eventID, imageURL)
 	if err != nil {
-		return err
+		return errors.Wrap(err, models.LevelDB)
 	}
 	return nil
 }
@@ -467,7 +467,7 @@ const getCategoriesQuery = `SELECT * FROM category`
 func (db *EventDB) GetCategories(ctx context.Context) ([]models.Category, error) {
 	rows, err := db.pool.Query(ctx, getCategoriesQuery)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, models.LevelDB)
 	}
 	defer rows.Close()
 
@@ -479,7 +479,7 @@ func (db *EventDB) GetCategories(ctx context.Context) ([]models.Category, error)
 			&category.Name,
 		)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, models.LevelDB)
 		}
 		categories = append(categories, category)
 	}
@@ -503,7 +503,7 @@ const selectPastEventsQuery = `
 func (db *EventDB) GetPastEvents(ctx context.Context, offset, limit int) ([]models.Event, error) {
 	rows, err := db.pool.Query(ctx, selectPastEventsQuery, limit, offset)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, models.LevelDB)
 	}
 	defer rows.Close()
 
@@ -525,7 +525,7 @@ func (db *EventDB) GetPastEvents(ctx context.Context, offset, limit int) ([]mode
 			&eventInfo.ImageURL,
 		)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, models.LevelDB)
 		}
 		event, err := db.toDomainEvent(ctx, eventInfo)
 		if err != nil {
@@ -539,8 +539,8 @@ func (db *EventDB) GetPastEvents(ctx context.Context, offset, limit int) ([]mode
 
 const getEventsByUserQuery = `
 	SELECT event.id, event.title, event.description, event.event_start, event.event_finish, 
-	event.location, event.capacity, event.created_at, event.user_id, event.category_id, 
-	COALESCE(array_agg(COALESCE(tag.name, '')), '{}') AS tags, media_url.url AS media_link
+		event.location, event.capacity, event.created_at, event.user_id, event.category_id, 
+		COALESCE(array_agg(COALESCE(tag.name, '')), '{}') AS tags, media_url.url AS media_link
 	FROM event
 	LEFT JOIN event_tag ON event.id = event_tag.event_id
 	LEFT JOIN tag ON tag.id = event_tag.tag_id
@@ -552,7 +552,7 @@ const getEventsByUserQuery = `
 func (db *EventDB) GetEventsByUser(ctx context.Context, userID int) ([]models.Event, error) {
 	rows, err := db.pool.Query(ctx, getEventsByUserQuery, userID)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, models.LevelDB)
 	}
 	defer rows.Close()
 
@@ -574,7 +574,7 @@ func (db *EventDB) GetEventsByUser(ctx context.Context, userID int) ([]models.Ev
 			&eventInfo.ImageURL,
 		)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, models.LevelDB)
 		}
 
 		event, err := db.toDomainEvent(ctx, eventInfo)
@@ -619,7 +619,7 @@ func (db *EventDB) SearchEvents(ctx context.Context, params models.SearchParams,
 
 	rows, err := db.pool.Query(ctx, baseSearchQuery, args...)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, models.LevelDB)
 	}
 	defer rows.Close()
 
@@ -641,7 +641,7 @@ func (db *EventDB) SearchEvents(ctx context.Context, params models.SearchParams,
 			&eventInfo.ImageURL,
 		)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, models.LevelDB)
 		}
 
 		event, err := db.toDomainEvent(ctx, eventInfo)

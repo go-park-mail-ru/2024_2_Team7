@@ -53,8 +53,8 @@ func main() {
 	authService := authService.NewService(userDB, sessionDB, imageDB)
 	eventService := eventService.NewService(eventDB, imageDB)
 
-	authHandler := auth.NewAuthHandler(&authService)
-	eventHandler := events.NewEventHandler(&eventService)
+	authHandler := auth.NewAuthHandler(&authService, appLogger)
+	eventHandler := events.NewEventHandler(&eventService, appLogger)
 
 	r := mux.NewRouter()
 

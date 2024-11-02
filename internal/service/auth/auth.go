@@ -19,6 +19,8 @@ type UserDB interface {
 	CheckCredentials(ctx context.Context, username string, password string) (models.User, error)
 	UserExists(ctx context.Context, username, email string) (bool, error)
 	UpdateUser(ctx context.Context, user models.User) (models.User, error)
+	CheckUsername(ctx context.Context, username string, ID int) (bool, error)
+	CheckEmail(ctx context.Context, email string, ID int) (bool, error)
 }
 
 type SessionDB interface {
@@ -45,6 +47,26 @@ func (a *authService) UpdateUser(ctx context.Context, data models.NewUserData) (
 	oldData, err := a.UserDB.GetUserByID(ctx, user.ID)
 	if err != nil {
 		return models.User{}, err
+	}
+
+	if user.Username != "" {
+		exists, err := a.UserDB.CheckUsername(ctx, user.Username, oldData.ID)
+		if err != nil {
+			return models.User{}, err
+		}
+		if exists {
+			return models.User{}, models.ErrUsernameIsUsed
+		}
+	}
+
+	if user.Email != "" {
+		exists, err := a.UserDB.CheckEmail(ctx, user.Email, oldData.ID)
+		if err != nil {
+			return models.User{}, err
+		}
+		if exists {
+			return models.User{}, models.ErrEmailIsUsed
+		}
 	}
 
 	if data.File != nil && data.Header != nil {
@@ -88,6 +110,7 @@ func (a *authService) Register(ctx context.Context, data models.NewUserData) (mo
 
 		user.ImageURL = path
 	}
+
 	userExists, err := a.UserDB.UserExists(ctx, user.Username, user.Email)
 	if err != nil {
 		return models.User{}, err

@@ -5,6 +5,8 @@ import (
 	"mime/multipart"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	"kudago/internal/models"
 )
 
@@ -93,7 +95,7 @@ func (s *EventService) DeleteEvent(ctx context.Context, ID, AuthorID int) error 
 	}
 
 	if dbEvent.AuthorID != AuthorID {
-		return models.ErrAccessDenied
+		return errors.Wrap(models.ErrAccessDenied, models.LevelService)
 	}
 	return s.EventDB.DeleteEvent(ctx, ID)
 }
@@ -118,7 +120,7 @@ func (s *EventService) UpdateEvent(ctx context.Context, event models.Event, head
 	}
 
 	if dbEvent.AuthorID != event.AuthorID {
-		return models.Event{}, models.ErrAccessDenied
+		return models.Event{}, errors.Wrap(models.ErrAccessDenied, models.LevelService)
 	}
 	path := ""
 	if header != nil && file != nil {

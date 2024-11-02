@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/redis/go-redis/v9"
 
 	"kudago/internal/models"
@@ -14,7 +15,7 @@ import (
 )
 
 const (
-	ExpirationTime = 24 * time.Hour
+	expirationTime = 24 * time.Hour
 )
 
 type SessionDB struct {
@@ -36,7 +37,7 @@ func NewDB(config *redisDB.RedisConfig) *SessionDB {
 
 func (db *SessionDB) CreateSession(ctx context.Context, ID int) (models.Session, error) {
 	sessionToken := generateSessionToken()
-	expiration := time.Now().Add(ExpirationTime)
+	expiration := time.Now().Add(expirationTime)
 
 	session := models.Session{
 		UserID:  ID,
@@ -44,9 +45,9 @@ func (db *SessionDB) CreateSession(ctx context.Context, ID int) (models.Session,
 		Expires: expiration,
 	}
 
-	err := db.client.Set(ctx, sessionToken, session.UserID, ExpirationTime).Err()
+	err := db.client.Set(ctx, sessionToken, session.UserID, expirationTime).Err()
 	if err != nil {
-		return models.Session{}, err
+		return models.Session{}, errors.Wrap(err, models.LevelDB)
 	}
 	return session, nil
 }
@@ -58,18 +59,18 @@ func (db *SessionDB) CheckSession(ctx context.Context, cookie string) (models.Se
 	}
 
 	if err != nil {
-		return models.Session{}, err
+		return models.Session{}, errors.Wrap(err, models.LevelDB)
 	}
 
 	userID, err := strconv.Atoi(ID)
 	if err != nil {
-		return models.Session{}, err
+		return models.Session{}, errors.Wrap(err, models.LevelDB)
 	}
 
 	session := models.Session{
 		UserID:  userID,
 		Token:   cookie,
-		Expires: time.Now().Add(ExpirationTime),
+		Expires: time.Now().Add(expirationTime),
 	}
 
 	return session, nil

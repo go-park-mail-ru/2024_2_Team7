@@ -11,6 +11,7 @@ import (
 
 	httpErrors "kudago/internal/http/errors"
 	"kudago/internal/http/utils"
+	"kudago/internal/logger"
 	"kudago/internal/models"
 
 	"github.com/asaskevich/govalidator"
@@ -18,6 +19,7 @@ import (
 
 type AuthHandler struct {
 	service AuthService
+	logger  *logger.Logger
 }
 
 type AuthService interface {
@@ -72,9 +74,10 @@ func init() {
 	})
 }
 
-func NewAuthHandler(s AuthService) *AuthHandler {
+func NewAuthHandler(s AuthService, logger *logger.Logger) *AuthHandler {
 	return &AuthHandler{
 		service: s,
+		logger:  logger,
 	}
 }
 
@@ -99,12 +102,14 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	jsonData := r.FormValue("json")
 	err := json.Unmarshal([]byte(jsonData), &req)
 	if err != nil {
+		h.logger.Error(err)
 		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
 		return
 	}
 
 	_, err = govalidator.ValidateStruct(&req)
 	if err != nil {
+		h.logger.Error(err)
 		utils.ProcessValidationErrors(w, err)
 		return
 	}
@@ -113,6 +118,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	r.ParseMultipartForm(1 << 20)
 	file, header, err := r.FormFile("image")
 	if err != nil {
+		h.logger.Error(err)
 		if err != http.ErrMissingFile {
 			utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
 			return
@@ -120,6 +126,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	} else {
 		err = utils.GenerateFilename(header)
 		if err != nil {
+			h.logger.Error(err)
 			utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidImage)
 			return
 		}
@@ -139,10 +146,12 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	user, err = h.service.Register(r.Context(), registerDTO)
 	if err != nil {
-		if errors.Is(err, &models.AuthError{}) {
+		var authErr *models.AuthError
+		if errors.As(err, &authErr) {
 			utils.WriteResponse(w, http.StatusConflict, err)
 			return
 		}
+		h.logger.Error(err)
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
@@ -178,12 +187,14 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	var req AuthRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.logger.Error(err)
 		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
 		return
 	}
 
 	_, err := govalidator.ValidateStruct(&req)
 	if err != nil {
+		h.logger.Error(err)
 		utils.ProcessValidationErrors(w, err)
 		return
 	}
@@ -195,6 +206,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.service.CheckCredentials(r.Context(), creds)
 	if err != nil {
+		h.logger.Error(err)
 		utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrWrongCredentials)
 		return
 	}
@@ -343,6 +355,12 @@ func (h *AuthHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	newUserData, err := h.service.UpdateUser(r.Context(), data)
 	if err != nil {
+		var authErr *models.AuthError
+		if errors.As(err, &authErr) {
+			utils.WriteResponse(w, http.StatusConflict, err)
+			return
+		}
+		h.logger.Error(err)
 		utils.WriteResponse(w, http.StatusNotFound, httpErrors.ErrUserNotFound)
 		return
 	}

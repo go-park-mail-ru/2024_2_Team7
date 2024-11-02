@@ -10,6 +10,13 @@ var (
 	ErrInvalidCategory    = errors.New("invalid category")
 	ErrInvalidImageFormat = errors.New("invalid image format")
 	ErrInvalidImage       = errors.New("invalid image")
+	ErrUnsupportedFile    = errors.New("unsupported file type")
+)
+
+const (
+	LevelDB      string = "DB"
+	LevelService string = "Service"
+	LevelHandler string = "Handler"
 )
 
 type AuthError struct {

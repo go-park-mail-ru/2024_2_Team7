@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"os"
 
 	"kudago/internal/repository/postgres"
@@ -38,6 +39,7 @@ func LoadConfig() (Config, error) {
 
 	postgresConfig, err := postgres.GetPostgresConfig()
 	if err != nil {
+		fmt.Println(err)
 		return Config{}, errors.New("Failed to connect to the postgres database")
 	}
 	conf.PostgresConfig = postgresConfig

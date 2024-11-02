@@ -11,6 +11,7 @@ import (
 
 	httpErrors "kudago/internal/http/errors"
 	"kudago/internal/http/utils"
+	"kudago/internal/logger"
 
 	"kudago/internal/models"
 
@@ -64,6 +65,7 @@ type GetEventsResponse struct {
 
 type EventHandler struct {
 	service EventService
+	logger  *logger.Logger
 }
 
 type SearchRequest struct {
@@ -88,9 +90,10 @@ type EventService interface {
 	SearchEvents(ctx context.Context, params models.SearchParams, page, limit int) ([]models.Event, error)
 }
 
-func NewEventHandler(s EventService) *EventHandler {
+func NewEventHandler(s EventService, logger *logger.Logger) *EventHandler {
 	return &EventHandler{
 		service: s,
+		logger:  logger,
 	}
 }
 
@@ -110,6 +113,7 @@ func (h EventHandler) GetUpcomingEvents(w http.ResponseWriter, r *http.Request) 
 
 	events, err := h.service.GetUpcomingEvents(r.Context(), page, limit)
 	if err != nil {
+		h.logger.Error(err)
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
@@ -136,6 +140,7 @@ func (h EventHandler) SearchEvents(w http.ResponseWriter, r *http.Request) {
 
 	var req SearchRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.logger.Error(err)
 		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
 		return
 	}
@@ -150,6 +155,7 @@ func (h EventHandler) SearchEvents(w http.ResponseWriter, r *http.Request) {
 
 	events, err := h.service.SearchEvents(r.Context(), params, page, limit)
 	if err != nil {
+		h.logger.Error(err)
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
@@ -174,6 +180,7 @@ func (h EventHandler) GetPastEvents(w http.ResponseWriter, r *http.Request) {
 
 	events, err := h.service.GetPastEvents(r.Context(), page, limit)
 	if err != nil {
+		h.logger.Error(err)
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
@@ -197,6 +204,7 @@ func (h EventHandler) GetEventsByTags(w http.ResponseWriter, r *http.Request) {
 
 	filteredEvents, err := h.service.GetEventsByTags(r.Context(), tags)
 	if err != nil {
+		h.logger.Error(err)
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
@@ -221,12 +229,15 @@ func (h EventHandler) GetEventsByCategory(w http.ResponseWriter, r *http.Request
 	category := vars["category"]
 	categoryID, err := strconv.Atoi(category)
 	if err != nil {
+		h.logger.Error(err)
 		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidCategory)
 		return
 	}
 
 	filteredEvents, err := h.service.GetEventsByCategory(r.Context(), categoryID)
 	if err != nil {
+		h.logger.Error(err)
+
 		switch err {
 		case models.ErrInvalidCategory:
 			utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidCategory)
@@ -262,6 +273,7 @@ func (h EventHandler) GetEventsByUser(w http.ResponseWriter, r *http.Request) {
 
 	filteredEvents, err := h.service.GetEventsByUser(r.Context(), session.UserID)
 	if err != nil {
+
 		switch err {
 		///TODO пока оставлю так, когда будет более четкая бд и ошибки для обработки, поправлю
 		default:

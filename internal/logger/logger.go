@@ -41,3 +41,7 @@ func (l *Logger) TraceQueryEnd(ctx context.Context, conn *pgx.Conn, data pgx.Tra
 		)
 	}
 }
+
+func (l *Logger) Error(err error, args ...interface{}) {
+	l.Logger.Error("failed : %v, args: %v", zap.Error(err), args)
+}
