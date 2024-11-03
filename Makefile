@@ -1,4 +1,5 @@
-MIGRATION_FOLDER=$(INTERNAL_REPO_PATH)migrations
+include .env
+export $(shell sed 's/=.*//' .env)
 
 build:
 	docker compose build
