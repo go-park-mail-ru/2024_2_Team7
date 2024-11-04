@@ -1,0 +1,4 @@
+db-data
+/cmd/server/db-data
+.git
+.gitignore

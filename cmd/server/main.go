@@ -98,10 +98,9 @@ func main() {
 		"/categories",
 	}
 
-	handlerWithAuth := middleware.AuthMiddleware(whitelist, authHandler, r)
+	handlerWithAuth := middleware.AuthWithCSRFMiddleware(whitelist, authHandler, encryptionKey, r)
 	handlerWithCORS := middleware.CORSMiddleware(handlerWithAuth)
-	handlerWithCSRF := middleware.CSRFMiddleware(handlerWithCORS, authHandler, encryptionKey)
-	handlerWithLogging := middleware.LoggingMiddleware(handlerWithCSRF, sugar)
+	handlerWithLogging := middleware.LoggingMiddleware(handlerWithCORS, sugar)
 	handler := middleware.PanicMiddleware(handlerWithLogging)
 
 	err = http.ListenAndServe(":"+port, handler)
