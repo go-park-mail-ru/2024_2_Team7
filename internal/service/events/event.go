@@ -16,17 +16,16 @@ type EventService struct {
 }
 
 type EventDB interface {
-	GetUpcomingEvents(ctx context.Context, offset, limit int) ([]models.Event, error)
-	GetPastEvents(ctx context.Context, offset, limit int) ([]models.Event, error)
+	GetUpcomingEvents(ctx context.Context, paginationParams models.PaginationParams) ([]models.Event, error)
+	GetPastEvents(ctx context.Context, paginationParams models.PaginationParams) ([]models.Event, error)
 	GetCategories(ctx context.Context) ([]models.Category, error)
-	GetEventsByTags(ctx context.Context, tags []string) ([]models.Event, error)
-	GetEventsByCategory(ctx context.Context, categoryID int) ([]models.Event, error)
-	GetEventsByUser(ctx context.Context, userID int) ([]models.Event, error)
+	GetEventsByCategory(ctx context.Context, categoryID int, paginationParams models.PaginationParams) ([]models.Event, error)
+	GetEventsByUser(ctx context.Context, userID int, paginationParams models.PaginationParams) ([]models.Event, error)
 	GetEventByID(ctx context.Context, ID int) (models.Event, error)
 	AddEvent(ctx context.Context, event models.Event) (models.Event, error)
 	DeleteEvent(ctx context.Context, ID int) error
 	UpdateEvent(ctx context.Context, event models.Event) (models.Event, error)
-	SearchEvents(ctx context.Context, paras models.SearchParams, offset, limit int) ([]models.Event, error)
+	SearchEvents(ctx context.Context, paras models.SearchParams,paginationParams models.PaginationParams) ([]models.Event, error)
 }
 
 type ImageDB interface {
@@ -38,29 +37,22 @@ func NewService(eventDB EventDB, imageDB ImageDB) EventService {
 	return EventService{EventDB: eventDB, ImageDB: imageDB}
 }
 
-func (s *EventService) GetUpcomingEvents(ctx context.Context, page, limit int) ([]models.Event, error) {
-	offset := (page - 1) * limit
-	return s.EventDB.GetUpcomingEvents(ctx, offset, limit)
+func (s *EventService) GetUpcomingEvents(ctx context.Context, paginationParams models.PaginationParams) ([]models.Event, error) {
+	return s.EventDB.GetUpcomingEvents(ctx, paginationParams)
 }
 
-func (s *EventService) GetPastEvents(ctx context.Context, page, limit int) ([]models.Event, error) {
-	offset := (page - 1) * limit
-	return s.EventDB.GetPastEvents(ctx, offset, limit)
+func (s *EventService) GetPastEvents(ctx context.Context, paginationParams models.PaginationParams) ([]models.Event, error) {
+	return s.EventDB.GetPastEvents(ctx, paginationParams)
 }
 
-func (s *EventService) GetEventsByTags(ctx context.Context, tags []string) ([]models.Event, error) {
-	for i, tag := range tags {
-		tags[i] = strings.ToLower(tag)
-	}
-	return s.EventDB.GetEventsByTags(ctx, tags)
+
+
+func (s *EventService) GetEventsByCategory(ctx context.Context, categoryID int, paginationParams models.PaginationParams) ([]models.Event, error) {
+	return s.EventDB.GetEventsByCategory(ctx, categoryID, paginationParams)
 }
 
-func (s *EventService) GetEventsByCategory(ctx context.Context, categoryID int) ([]models.Event, error) {
-	return s.EventDB.GetEventsByCategory(ctx, categoryID)
-}
-
-func (s *EventService) GetEventsByUser(ctx context.Context, userID int) ([]models.Event, error) {
-	return s.EventDB.GetEventsByUser(ctx, userID)
+func (s *EventService) GetEventsByUser(ctx context.Context, userID int,paginationParams models.PaginationParams) ([]models.Event, error) {
+	return s.EventDB.GetEventsByUser(ctx, userID, paginationParams)
 }
 
 func (s *EventService) GetCategories(ctx context.Context) ([]models.Category, error) {
@@ -97,6 +89,8 @@ func (s *EventService) DeleteEvent(ctx context.Context, ID, AuthorID int) error 
 	if dbEvent.AuthorID != AuthorID {
 		return errors.Wrap(models.ErrAccessDenied, models.LevelService)
 	}
+
+	s.ImageDB.DeleteImage(ctx, dbEvent.ImageURL)
 	return s.EventDB.DeleteEvent(ctx, ID)
 }
 
@@ -104,13 +98,11 @@ func (s *EventService) GetEventByID(ctx context.Context, ID int) (models.Event, 
 	return s.EventDB.GetEventByID(ctx, ID)
 }
 
-func (s *EventService) SearchEvents(ctx context.Context, params models.SearchParams, page, limit int) ([]models.Event, error) {
-	offset := (page - 1) * limit
-
+func (s *EventService) SearchEvents(ctx context.Context, params models.SearchParams, paginationParams models.PaginationParams) ([]models.Event, error) {
 	for i, tag := range params.Tags {
 		params.Tags[i] = strings.ToLower(tag)
 	}
-	return s.EventDB.SearchEvents(ctx, params, limit, offset)
+	return s.EventDB.SearchEvents(ctx, params, paginationParams)
 }
 
 func (s *EventService) UpdateEvent(ctx context.Context, event models.Event, header *multipart.FileHeader, file *multipart.File) (models.Event, error) {

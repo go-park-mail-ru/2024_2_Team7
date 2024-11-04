@@ -19,7 +19,11 @@ import (
 	"go.uber.org/zap"
 )
 
-const uploadPath = "./static/images"
+const (
+	uploadPath   = "./static/images"
+	defaultPage  = 0
+	defaultLimit = 30
+)
 
 type ValidationErrResponse struct {
 	Errors []models.AuthError `json:"errors"`
@@ -143,4 +147,14 @@ func getFileExtension(fileName string) string {
 
 	extension = strings.ToLower(strings.TrimSpace(extension))
 	return extension
+}
+
+func GetPaginationParams(r *http.Request) models.PaginationParams {
+	page := GetQueryParamInt(r, "page", defaultPage)
+	limit := GetQueryParamInt(r, "limit", defaultLimit)
+	offset:=page*limit
+	return models.PaginationParams{
+		Offset:  offset,
+		Limit: limit,
+	}
 }

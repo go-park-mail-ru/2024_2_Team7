@@ -7,7 +7,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"strconv"
-	"strings"
 
 	httpErrors "kudago/internal/http/errors"
 	"kudago/internal/http/utils"
@@ -69,7 +68,7 @@ type EventHandler struct {
 }
 
 type SearchRequest struct {
-	Str        string   `json:"str"`
+	Query      string   `json:"str"`
 	EventStart string   `json:"event_start"`
 	EventEnd   string   `json:"event_end"`
 	Tags       []string `json:"tags"`
@@ -77,17 +76,16 @@ type SearchRequest struct {
 }
 
 type EventService interface {
-	GetUpcomingEvents(ctx context.Context, page, limit int) ([]models.Event, error)
-	GetPastEvents(ctx context.Context, page, limit int) ([]models.Event, error)
-	GetEventsByTags(ctx context.Context, tags []string) ([]models.Event, error)
-	GetEventsByCategory(ctx context.Context, categoryID int) ([]models.Event, error)
-	GetEventsByUser(ctx context.Context, userID int) ([]models.Event, error)
+	GetUpcomingEvents(ctx context.Context, paginationParams models.PaginationParams) ([]models.Event, error)
+	GetPastEvents(ctx context.Context, paginationParams models.PaginationParams) ([]models.Event, error)
+	GetEventsByCategory(ctx context.Context, categoryID int, paginationParams models.PaginationParams) ([]models.Event, error)
+	GetEventsByUser(ctx context.Context, userID int, paginationParams models.PaginationParams) ([]models.Event, error)
 	GetCategories(ctx context.Context) ([]models.Category, error)
 	GetEventByID(ctx context.Context, ID int) (models.Event, error)
 	AddEvent(ctx context.Context, event models.Event, header *multipart.FileHeader, file *multipart.File) (models.Event, error)
 	DeleteEvent(ctx context.Context, ID, authorID int) error
 	UpdateEvent(ctx context.Context, event models.Event, header *multipart.FileHeader, file *multipart.File) (models.Event, error)
-	SearchEvents(ctx context.Context, params models.SearchParams, page, limit int) ([]models.Event, error)
+	SearchEvents(ctx context.Context, params models.SearchParams, paginationParams models.PaginationParams) ([]models.Event, error)
 }
 
 func NewEventHandler(s EventService, logger *logger.Logger) *EventHandler {
@@ -108,16 +106,14 @@ func NewEventHandler(s EventService, logger *logger.Logger) *EventHandler {
 // @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
 // @Router /events [get]
 func (h EventHandler) GetUpcomingEvents(w http.ResponseWriter, r *http.Request) {
-	page := utils.GetQueryParamInt(r, "page", 1)
-	limit := utils.GetQueryParamInt(r, "limit", 30)
-
-	events, err := h.service.GetUpcomingEvents(r.Context(), page, limit)
+	paginationParams:=utils.GetPaginationParams(r)
+	events, err := h.service.GetUpcomingEvents(r.Context(), paginationParams)
 	if err != nil {
-		h.logger.Error(err)
+		h.logger.Error(r.Context(), "getUpcomingEvents", err)
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
-	resp := writeEventsResponse(events, limit)
+	resp := writeEventsResponse(events, paginationParams.Limit)
 
 	utils.WriteResponse(w, http.StatusOK, resp)
 }
@@ -135,31 +131,30 @@ func (h EventHandler) GetUpcomingEvents(w http.ResponseWriter, r *http.Request) 
 // @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
 // @Router /events [get]
 func (h EventHandler) SearchEvents(w http.ResponseWriter, r *http.Request) {
-	page := utils.GetQueryParamInt(r, "page", 1)
-	limit := utils.GetQueryParamInt(r, "limit", 30)
+	paginationParams:=utils.GetPaginationParams(r)
 
 	var req SearchRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.Error(err)
+		h.logger.Error(r.Context(), "search", err)
 		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
 		return
 	}
 
 	params := models.SearchParams{
-		Str:        req.Str,
+		Query:      req.Query,
 		EventStart: req.EventStart,
 		EventEnd:   req.EventEnd,
 		Tags:       req.Tags,
 		Category:   req.CategoryID,
 	}
 
-	events, err := h.service.SearchEvents(r.Context(), params, page, limit)
+	events, err := h.service.SearchEvents(r.Context(), params, paginationParams)
 	if err != nil {
-		h.logger.Error(err)
+		h.logger.Error(r.Context(), "search", err)
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
-	resp := writeEventsResponse(events, limit)
+	resp := writeEventsResponse(events, paginationParams.Limit)
 
 	utils.WriteResponse(w, http.StatusOK, resp)
 }
@@ -175,45 +170,16 @@ func (h EventHandler) SearchEvents(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
 // @Router /events [get]
 func (h EventHandler) GetPastEvents(w http.ResponseWriter, r *http.Request) {
-	page := utils.GetQueryParamInt(r, "page", 1)
-	limit := utils.GetQueryParamInt(r, "limit", 30)
+	paginationParams:=utils.GetPaginationParams(r)
 
-	events, err := h.service.GetPastEvents(r.Context(), page, limit)
+	events, err := h.service.GetPastEvents(r.Context(), paginationParams)
 	if err != nil {
-		h.logger.Error(err)
+		h.logger.Error(r.Context(), "getPastEvents", err)
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
-	resp := writeEventsResponse(events, limit)
+	resp := writeEventsResponse(events, paginationParams.Limit)
 
-	utils.WriteResponse(w, http.StatusOK, resp)
-}
-
-// пока просто ручка потом когда сделаем полноценный поиск поменяем
-
-// @Summary Получение событий по тегу
-// @Description Возвращает события по тегу
-// @Tags events
-// @Produce  json
-// @Success 200 {object} GetEventsResponse
-// @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
-// @Router /events/tags/{tag} [get]
-func (h EventHandler) GetEventsByTags(w http.ResponseWriter, r *http.Request) {
-	tagsParam := r.URL.Query().Get("tags")
-	tags := strings.Split(tagsParam, ",")
-
-	filteredEvents, err := h.service.GetEventsByTags(r.Context(), tags)
-	if err != nil {
-		h.logger.Error(err)
-		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
-		return
-	}
-
-	resp := GetEventsResponse{}
-	for _, event := range filteredEvents {
-		eventResp := eventToEventResponse(event)
-		resp.Events = append(resp.Events, eventResp)
-	}
 	utils.WriteResponse(w, http.StatusOK, resp)
 }
 
@@ -225,19 +191,19 @@ func (h EventHandler) GetEventsByTags(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
 // @Router /events/categories/{category} [get]
 func (h EventHandler) GetEventsByCategory(w http.ResponseWriter, r *http.Request) {
+	paginationParams:=utils.GetPaginationParams(r)
 	vars := mux.Vars(r)
 	category := vars["category"]
 	categoryID, err := strconv.Atoi(category)
 	if err != nil {
-		h.logger.Error(err)
+		h.logger.Error(r.Context(), "getEventsByCategory", err)
 		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidCategory)
 		return
 	}
 
-	filteredEvents, err := h.service.GetEventsByCategory(r.Context(), categoryID)
+	events, err := h.service.GetEventsByCategory(r.Context(), categoryID, paginationParams)
 	if err != nil {
-		h.logger.Error(err)
-
+		h.logger.Error(r.Context(), "getEventsByCategory", err)
 		switch err {
 		case models.ErrInvalidCategory:
 			utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidCategory)
@@ -249,11 +215,8 @@ func (h EventHandler) GetEventsByCategory(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	resp := GetEventsResponse{}
-	for _, event := range filteredEvents {
-		eventResp := eventToEventResponse(event)
-		resp.Events = append(resp.Events, eventResp)
-	}
+	resp := writeEventsResponse(events, paginationParams.Limit)
+
 	utils.WriteResponse(w, http.StatusOK, resp)
 }
 
@@ -265,13 +228,15 @@ func (h EventHandler) GetEventsByCategory(w http.ResponseWriter, r *http.Request
 // @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
 // @Router /events/my [get]
 func (h EventHandler) GetEventsByUser(w http.ResponseWriter, r *http.Request) {
+	paginationParams:=utils.GetPaginationParams(r)
+
 	session, ok := utils.GetSessionFromContext(r.Context())
 	if !ok {
 		utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrUnauthorized)
 		return
 	}
 
-	filteredEvents, err := h.service.GetEventsByUser(r.Context(), session.UserID)
+	events, err := h.service.GetEventsByUser(r.Context(), session.UserID, paginationParams)
 	if err != nil {
 
 		switch err {
@@ -282,11 +247,8 @@ func (h EventHandler) GetEventsByUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := GetEventsResponse{}
-	for _, event := range filteredEvents {
-		eventResp := eventToEventResponse(event)
-		resp.Events = append(resp.Events, eventResp)
-	}
+	resp := writeEventsResponse(events, paginationParams.Limit)
+
 	utils.WriteResponse(w, http.StatusOK, resp)
 }
 

@@ -102,14 +102,14 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	jsonData := r.FormValue("json")
 	err := json.Unmarshal([]byte(jsonData), &req)
 	if err != nil {
-		h.logger.Error(err)
+		h.logger.Error(r.Context(), "register", err)
 		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
 		return
 	}
 
 	_, err = govalidator.ValidateStruct(&req)
 	if err != nil {
-		h.logger.Error(err)
+		h.logger.Error(r.Context(), "register", err)
 		utils.ProcessValidationErrors(w, err)
 		return
 	}
@@ -118,15 +118,15 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	r.ParseMultipartForm(1 << 20)
 	file, header, err := r.FormFile("image")
 	if err != nil {
-		h.logger.Error(err)
 		if err != http.ErrMissingFile {
-			utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
+			utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidImage)
 			return
 		}
+		h.logger.Error(r.Context(), "register", err)
 	} else {
 		err = utils.GenerateFilename(header)
 		if err != nil {
-			h.logger.Error(err)
+			h.logger.Error(r.Context(), "register", err)
 			utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidImage)
 			return
 		}
@@ -151,7 +151,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 			utils.WriteResponse(w, http.StatusConflict, err)
 			return
 		}
-		h.logger.Error(err)
+		h.logger.Error(r.Context(), "register", err)
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
@@ -187,14 +187,14 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	var req AuthRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.Error(err)
+		h.logger.Error(r.Context(), "login", err)
 		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
 		return
 	}
 
 	_, err := govalidator.ValidateStruct(&req)
 	if err != nil {
-		h.logger.Error(err)
+		h.logger.Error(r.Context(), "login", err)
 		utils.ProcessValidationErrors(w, err)
 		return
 	}
@@ -206,7 +206,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.service.CheckCredentials(r.Context(), creds)
 	if err != nil {
-		h.logger.Error(err)
+		h.logger.Error(r.Context(), "login", err)
 		utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrWrongCredentials)
 		return
 	}
@@ -360,7 +360,7 @@ func (h *AuthHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 			utils.WriteResponse(w, http.StatusConflict, err)
 			return
 		}
-		h.logger.Error(err)
+		h.logger.Error(r.Context(), "updateUser", err)
 		utils.WriteResponse(w, http.StatusNotFound, httpErrors.ErrUserNotFound)
 		return
 	}

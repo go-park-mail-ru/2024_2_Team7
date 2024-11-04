@@ -70,17 +70,16 @@ func main() {
 	r.HandleFunc("/profile", authHandler.UpdateUser).Methods("PUT")
 
 	r.HandleFunc("/events/{id:[0-9]+}", eventHandler.GetEventByID).Methods("GET")
-	r.HandleFunc("/events/tags", eventHandler.GetEventsByTags).Methods("GET")
 	r.HandleFunc("/events/categories/{category}", eventHandler.GetEventsByCategory).Methods("GET")
 	r.HandleFunc("/events", eventHandler.GetUpcomingEvents).Methods("GET")
-	r.HandleFunc("/pastevents", eventHandler.GetPastEvents).Methods("GET")
+	r.HandleFunc("/events/past", eventHandler.GetPastEvents).Methods("GET")
 
 	r.HandleFunc("/categories", eventHandler.GetCategories).Methods("GET")
 	r.HandleFunc("/events/my", eventHandler.GetEventsByUser).Methods("GET")
 	r.HandleFunc("/events/{id:[0-9]+}", eventHandler.UpdateEvent).Methods("PUT")
 	r.HandleFunc("/events/{id:[0-9]+}", eventHandler.DeleteEvent).Methods("DELETE")
 	r.HandleFunc("/events", eventHandler.AddEvent).Methods("POST")
-	r.HandleFunc("/search", eventHandler.SearchEvents).Methods("GET")
+	r.HandleFunc("/events/search", eventHandler.SearchEvents).Methods("GET")
 
 	whitelist := []string{
 		"/login",

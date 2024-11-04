@@ -42,6 +42,7 @@ func (l *Logger) TraceQueryEnd(ctx context.Context, conn *pgx.Conn, data pgx.Tra
 	}
 }
 
-func (l *Logger) Error(err error, args ...interface{}) {
-	l.Logger.Error("failed : %v, args: %v", zap.Error(err), args)
+func (l *Logger) Error(ctx context.Context, method string, err error) {
+	requestID:=utils.GetRequestIDFromContext(ctx)
+	l.Logger.Error("request_id: %v, method: %v, failed : %v", requestID, method, zap.Error(err))
 }

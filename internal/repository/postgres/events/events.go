@@ -49,14 +49,14 @@ const selectUpcomingEventsQuery = `
 	ORDER BY event.event_start ASC
 	LIMIT $1 OFFSET $2`
 
-func (db *EventDB) GetUpcomingEvents(ctx context.Context, offset, limit int) ([]models.Event, error) {
-	rows, err := db.pool.Query(ctx, selectUpcomingEventsQuery, limit, offset)
+func (db *EventDB) GetUpcomingEvents(ctx context.Context, paginationParams models.PaginationParams) ([]models.Event, error) {
+	rows, err := db.pool.Query(ctx, selectUpcomingEventsQuery, paginationParams.Limit, paginationParams.Offset)
 	if err != nil {
 		return nil, errors.Wrap(err, models.LevelDB)
 	}
 	defer rows.Close()
 
-	events := make([]models.Event, 0, limit)
+	events := make([]models.Event, 0, paginationParams.Limit)
 	for rows.Next() {
 		var eventInfo EventInfo
 		err = rows.Scan(
@@ -76,57 +76,6 @@ func (db *EventDB) GetUpcomingEvents(ctx context.Context, offset, limit int) ([]
 		if err != nil {
 			return nil, errors.Wrap(err, models.LevelDB)
 		}
-		event, err := db.toDomainEvent(ctx, eventInfo)
-		if err != nil {
-			continue
-		}
-		events = append(events, event)
-	}
-
-	return events, nil
-}
-
-const getEventsByTagsQuery = `
-	SELECT event.id, event.title, event.description, event.event_start, event.event_finish, 
-		event.location, event.capacity, event.created_at, event.user_id, event.category_id,
-		COALESCE(array_agg(DISTINCT tag.name), '{}') AS tags, media_url.url AS media_link
-	FROM event
-	JOIN event_tag ON event.id = event_tag.event_id
-	JOIN tag ON tag.id = event_tag.tag_id
-	LEFT JOIN media_url ON event.id = media_url.event_id
-	WHERE event.event_finish >= NOW()
-	GROUP BY event.id, media_url.url
-	HAVING array_agg(DISTINCT tag.name) @> $1
-	ORDER BY event.event_finish ASC`
-
-func (db *EventDB) GetEventsByTags(ctx context.Context, tags []string) ([]models.Event, error) {
-	rows, err := db.pool.Query(ctx, getEventsByTagsQuery, tags)
-	if err != nil {
-		return nil, errors.Wrap(err, models.LevelDB)
-	}
-	defer rows.Close()
-
-	var events []models.Event
-	for rows.Next() {
-		var eventInfo EventInfo
-		err = rows.Scan(
-			&eventInfo.ID,
-			&eventInfo.Title,
-			&eventInfo.Description,
-			&eventInfo.EventStart,
-			&eventInfo.EventFinish,
-			&eventInfo.Location,
-			&eventInfo.Capacity,
-			&eventInfo.CreatedAt,
-			&eventInfo.UserID,
-			&eventInfo.CategoryID,
-			&eventInfo.Tags,
-			&eventInfo.ImageURL,
-		)
-		if err != nil {
-			return nil, errors.Wrap(err, models.LevelDB)
-		}
-
 		event, err := db.toDomainEvent(ctx, eventInfo)
 		if err != nil {
 			continue
@@ -188,10 +137,11 @@ const getEventsByCategoryQuery = `
 	LEFT JOIN media_url ON event.id = media_url.event_id
 	WHERE event.category_id=$1 	AND event.event_finish >= NOW()
 	GROUP BY event.id, media_url.url
-	ORDER BY event.event_finish ASC`
+	ORDER BY event.event_finish ASC
+	LIMIT $2 OFFSET $3`
 
-func (db *EventDB) GetEventsByCategory(ctx context.Context, categoryID int) ([]models.Event, error) {
-	rows, err := db.pool.Query(ctx, getEventsByCategoryQuery, categoryID)
+func (db *EventDB) GetEventsByCategory(ctx context.Context, categoryID int,paginationParams models.PaginationParams) ([]models.Event, error) {
+	rows, err := db.pool.Query(ctx, getEventsByCategoryQuery, categoryID, paginationParams.Limit, paginationParams.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -500,14 +450,14 @@ const selectPastEventsQuery = `
 	ORDER BY event.event_start DESC
 	LIMIT $1 OFFSET $2`
 
-func (db *EventDB) GetPastEvents(ctx context.Context, offset, limit int) ([]models.Event, error) {
-	rows, err := db.pool.Query(ctx, selectPastEventsQuery, limit, offset)
+func (db *EventDB) GetPastEvents(ctx context.Context, paginationParams models.PaginationParams) ([]models.Event, error) {
+	rows, err := db.pool.Query(ctx, selectPastEventsQuery, paginationParams.Limit, paginationParams.Offset)
 	if err != nil {
 		return nil, errors.Wrap(err, models.LevelDB)
 	}
 	defer rows.Close()
 
-	events := make([]models.Event, 0, limit)
+	events := make([]models.Event, 0, paginationParams.Limit)
 	for rows.Next() {
 		var eventInfo EventInfo
 		err = rows.Scan(
@@ -547,10 +497,11 @@ const getEventsByUserQuery = `
 	LEFT JOIN media_url ON event.id = media_url.event_id
 	WHERE event.user_id=$1 
 	GROUP BY event.id, media_url.url
-	ORDER BY event.event_finish ASC`
+	ORDER BY event.event_finish ASC
+	LIMIT $2 OFFSET $3`
 
-func (db *EventDB) GetEventsByUser(ctx context.Context, userID int) ([]models.Event, error) {
-	rows, err := db.pool.Query(ctx, getEventsByUserQuery, userID)
+func (db *EventDB) GetEventsByUser(ctx context.Context, userID int, paginationParams models.PaginationParams) ([]models.Event, error) {
+	rows, err := db.pool.Query(ctx, getEventsByUserQuery, userID, paginationParams.Limit, paginationParams.Offset)
 	if err != nil {
 		return nil, errors.Wrap(err, models.LevelDB)
 	}
@@ -606,15 +557,15 @@ const baseSearchQuery = `
 	LIMIT $6 OFFSET $7;
 `
 
-func (db *EventDB) SearchEvents(ctx context.Context, params models.SearchParams, limit, offset int) ([]models.Event, error) {
+func (db *EventDB) SearchEvents(ctx context.Context, params models.SearchParams, paginationParams models.PaginationParams) ([]models.Event, error) {
 	args := []interface{}{
-		nilIfEmpty(params.Str),
+		nilIfEmpty(params.Query),
 		nilIfZero(params.Category),
 		nilIfEmpty(params.EventStart),
 		nilIfEmpty(params.EventEnd),
 		tagsToArray(params.Tags),
-		limit,
-		offset,
+		paginationParams.Limit,
+		paginationParams.Offset,
 	}
 
 	rows, err := db.pool.Query(ctx, baseSearchQuery, args...)
@@ -623,7 +574,7 @@ func (db *EventDB) SearchEvents(ctx context.Context, params models.SearchParams,
 	}
 	defer rows.Close()
 
-	events := make([]models.Event, 0, limit)
+	events := make([]models.Event, 0, paginationParams.Limit)
 	for rows.Next() {
 		var eventInfo EventInfo
 		err = rows.Scan(
