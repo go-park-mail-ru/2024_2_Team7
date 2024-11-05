@@ -1,12 +1,13 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
-	"kudago/internal/http/auth"
 	httpErrors "kudago/internal/http/errors"
 	"kudago/internal/http/utils"
+	"kudago/internal/models"
 )
 
 const (
@@ -14,11 +15,15 @@ const (
 	SessionKey   = "session"
 )
 
-func AuthMiddleware(whitelist []string, authHandler *auth.AuthHandler, next http.Handler) http.Handler {
+type sessionChecker interface {
+	CheckSession(ctx context.Context, cookie string) (models.Session, error)
+}
+
+func AuthMiddleware(whitelist []string, sessionChecker sessionChecker, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie(SessionToken)
 		if err == nil {
-			session, err := authHandler.CheckSessionMiddleware(r.Context(), cookie.Value)
+			session, err := sessionChecker.CheckSession(r.Context(), cookie.Value)
 			if err == nil {
 				ctx := utils.SetSessionInContext(r.Context(), session)
 				r = r.WithContext(ctx)

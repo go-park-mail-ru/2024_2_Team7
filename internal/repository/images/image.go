@@ -1,15 +1,13 @@
 package images
 
 import (
+	"fmt"
 	"io"
-	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
 
 	"kudago/internal/models"
-
-	"github.com/pkg/errors"
 
 	"golang.org/x/net/context"
 )
@@ -26,48 +24,52 @@ func NewDB(config ImageConfig) *ImageDB {
 	return &ImageDB{UploadPath: config.Path}
 }
 
-func (r *ImageDB) SaveImage(ctx context.Context, header multipart.FileHeader, file multipart.File) (string, error) {
-	defer file.Close()
+func (r *ImageDB) SaveImage(ctx context.Context, media models.MediaFile) (string, error) {
+	defer media.File.Close()
 
 	buffer := make([]byte, 512)
-	if _, err := file.Read(buffer); err != nil {
-		return "", errors.Wrap(err, models.LevelDB)
+	if _, err := media.File.Read(buffer); err != nil {
+		return "", fmt.Errorf("%s: %w", models.LevelDB, err)
 	}
 
 	fileType := http.DetectContentType(buffer)
 	if !isSupportedImageType(fileType) {
-		return "", errors.Wrap(models.ErrUnsupportedFile, models.LevelDB)
+		return "", fmt.Errorf("%s: %w", models.LevelDB, models.ErrUnsupportedFile)
 	}
 
-	if _, err := file.Seek(0, io.SeekStart); err != nil {
-		return "", errors.Wrap(err, models.LevelDB)
+	if seeker, ok := media.File.(io.Seeker); ok {
+		if _, err := seeker.Seek(0, io.SeekStart); err != nil {
+			return "", fmt.Errorf("%s: %w", models.LevelDB, models.ErrUnsupportedFile)
+		}
+	} else {
+		return "", fmt.Errorf("%s: %w", models.LevelDB, models.ErrUnsupportedFile)
 	}
 
-	newPath := filepath.Join(r.UploadPath, header.Filename)
+	newPath := filepath.Join(r.UploadPath, media.Filename)
 	if err := os.MkdirAll(r.UploadPath, os.ModePerm); err != nil {
-		return "", errors.Wrap(err, models.LevelDB)
+		return "", fmt.Errorf("%s: %w", models.LevelDB, models.ErrUnsupportedFile)
 	}
 
 	newFile, err := os.Create(newPath)
 	if err != nil {
-		return "", errors.Wrap(err, models.LevelDB)
+		return "", fmt.Errorf("%s: %w", models.LevelDB, models.ErrUnsupportedFile)
 	}
 	defer newFile.Close()
 
-	_, err = io.Copy(newFile, file)
+	_, err = io.Copy(newFile, media.File)
 	if err != nil {
-		return "", errors.Wrap(err, models.LevelDB)
+		return "", fmt.Errorf("%s: %w", models.LevelDB, models.ErrUnsupportedFile)
 	}
 	return newPath, nil
 }
 
 func (r *ImageDB) DeleteImage(ctx context.Context, imagePath string) error {
 	if _, err := os.Stat(imagePath); os.IsNotExist(err) {
-		return errors.Wrap(err, models.LevelDB)
+		return fmt.Errorf("%s: %w", models.LevelDB, models.ErrUnsupportedFile)
 	}
 
 	if err := os.Remove(imagePath); err != nil {
-		return errors.Wrap(err, models.LevelDB)
+		return fmt.Errorf("%s: %w", models.LevelDB, models.ErrUnsupportedFile)
 	}
 
 	return nil

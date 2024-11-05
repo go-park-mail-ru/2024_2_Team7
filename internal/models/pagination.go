@@ -1,6 +1,6 @@
 package models
 
-type PaginationParams struct{
+type PaginationParams struct {
 	Offset int
-	Limit int
+	Limit  int
 }

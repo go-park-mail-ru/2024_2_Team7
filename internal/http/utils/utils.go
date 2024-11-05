@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"mime/multipart"
 	"net/http"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -20,9 +21,10 @@ import (
 )
 
 const (
-	uploadPath   = "./static/images"
-	defaultPage  = 0
-	defaultLimit = 30
+	uploadPath    = "./static/images"
+	defaultPage   = 0
+	defaultLimit  = 30
+	maxUploadSize = 1 * 1024 * 1024 // 1Mb
 )
 
 type ValidationErrResponse struct {
@@ -138,23 +140,37 @@ func GenerateFilename(header *multipart.FileHeader) error {
 }
 
 func getFileExtension(fileName string) string {
-	parts := strings.Split(fileName, ".")
-	extension := parts[1]
-
-	if extension == "" {
-		return ""
-	}
-
-	extension = strings.ToLower(strings.TrimSpace(extension))
+	extension := strings.ToLower(strings.TrimPrefix(filepath.Ext(fileName), "."))
 	return extension
 }
 
 func GetPaginationParams(r *http.Request) models.PaginationParams {
 	page := GetQueryParamInt(r, "page", defaultPage)
 	limit := GetQueryParamInt(r, "limit", defaultLimit)
-	offset:=page*limit
+	offset := page * limit
 	return models.PaginationParams{
-		Offset:  offset,
-		Limit: limit,
+		Offset: offset,
+		Limit:  limit,
 	}
+}
+
+func HandleImageUpload(r *http.Request) (models.MediaFile, error) {
+	r.ParseMultipartForm(maxUploadSize)
+	file, header, err := r.FormFile("image")
+	if err != nil {
+		if err != http.ErrMissingFile {
+			return models.MediaFile{}, models.ErrInvalidImage
+		}
+		return models.MediaFile{}, nil
+	}
+
+	err = GenerateFilename(header)
+	if err != nil {
+		return models.MediaFile{}, models.ErrInvalidImage
+	}
+
+	return models.MediaFile{
+		Filename: header.Filename,
+		File:     file,
+	}, nil
 }

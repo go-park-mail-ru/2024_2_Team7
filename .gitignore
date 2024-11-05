@@ -7,3 +7,4 @@ c.out
 pgdata
 auth_test.go
 static
+update_event_test.go

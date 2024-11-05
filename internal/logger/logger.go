@@ -2,6 +2,7 @@ package logger
 
 import (
 	"context"
+	"fmt"
 
 	"kudago/internal/http/utils"
 
@@ -43,6 +44,7 @@ func (l *Logger) TraceQueryEnd(ctx context.Context, conn *pgx.Conn, data pgx.Tra
 }
 
 func (l *Logger) Error(ctx context.Context, method string, err error) {
-	requestID:=utils.GetRequestIDFromContext(ctx)
-	l.Logger.Error("request_id: %v, method: %v, failed : %v", requestID, method, zap.Error(err))
+	requestID := utils.GetRequestIDFromContext(ctx)
+	fmt.Println(requestID, method, err)
+	l.Logger.Error("request_id: %s, method: %s, failed : %s", requestID, method, zap.Error(err))
 }

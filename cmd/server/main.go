@@ -54,7 +54,7 @@ func main() {
 	eventService := eventService.NewService(eventDB, imageDB)
 
 	authHandler := auth.NewAuthHandler(&authService, appLogger)
-	eventHandler := events.NewEventHandler(&eventService, appLogger)
+	eventHandler := events.NewEventHandler(&eventService, eventDB, appLogger)
 
 	r := mux.NewRouter()
 
@@ -90,9 +90,10 @@ func main() {
 		"/logout",
 		"/docs",
 		"/categories",
+		"/swagger",
 	}
 
-	handlerWithAuth := middleware.AuthMiddleware(whitelist, authHandler, r)
+	handlerWithAuth := middleware.AuthMiddleware(whitelist, sessionDB, r)
 	handlerWithCORS := middleware.CORSMiddleware(handlerWithAuth)
 	handlerWithLogging := middleware.LoggingMiddleware(handlerWithCORS, appLogger.Logger)
 	handler := middleware.PanicMiddleware(handlerWithLogging)

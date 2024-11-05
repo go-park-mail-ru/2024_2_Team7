@@ -1,8 +1,9 @@
+//go:generate mockgen -source ./auth.go -destination=./mocks/auth.go -package=mocks
+
 package authService
 
 import (
 	"context"
-	"mime/multipart"
 
 	"kudago/internal/models"
 )
@@ -30,7 +31,7 @@ type SessionDB interface {
 }
 
 type ImageDB interface {
-	SaveImage(ctx context.Context, header multipart.FileHeader, file multipart.File) (string, error)
+	SaveImage(ctx context.Context, media models.MediaFile) (string, error)
 	DeleteImage(ctx context.Context, imagePath string) error
 }
 
@@ -69,8 +70,12 @@ func (a *authService) UpdateUser(ctx context.Context, data models.NewUserData) (
 		}
 	}
 
-	if data.File != nil && data.Header != nil {
-		path, err := a.ImageDB.SaveImage(ctx, *data.Header, *data.File)
+	if data.Media.File != nil && data.Media.Filename != "" {
+		media := models.MediaFile{
+			Filename: data.Media.Filename,
+			File:     data.Media.File,
+		}
+		path, err := a.ImageDB.SaveImage(ctx, media)
 		if err != nil {
 			return models.User{}, err
 		}
@@ -85,7 +90,7 @@ func (a *authService) UpdateUser(ctx context.Context, data models.NewUserData) (
 		return models.User{}, err
 	}
 
-	if oldData.ImageURL != "" && data.File != nil {
+	if oldData.ImageURL != "" && data.Media.File != nil {
 		err = a.ImageDB.DeleteImage(ctx, oldData.ImageURL)
 	}
 	return user, nil
@@ -102,8 +107,12 @@ func (a *authService) CheckCredentials(ctx context.Context, creds models.Credent
 func (a *authService) Register(ctx context.Context, data models.NewUserData) (models.User, error) {
 	user := data.User
 
-	if data.Header != nil && data.File != nil {
-		path, err := a.ImageDB.SaveImage(ctx, *data.Header, *data.File)
+	if data.Media.Filename != "" && data.Media.File != nil {
+		media := models.MediaFile{
+			Filename: data.Media.Filename,
+			File:     data.Media.File,
+		}
+		path, err := a.ImageDB.SaveImage(ctx, media)
 		if err != nil {
 			return models.User{}, err
 		}

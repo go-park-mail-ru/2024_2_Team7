@@ -4,10 +4,10 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 	"strconv"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/redis/go-redis/v9"
 
 	"kudago/internal/models"
@@ -47,7 +47,7 @@ func (db *SessionDB) CreateSession(ctx context.Context, ID int) (models.Session,
 
 	err := db.client.Set(ctx, sessionToken, session.UserID, expirationTime).Err()
 	if err != nil {
-		return models.Session{}, errors.Wrap(err, models.LevelDB)
+		return models.Session{}, fmt.Errorf("%s: %w", models.LevelDB, err)
 	}
 	return session, nil
 }
@@ -59,12 +59,12 @@ func (db *SessionDB) CheckSession(ctx context.Context, cookie string) (models.Se
 	}
 
 	if err != nil {
-		return models.Session{}, errors.Wrap(err, models.LevelDB)
+		return models.Session{}, fmt.Errorf("%s: %w", models.LevelDB, err)
 	}
 
 	userID, err := strconv.Atoi(ID)
 	if err != nil {
-		return models.Session{}, errors.Wrap(err, models.LevelDB)
+		return models.Session{}, fmt.Errorf("%s: %w", models.LevelDB, err)
 	}
 
 	session := models.Session{

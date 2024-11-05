@@ -1,7 +1,5 @@
 package models
 
-import "mime/multipart"
-
 type User struct {
 	ID       int    `json:"id"`
 	Username string `json:"username"`
@@ -11,7 +9,6 @@ type User struct {
 }
 
 type NewUserData struct {
-	User   User
-	Header *multipart.FileHeader
-	File   *multipart.File
+	User  User
+	Media MediaFile
 }

@@ -1,44 +1,14 @@
+//go:generate mockgen -source ./events.go -destination=./mocks/events.go -package=mocks
+
 package events
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
-	"mime/multipart"
-	"net/http"
-	"strconv"
 
-	httpErrors "kudago/internal/http/errors"
-	"kudago/internal/http/utils"
 	"kudago/internal/logger"
 
 	"kudago/internal/models"
-
-	"github.com/asaskevich/govalidator"
-	"github.com/gorilla/mux"
 )
-
-type EventRequest struct {
-	Title       string   `json:"title" valid:"required,length(3|50)"`
-	Description string   `json:"description" valid:"required"`
-	Location    string   `json:"location"`
-	Category    int      `json:"category_id" valid:"required"`
-	Capacity    int      `json:"capacity"`
-	Tag         []string `json:"tag"`
-	EventStart  string   `json:"event_start" valid:"rfc3339,required"`
-	EventEnd    string   `json:"event_end" valid:"rfc3339,required"`
-}
-
-type UpdateEventRequest struct {
-	Title       string   `json:"title" valid:"length(3|50), omitempty"`
-	Description string   `json:"description"`
-	Location    string   `json:"location"`
-	Category    int      `json:"category_id"`
-	Capacity    int      `json:"capacity"`
-	Tag         []string `json:"tag"`
-	EventStart  string   `json:"event_start" valid:"rfc3339"`
-	EventEnd    string   `json:"event_end" valid:"rfc3339"`
-}
 
 type EventResponse struct {
 	ID          int      `json:"id"`
@@ -54,450 +24,38 @@ type EventResponse struct {
 	ImageURL    string   `json:"image"`
 }
 
-type CreateEventResponse struct {
-	Event EventResponse `json:"event"`
-}
-
 type GetEventsResponse struct {
 	Events []EventResponse `json:"events"`
 }
 
 type EventHandler struct {
 	service EventService
+	getter  EventsGetter
 	logger  *logger.Logger
 }
 
-type SearchRequest struct {
-	Query      string   `json:"str"`
-	EventStart string   `json:"event_start"`
-	EventEnd   string   `json:"event_end"`
-	Tags       []string `json:"tags"`
-	CategoryID int      `json:"category_id"`
+type EventService interface {
+	AddEvent(ctx context.Context, event models.Event, media models.MediaFile) (models.Event, error)
+	DeleteEvent(ctx context.Context, ID, authorID int) error
+	UpdateEvent(ctx context.Context, event models.Event, media models.MediaFile) (models.Event, error)
+	SearchEvents(ctx context.Context, params models.SearchParams, paginationParams models.PaginationParams) ([]models.Event, error)
 }
 
-type EventService interface {
+type EventsGetter interface {
 	GetUpcomingEvents(ctx context.Context, paginationParams models.PaginationParams) ([]models.Event, error)
 	GetPastEvents(ctx context.Context, paginationParams models.PaginationParams) ([]models.Event, error)
 	GetEventsByCategory(ctx context.Context, categoryID int, paginationParams models.PaginationParams) ([]models.Event, error)
 	GetEventsByUser(ctx context.Context, userID int, paginationParams models.PaginationParams) ([]models.Event, error)
 	GetCategories(ctx context.Context) ([]models.Category, error)
 	GetEventByID(ctx context.Context, ID int) (models.Event, error)
-	AddEvent(ctx context.Context, event models.Event, header *multipart.FileHeader, file *multipart.File) (models.Event, error)
-	DeleteEvent(ctx context.Context, ID, authorID int) error
-	UpdateEvent(ctx context.Context, event models.Event, header *multipart.FileHeader, file *multipart.File) (models.Event, error)
-	SearchEvents(ctx context.Context, params models.SearchParams, paginationParams models.PaginationParams) ([]models.Event, error)
 }
 
-func NewEventHandler(s EventService, logger *logger.Logger) *EventHandler {
+func NewEventHandler(s EventService, g EventsGetter, logger *logger.Logger) *EventHandler {
 	return &EventHandler{
 		service: s,
 		logger:  logger,
+		getter:  g,
 	}
-}
-
-// @Summary Получить все грядущие события
-// @Description Получить все грядущие события
-// @Tags events
-// @Accept  json
-// @Produce  json
-// @Param page query int false "Номер страницы (по умолчанию 1)"
-// @Param limit query int false "Количество событий на странице (по умолчанию 30)"
-// @Success 200 {object} GetEventsResponse
-// @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
-// @Router /events [get]
-func (h EventHandler) GetUpcomingEvents(w http.ResponseWriter, r *http.Request) {
-	paginationParams:=utils.GetPaginationParams(r)
-	events, err := h.service.GetUpcomingEvents(r.Context(), paginationParams)
-	if err != nil {
-		h.logger.Error(r.Context(), "getUpcomingEvents", err)
-		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
-		return
-	}
-	resp := writeEventsResponse(events, paginationParams.Limit)
-
-	utils.WriteResponse(w, http.StatusOK, resp)
-}
-
-// @Summary Поиск событий
-// @Description Поиск событий по ключевым словам, датам, тегам и категории
-// @Tags events
-// @Accept json
-// @Produce json
-// @Param page query int false "Номер страницы (по умолчанию 1)"
-// @Param limit query int false "Количество событий на странице (по умолчанию 30)"
-// @Param SearchRequest body SearchRequest false "Фильтры для поиска событий"
-// @Success 200 {object} GetEventsResponse "Список событий"
-// @Failure 400 {object} httpErrors.HttpError "Invalid Data"
-// @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
-// @Router /events [get]
-func (h EventHandler) SearchEvents(w http.ResponseWriter, r *http.Request) {
-	paginationParams:=utils.GetPaginationParams(r)
-
-	var req SearchRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.Error(r.Context(), "search", err)
-		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
-		return
-	}
-
-	params := models.SearchParams{
-		Query:      req.Query,
-		EventStart: req.EventStart,
-		EventEnd:   req.EventEnd,
-		Tags:       req.Tags,
-		Category:   req.CategoryID,
-	}
-
-	events, err := h.service.SearchEvents(r.Context(), params, paginationParams)
-	if err != nil {
-		h.logger.Error(r.Context(), "search", err)
-		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
-		return
-	}
-	resp := writeEventsResponse(events, paginationParams.Limit)
-
-	utils.WriteResponse(w, http.StatusOK, resp)
-}
-
-// @Summary Получить все прошедшие события
-// @Description Получить все прошедшие события
-// @Tags events
-// @Accept  json
-// @Produce  json
-// @Param page query int false "Номер страницы (по умолчанию 1)"
-// @Param limit query int false "Количество событий на странице (по умолчанию 30)"
-// @Success 200 {object} GetEventsResponse
-// @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
-// @Router /events [get]
-func (h EventHandler) GetPastEvents(w http.ResponseWriter, r *http.Request) {
-	paginationParams:=utils.GetPaginationParams(r)
-
-	events, err := h.service.GetPastEvents(r.Context(), paginationParams)
-	if err != nil {
-		h.logger.Error(r.Context(), "getPastEvents", err)
-		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
-		return
-	}
-	resp := writeEventsResponse(events, paginationParams.Limit)
-
-	utils.WriteResponse(w, http.StatusOK, resp)
-}
-
-// @Summary Получение событий по категори
-// @Description Возвращает события по ID категории
-// @Tags events
-// @Produce  json
-// @Success 200 {object} GetEventsResponse
-// @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
-// @Router /events/categories/{category} [get]
-func (h EventHandler) GetEventsByCategory(w http.ResponseWriter, r *http.Request) {
-	paginationParams:=utils.GetPaginationParams(r)
-	vars := mux.Vars(r)
-	category := vars["category"]
-	categoryID, err := strconv.Atoi(category)
-	if err != nil {
-		h.logger.Error(r.Context(), "getEventsByCategory", err)
-		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidCategory)
-		return
-	}
-
-	events, err := h.service.GetEventsByCategory(r.Context(), categoryID, paginationParams)
-	if err != nil {
-		h.logger.Error(r.Context(), "getEventsByCategory", err)
-		switch err {
-		case models.ErrInvalidCategory:
-			utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidCategory)
-
-		///TODO пока оставлю так, когда будет более четкая бд и ошибки для обработки, поправлю
-		default:
-			utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
-		}
-		return
-	}
-
-	resp := writeEventsResponse(events, paginationParams.Limit)
-
-	utils.WriteResponse(w, http.StatusOK, resp)
-}
-
-// @Summary Получение событий пользователя
-// @Description Возвращает события пользователя
-// @Tags events
-// @Produce  json
-// @Success 200 {object} GetEventsResponse
-// @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
-// @Router /events/my [get]
-func (h EventHandler) GetEventsByUser(w http.ResponseWriter, r *http.Request) {
-	paginationParams:=utils.GetPaginationParams(r)
-
-	session, ok := utils.GetSessionFromContext(r.Context())
-	if !ok {
-		utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrUnauthorized)
-		return
-	}
-
-	events, err := h.service.GetEventsByUser(r.Context(), session.UserID, paginationParams)
-	if err != nil {
-
-		switch err {
-		///TODO пока оставлю так, когда будет более четкая бд и ошибки для обработки, поправлю
-		default:
-			utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
-		}
-		return
-	}
-
-	resp := writeEventsResponse(events, paginationParams.Limit)
-
-	utils.WriteResponse(w, http.StatusOK, resp)
-}
-
-// @Summary Получение события по ID
-// @Description Возвращает информацию о событии по его идентификатору
-// @Tags events
-// @Produce  json
-// @Success 200 {object} EventResponse
-// @Failure 404 {object} httpErrors.HttpError "Event Not Found"
-// @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
-// @Router /events/{id} [get]
-func (h EventHandler) GetEventByID(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	event, err := h.service.GetEventByID(r.Context(), id)
-	if err != nil {
-		switch {
-		case errors.Is(err, models.ErrEventNotFound):
-			w.WriteHeader(http.StatusNoContent)
-		default:
-			utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
-		}
-		return
-	}
-	resp := eventToEventResponse(event)
-	utils.WriteResponse(w, http.StatusOK, resp)
-}
-
-// @Summary Удаление события
-// @Description Удаляет существующее событие
-// @Tags events
-// @Produce  json
-// @Success 204
-// @Failure 401 {object} httpErrors.HttpError "Unauthorized"
-// @Failure 403 {object} httpErrors.HttpError "Access Denied"
-// @Failure 404 {object} httpErrors.HttpError "Event Not Found"
-// @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
-// @Router /events/{id} [delete]
-func (h EventHandler) DeleteEvent(w http.ResponseWriter, r *http.Request) {
-	session, ok := utils.GetSessionFromContext(r.Context())
-
-	if !ok {
-		utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrUnauthorized)
-		return
-	}
-
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	authorID := session.UserID
-	err = h.service.DeleteEvent(r.Context(), id, authorID)
-	if err != nil {
-		switch {
-		case errors.Is(err, models.ErrEventNotFound):
-			utils.WriteResponse(w, http.StatusNotFound, httpErrors.ErrEventNotFound)
-		case errors.Is(err, models.ErrAccessDenied):
-			utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrAccessDenied)
-		default:
-			utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
-		}
-		return
-	}
-}
-
-// @Summary Создание события
-// @Description Создает новое событие в системе
-// @Tags events
-// @Accept  json
-// @Produce  json
-// @Success 201 {object} EventResponse
-// @Failure 400 {object} httpErrors.HttpError "Invalid Data"
-// @Failure 401 {object} httpErrors.HttpError "Unauthorized"
-// @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
-// @Router /events [post]
-func (h EventHandler) AddEvent(w http.ResponseWriter, r *http.Request) {
-	session, ok := utils.GetSessionFromContext(r.Context())
-	if !ok {
-		utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrUnauthorized)
-		return
-	}
-
-	var req EventRequest
-	jsonData := r.FormValue("json")
-	err := json.Unmarshal([]byte(jsonData), &req)
-	if err != nil {
-		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
-		return
-	}
-
-	_, err = govalidator.ValidateStruct(&req)
-	if err != nil {
-		utils.ProcessValidationErrors(w, err)
-		return
-	}
-
-	r.ParseMultipartForm(1 << 20)
-	file, header, err := r.FormFile("image")
-
-	if err != nil {
-		if err != http.ErrMissingFile {
-			utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
-			return
-		}
-	} else {
-		err = utils.GenerateFilename(header)
-		if err != nil {
-			utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidImage)
-			return
-		}
-	}
-
-	event := models.Event{
-		Title:       req.Title,
-		Description: req.Description,
-		Location:    req.Location,
-		EventStart:  req.EventStart,
-		EventEnd:    req.EventEnd,
-		AuthorID:    session.UserID,
-		CategoryID:  req.Category,
-		Capacity:    req.Capacity,
-		Tag:         req.Tag,
-	}
-
-	event, err = h.service.AddEvent(r.Context(), event, header, &file)
-	if err != nil {
-		switch err {
-		case models.ErrInvalidCategory:
-			utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidCategory)
-
-		///TODO пока оставлю так, когда будет более четкая бд и ошибки для обработки, поправлю
-		default:
-			utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
-		}
-		return
-	}
-	resp := eventToEventResponse(event)
-	utils.WriteResponse(w, http.StatusOK, resp)
-}
-
-// @Summary Обновление события
-// @Description Обновляет данные существующего события
-// @Tags events
-// @Accept  json
-// @Produce  json
-// @Success 200 {object} EventResponse
-// @Failure 400 {object} httpErrors.HttpError "Invalid Data"
-// @Failure 401 {object} httpErrors.HttpError "Unauthorized"
-// @Failure 403 {object} httpErrors.HttpError "Access Denied"
-// @Failure 404 {object} httpErrors.HttpError "Event Not Found"
-// @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
-// @Router /events/{id} [put]
-func (h EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
-	session, ok := utils.GetSessionFromContext(r.Context())
-	if !ok {
-		utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrUnauthorized)
-		return
-	}
-
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	var req UpdateEventRequest
-	jsonData := r.FormValue("json")
-	err = json.Unmarshal([]byte(jsonData), &req)
-	if err != nil {
-		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
-		return
-	}
-
-	_, err = govalidator.ValidateStruct(&req)
-	if err != nil {
-		utils.ProcessValidationErrors(w, err)
-		return
-	}
-
-	r.ParseMultipartForm(1 << 20)
-	file, header, err := r.FormFile("image")
-
-	if err != nil {
-		if err != http.ErrMissingFile {
-			utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
-			return
-		}
-	} else {
-		err = utils.GenerateFilename(header)
-		if err != nil {
-			utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidImage)
-			return
-		}
-	}
-
-	event := models.Event{
-		ID:          id,
-		Title:       req.Title,
-		Description: req.Description,
-		EventStart:  req.EventStart,
-		EventEnd:    req.EventEnd,
-		AuthorID:    session.UserID,
-		Tag:         req.Tag,
-		Location:    req.Location,
-		CategoryID:  req.Category,
-		Capacity:    req.Capacity,
-	}
-
-	event, err = h.service.UpdateEvent(r.Context(), event, header, &file)
-	if err != nil {
-		switch {
-		case errors.Is(err, models.ErrEventNotFound):
-			utils.WriteResponse(w, http.StatusNotFound, httpErrors.ErrEventNotFound)
-		case errors.Is(err, models.ErrAccessDenied):
-			utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrAccessDenied)
-		default:
-			utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
-		}
-		return
-	}
-	resp := eventToEventResponse(event)
-	utils.WriteResponse(w, http.StatusOK, resp)
-}
-
-// @Summary Получить все категории
-// @Description Получить список всех доступных категорий событий
-// @Tags categories
-// @Accept  json
-// @Produce  json
-// @Success 200 {array} models.Category "Список категорий"
-// @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
-// @Router /categories [get]
-func (h EventHandler) GetCategories(w http.ResponseWriter, r *http.Request) {
-	categories, err := h.service.GetCategories(r.Context())
-	if err != nil {
-		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
-		return
-	}
-
-	utils.WriteResponse(w, http.StatusOK, categories)
 }
 
 func eventToEventResponse(event models.Event) EventResponse {

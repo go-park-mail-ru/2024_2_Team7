@@ -1,11 +1,11 @@
+//go:generate mockgen -source ./events.go -destination=./mocks/events.go -package=mock_events
+
 package eventService
 
 import (
 	"context"
-	"mime/multipart"
+	"fmt"
 	"strings"
-
-	"github.com/pkg/errors"
 
 	"kudago/internal/models"
 )
@@ -25,11 +25,11 @@ type EventDB interface {
 	AddEvent(ctx context.Context, event models.Event) (models.Event, error)
 	DeleteEvent(ctx context.Context, ID int) error
 	UpdateEvent(ctx context.Context, event models.Event) (models.Event, error)
-	SearchEvents(ctx context.Context, paras models.SearchParams,paginationParams models.PaginationParams) ([]models.Event, error)
+	SearchEvents(ctx context.Context, params models.SearchParams, paginationParams models.PaginationParams) ([]models.Event, error)
 }
 
 type ImageDB interface {
-	SaveImage(ctx context.Context, header multipart.FileHeader, file multipart.File) (string, error)
+	SaveImage(ctx context.Context, media models.MediaFile) (string, error)
 	DeleteImage(ctx context.Context, path string) error
 }
 
@@ -37,47 +37,23 @@ func NewService(eventDB EventDB, imageDB ImageDB) EventService {
 	return EventService{EventDB: eventDB, ImageDB: imageDB}
 }
 
-func (s *EventService) GetUpcomingEvents(ctx context.Context, paginationParams models.PaginationParams) ([]models.Event, error) {
-	return s.EventDB.GetUpcomingEvents(ctx, paginationParams)
-}
-
-func (s *EventService) GetPastEvents(ctx context.Context, paginationParams models.PaginationParams) ([]models.Event, error) {
-	return s.EventDB.GetPastEvents(ctx, paginationParams)
-}
-
-
-
-func (s *EventService) GetEventsByCategory(ctx context.Context, categoryID int, paginationParams models.PaginationParams) ([]models.Event, error) {
-	return s.EventDB.GetEventsByCategory(ctx, categoryID, paginationParams)
-}
-
-func (s *EventService) GetEventsByUser(ctx context.Context, userID int,paginationParams models.PaginationParams) ([]models.Event, error) {
-	return s.EventDB.GetEventsByUser(ctx, userID, paginationParams)
-}
-
-func (s *EventService) GetCategories(ctx context.Context) ([]models.Category, error) {
-	return s.EventDB.GetCategories(ctx)
-}
-
-func (s *EventService) AddEvent(ctx context.Context, event models.Event, header *multipart.FileHeader, file *multipart.File) (models.Event, error) {
-	path := ""
-	if header != nil && file != nil {
-		path, err := s.ImageDB.SaveImage(ctx, *header, *file)
+func (s *EventService) AddEvent(ctx context.Context, event models.Event, media models.MediaFile) (models.Event, error) {
+	if media.File != nil {
+		path, err := s.ImageDB.SaveImage(ctx, media)
 		if err != nil {
 			return models.Event{}, err
 		}
-
 		event.ImageURL = path
 	}
 
 	event, err := s.EventDB.AddEvent(ctx, event)
 	if err != nil {
-		if path != "" {
-			s.ImageDB.DeleteImage(ctx, path)
+		if event.ImageURL != "" {
+			s.ImageDB.DeleteImage(ctx, event.ImageURL)
 		}
 		return models.Event{}, err
 	}
-	return event, err
+	return event, nil
 }
 
 func (s *EventService) DeleteEvent(ctx context.Context, ID, AuthorID int) error {
@@ -87,10 +63,13 @@ func (s *EventService) DeleteEvent(ctx context.Context, ID, AuthorID int) error 
 	}
 
 	if dbEvent.AuthorID != AuthorID {
-		return errors.Wrap(models.ErrAccessDenied, models.LevelService)
+		return fmt.Errorf("%s: %w", models.LevelService, models.ErrAccessDenied)
 	}
 
-	s.ImageDB.DeleteImage(ctx, dbEvent.ImageURL)
+	if dbEvent.ImageURL != "" {
+		s.ImageDB.DeleteImage(ctx, dbEvent.ImageURL)
+	}
+
 	return s.EventDB.DeleteEvent(ctx, ID)
 }
 
@@ -105,35 +84,34 @@ func (s *EventService) SearchEvents(ctx context.Context, params models.SearchPar
 	return s.EventDB.SearchEvents(ctx, params, paginationParams)
 }
 
-func (s *EventService) UpdateEvent(ctx context.Context, event models.Event, header *multipart.FileHeader, file *multipart.File) (models.Event, error) {
+func (s *EventService) UpdateEvent(ctx context.Context, event models.Event, media models.MediaFile) (models.Event, error) {
 	dbEvent, err := s.EventDB.GetEventByID(ctx, event.ID)
 	if err != nil {
 		return models.Event{}, err
 	}
 
 	if dbEvent.AuthorID != event.AuthorID {
-		return models.Event{}, errors.Wrap(models.ErrAccessDenied, models.LevelService)
+		return models.Event{}, fmt.Errorf("%s: %w", models.LevelService, models.ErrAccessDenied)
 	}
-	path := ""
-	if header != nil && file != nil {
-		path, err := s.ImageDB.SaveImage(ctx, *header, *file)
+
+	if media.File != nil {
+		path, err := s.ImageDB.SaveImage(ctx, media)
 		if err != nil {
 			return models.Event{}, err
 		}
-
 		event.ImageURL = path
 	}
 
-	event, err = s.EventDB.UpdateEvent(ctx, event)
+	updatedEvent, err := s.EventDB.UpdateEvent(ctx, event)
 	if err != nil {
-		if path != "" {
-			s.ImageDB.DeleteImage(ctx, path)
+		if media.File != nil {
+			s.ImageDB.DeleteImage(ctx, event.ImageURL)
 		}
 		return models.Event{}, err
 	}
 
-	if dbEvent.ImageURL != "" && file != nil {
-		err = s.ImageDB.DeleteImage(ctx, dbEvent.ImageURL)
+	if dbEvent.ImageURL != "" && media.File != nil {
+		s.ImageDB.DeleteImage(ctx, dbEvent.ImageURL)
 	}
-	return event, nil
+	return updatedEvent, nil
 }

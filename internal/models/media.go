@@ -2,7 +2,7 @@ package models
 
 import "io"
 
-type MediaFile struct{
+type MediaFile struct {
 	Filename string
-	File io.ReadCloser
+	File     io.ReadCloser
 }
