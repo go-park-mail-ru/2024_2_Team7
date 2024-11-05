@@ -2,12 +2,15 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"github.com/pressly/goose/v3"
 	"os"
 
 	"kudago/internal/logger"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 type PostgresConfig struct {
@@ -32,6 +35,7 @@ func GetPostgresConfig() (PostgresConfig, error) {
 }
 
 func InitPostgres(config PostgresConfig, logger *logger.Logger) (*pgxpool.Pool, error) {
+	fmt.Println(config.URL)
 	dbConf, err := pgxpool.ParseConfig(config.URL)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse db URL: %v", err)
@@ -47,5 +51,29 @@ func InitPostgres(config PostgresConfig, logger *logger.Logger) (*pgxpool.Pool, 
 	if postgresPing != nil {
 		return nil, fmt.Errorf("unable to connect to db: %v", err)
 	}
+
+	if err := RunMigrations(config.URL); err != nil {
+		return nil, fmt.Errorf("failed to run migrations: %v", err)
+	}
+
 	return pool, nil
+}
+
+func RunMigrations(dbURL string) error {
+	migrationsDir := os.Getenv("MIGRATION_FOLDER")
+	if migrationsDir == "" {
+		return fmt.Errorf("MIGRATION_FOLDER environment variable is not set")
+	}
+
+	sqlDB, err := sql.Open("pgx", dbURL)
+	if err != nil {
+		return fmt.Errorf("unable to open db: %v", err)
+	}
+	defer sqlDB.Close()
+
+	if err := goose.Up(sqlDB, migrationsDir); err != nil {
+		return fmt.Errorf("failed to run migrations: %v", err)
+	}
+
+	return nil
 }

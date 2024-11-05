@@ -5,6 +5,7 @@ coverage.out
 c.out
 .env
 pgdata
+db-data
 auth_test.go
 static
 update_event_test.go
