@@ -1,4 +1,4 @@
-//go:generate mockgen -source ./events.go -destination=./mocks/events.go -package=mock_events
+//go:generate mockgen -source ./events.go -destination=./mocks/events.go -package=mocks
 
 package eventService
 

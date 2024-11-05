@@ -1,3 +1,5 @@
+//go:generate mockgen -source /home/ksu/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.1/tx.go -destination=./mocks/mocks_tx.go -package=mocks_tx
+
 package eventRepository
 
 import (

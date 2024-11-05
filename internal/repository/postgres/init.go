@@ -4,8 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/pressly/goose/v3"
 	"os"
+
+	"github.com/pressly/goose/v3"
 
 	"kudago/internal/logger"
 

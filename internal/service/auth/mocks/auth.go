@@ -7,7 +7,6 @@ package mocks
 import (
 	context "context"
 	models "kudago/internal/models"
-	multipart "mime/multipart"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -246,16 +245,16 @@ func (mr *MockImageDBMockRecorder) DeleteImage(ctx, imagePath interface{}) *gomo
 }
 
 // SaveImage mocks base method.
-func (m *MockImageDB) SaveImage(ctx context.Context, header multipart.FileHeader, file multipart.File) (string, error) {
+func (m *MockImageDB) SaveImage(ctx context.Context, media models.MediaFile) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SaveImage", ctx, header, file)
+	ret := m.ctrl.Call(m, "SaveImage", ctx, media)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SaveImage indicates an expected call of SaveImage.
-func (mr *MockImageDBMockRecorder) SaveImage(ctx, header, file interface{}) *gomock.Call {
+func (mr *MockImageDBMockRecorder) SaveImage(ctx, media interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveImage", reflect.TypeOf((*MockImageDB)(nil).SaveImage), ctx, header, file)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveImage", reflect.TypeOf((*MockImageDB)(nil).SaveImage), ctx, media)
 }

@@ -42,7 +42,6 @@ type UpdateEventRequest struct {
 // @Failure 404 {object} httpErrors.HttpError "Событие не найдено"
 // @Failure 500 {object} httpErrors.HttpError "Внутренняя ошибка сервера"
 // @Router /events/{id} [put]
-
 func (h EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 	session, ok := utils.GetSessionFromContext(r.Context())
 	if !ok {

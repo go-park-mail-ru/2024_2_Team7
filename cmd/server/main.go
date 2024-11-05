@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -42,6 +43,7 @@ func main() {
 
 	pool, err := postgres.InitPostgres(conf.PostgresConfig, appLogger)
 	if err != nil {
+		fmt.Println(err)
 		log.Fatalf("Failed to connect to the postgres database")
 	}
 	defer pool.Close()

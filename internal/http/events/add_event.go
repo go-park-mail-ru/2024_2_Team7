@@ -38,7 +38,6 @@ type CreateEventResponse struct {
 // @Failure 401 {object} httpErrors.HttpError "Неавторизован"
 // @Failure 500 {object} httpErrors.HttpError "Внутренняя ошибка сервера"
 // @Router /events [post]
-
 func (h EventHandler) AddEvent(w http.ResponseWriter, r *http.Request) {
 	session, ok := utils.GetSessionFromContext(r.Context())
 	if !ok {
