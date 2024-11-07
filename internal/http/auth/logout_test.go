@@ -84,14 +84,14 @@ func TestAuthHandler_Logout(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
 			tt.setupFunc(ctrl).Logout(tt.w, tt.req)
 
 			assert.Equal(t, tt.wantCode, tt.w.Code)
-
-			// Additional checks can be added if needed, such as checking for cookies
 		})
 	}
 }

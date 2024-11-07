@@ -15,6 +15,8 @@ import (
 )
 
 func TestEventService_AddEvent(t *testing.T) {
+	t.Parallel()
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -33,7 +35,7 @@ func TestEventService_AddEvent(t *testing.T) {
 		expectError bool
 	}{
 		{
-			name: "success with image",
+			name: "успешное сохранение",
 			event: models.Event{
 				Title: "Event 1",
 			},
@@ -53,7 +55,7 @@ func TestEventService_AddEvent(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name: "error saving image",
+			name: "ошибка при сохранении",
 			event: models.Event{
 				Title: "Event 2",
 			},
@@ -71,6 +73,8 @@ func TestEventService_AddEvent(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			tc.setupMocks()
 
 			result, err := service.AddEvent(context.Background(), tc.event, tc.media)
@@ -85,6 +89,8 @@ func TestEventService_AddEvent(t *testing.T) {
 }
 
 func TestEventService_DeleteEvent(t *testing.T) {
+	t.Parallel()
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -100,7 +106,7 @@ func TestEventService_DeleteEvent(t *testing.T) {
 		expectError bool
 	}{
 		{
-			name:     "success with image deletion",
+			name:     "успешное выполнение",
 			ID:       1,
 			AuthorID: 1,
 			setupMocks: func() {
@@ -111,7 +117,7 @@ func TestEventService_DeleteEvent(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:     "unauthorized deletion attempt",
+			name:     "нет доступа",
 			ID:       1,
 			AuthorID: 2,
 			setupMocks: func() {
@@ -123,6 +129,8 @@ func TestEventService_DeleteEvent(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			tc.setupMocks()
 
 			err := service.DeleteEvent(context.Background(), tc.ID, tc.AuthorID)
@@ -136,6 +144,8 @@ func TestEventService_DeleteEvent(t *testing.T) {
 }
 
 func TestEventService_SearchEvents(t *testing.T) {
+	t.Parallel()
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -149,7 +159,7 @@ func TestEventService_SearchEvents(t *testing.T) {
 		expectError  bool
 	}{
 		{
-			name: "search with tags",
+			name: "успешное выполнение",
 			searchParams: models.SearchParams{
 				Tags: []string{"Music", "Live"},
 			},
@@ -162,6 +172,8 @@ func TestEventService_SearchEvents(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			tc.setupMocks()
 
 			_, err := service.SearchEvents(context.Background(), tc.searchParams, models.PaginationParams{})
@@ -175,6 +187,8 @@ func TestEventService_SearchEvents(t *testing.T) {
 }
 
 func TestEventService_UpdateEvent(t *testing.T) {
+	t.Parallel()
+
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -193,7 +207,7 @@ func TestEventService_UpdateEvent(t *testing.T) {
 		expectError bool
 	}{
 		{
-			name: "success with new image",
+			name: "успешное выполенение",
 			event: models.Event{
 				ID:       1,
 				AuthorID: 1,
@@ -216,6 +230,8 @@ func TestEventService_UpdateEvent(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
 			tc.setupMocks()
 
 			result, err := service.UpdateEvent(context.Background(), tc.event, tc.media)

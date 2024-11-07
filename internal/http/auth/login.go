@@ -36,14 +36,14 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	var req AuthRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.Error(r.Context(), "login decode", err)
+		h.logger.Error(r.Context(), "login", err)
 		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
 		return
 	}
 
 	_, err := govalidator.ValidateStruct(&req)
 	if err != nil {
-		h.logger.Error(r.Context(), "login val", err)
+		h.logger.Error(r.Context(), "login", err)
 		utils.ProcessValidationErrors(w, err)
 		return
 	}

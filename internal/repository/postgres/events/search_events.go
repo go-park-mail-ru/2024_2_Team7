@@ -10,7 +10,8 @@ import (
 const baseSearchQuery = `
 	SELECT event.id, event.title, event.description, event.event_start, event.event_finish, 
 		event.location, event.capacity, event.created_at, event.user_id, event.category_id,
-		COALESCE(array_agg(DISTINCT tag.name), '{}') AS tags, media_url.url AS media_link
+	COALESCE(array_agg(DISTINCT tag.name) FILTER (WHERE tag.name IS NOT NULL), ARRAY[]::TEXT[]) AS tags,
+		COALESCE(media_url.url, '') AS media_link	
 	FROM event
 	LEFT JOIN event_tag ON event.id = event_tag.event_id
 	LEFT JOIN tag ON tag.id = event_tag.tag_id
@@ -21,10 +22,15 @@ const baseSearchQuery = `
 		AND ($3::TIMESTAMP IS NULL OR event.event_start >= $3)
 		AND ($4::TIMESTAMP IS NULL OR event.event_finish <= $4)
 	GROUP BY event.id, media_url.url
-	HAVING (array_length($5::TEXT[], 1) = 0 OR array_length(array_agg(DISTINCT LOWER(tag.name)), 1) = 0 OR array_agg(DISTINCT LOWER(tag.name)) @> $5::TEXT[])
+	HAVING (
+		$5::TEXT[] IS NULL 
+		OR array_length($5::TEXT[], 1) = 0 
+		OR array_length(array_agg(DISTINCT LOWER(tag.name)), 1) = 0 
+		OR array_agg(DISTINCT LOWER(tag.name)) @> $5::TEXT[]
+	)
 	ORDER BY event.event_finish ASC
 	LIMIT $6 OFFSET $7;
-`
+	`
 
 func (db *EventDB) SearchEvents(ctx context.Context, params models.SearchParams, paginationParams models.PaginationParams) ([]models.Event, error) {
 	args := []interface{}{

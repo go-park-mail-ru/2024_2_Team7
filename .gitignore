@@ -6,6 +6,6 @@ c.out
 .env
 pgdata
 db-data
-auth_test.go
+register_test.go
 static
 update_event_test.go

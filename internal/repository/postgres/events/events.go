@@ -1,4 +1,5 @@
-//go:generate mockgen -source /home/ksu/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.1/tx.go -destination=./mocks/mocks_tx.go -package=mocks_tx
+//go:generate mockgen -source /home/ksu/go/pkg/mod/github.com/jackc/pgx/v5@v5.7.1/tx.go -destination=./mocks/mocks_tx.go -package=mocks
+//go:generate mockgen -source events.go -destination=./mocks/mocks.go -package=mocks
 
 package eventRepository
 
@@ -10,11 +11,19 @@ import (
 	"kudago/internal/models"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type EventDB struct {
-	pool *pgxpool.Pool
+	pool Pool
+}
+
+type Pool interface {
+	Begin(ctx context.Context) (pgx.Tx, error)
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+	Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
 }
 
 type EventInfo struct {
@@ -32,7 +41,7 @@ type EventInfo struct {
 	ImageURL    *string   `db:"image"`
 }
 
-func NewDB(pool *pgxpool.Pool) *EventDB {
+func NewDB(pool Pool) *EventDB {
 	return &EventDB{
 		pool: pool,
 	}
