@@ -7,5 +7,4 @@ c.out
 pgdata
 db-data
 register_test.go
-static
 update_event_test.go
