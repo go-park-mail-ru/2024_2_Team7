@@ -12,7 +12,7 @@ import (
 )
 
 type AddEventRequest struct {
-	Title       string   `json:"title" valid:"required,length(3|50)"`
+	Title       string   `json:"title" valid:"required,length(3|100)"`
 	Description string   `json:"description" valid:"required"`
 	Location    string   `json:"location"`
 	Category    int      `json:"category_id" valid:"required"`
