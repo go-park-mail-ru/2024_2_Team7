@@ -36,9 +36,7 @@ func (h EventHandler) SearchEvents(w http.ResponseWriter, r *http.Request) {
 
 	categoryID, err := strconv.Atoi(categoryIDStr)
 	if err != nil {
-		h.logger.Error(r.Context(), "search", err)
-		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
-		return
+		categoryID = 0
 	}
 
 	params := models.SearchParams{
