@@ -3,7 +3,6 @@ package events
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -60,7 +59,7 @@ func (h EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 	jsonData := r.FormValue("json")
 	err = json.Unmarshal([]byte(jsonData), &req)
 	if err != nil {
-		fmt.Println(err)
+		h.logger.Error(r.Context(), "update", err)
 		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
 		return
 	}
