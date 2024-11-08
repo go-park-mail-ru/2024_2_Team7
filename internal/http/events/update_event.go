@@ -15,7 +15,7 @@ import (
 )
 
 type UpdateEventRequest struct {
-	Title       string   `json:"title" valid:"length(3|50), omitempty"`
+	Title       string   `json:"title" valid:"length(3|100), omitempty"`
 	Description string   `json:"description"`
 	Location    string   `json:"location"`
 	Category    int      `json:"category_id"`
