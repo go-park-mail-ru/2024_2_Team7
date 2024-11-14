@@ -124,6 +124,7 @@ func GenerateFilename(header *multipart.FileHeader) error {
 	if err != nil {
 		return models.ErrInvalidImage
 	}
+
 	token := base64.URLEncoding.EncodeToString(bytes)
 	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
 

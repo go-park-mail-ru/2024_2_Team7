@@ -50,6 +50,20 @@ func (mr *MockEventDBMockRecorder) AddEvent(ctx, event interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddEvent", reflect.TypeOf((*MockEventDB)(nil).AddEvent), ctx, event)
 }
 
+// AddEventToFavorites mocks base method.
+func (m *MockEventDB) AddEventToFavorites(ctx context.Context, newFavorite models.FavoriteEvent) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddEventToFavorites", ctx, newFavorite)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddEventToFavorites indicates an expected call of AddEventToFavorites.
+func (mr *MockEventDBMockRecorder) AddEventToFavorites(ctx, newFavorite interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddEventToFavorites", reflect.TypeOf((*MockEventDB)(nil).AddEventToFavorites), ctx, newFavorite)
+}
+
 // DeleteEvent mocks base method.
 func (m *MockEventDB) DeleteEvent(ctx context.Context, ID int) error {
 	m.ctrl.T.Helper()
@@ -62,6 +76,20 @@ func (m *MockEventDB) DeleteEvent(ctx context.Context, ID int) error {
 func (mr *MockEventDBMockRecorder) DeleteEvent(ctx, ID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteEvent", reflect.TypeOf((*MockEventDB)(nil).DeleteEvent), ctx, ID)
+}
+
+// DeleteEventFromFavorites mocks base method.
+func (m *MockEventDB) DeleteEventFromFavorites(ctx context.Context, favorite models.FavoriteEvent) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteEventFromFavorites", ctx, favorite)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteEventFromFavorites indicates an expected call of DeleteEventFromFavorites.
+func (mr *MockEventDBMockRecorder) DeleteEventFromFavorites(ctx, favorite interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteEventFromFavorites", reflect.TypeOf((*MockEventDB)(nil).DeleteEventFromFavorites), ctx, favorite)
 }
 
 // GetCategories mocks base method.

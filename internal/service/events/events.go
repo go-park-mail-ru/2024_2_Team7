@@ -26,6 +26,8 @@ type EventDB interface {
 	DeleteEvent(ctx context.Context, ID int) error
 	UpdateEvent(ctx context.Context, event models.Event) (models.Event, error)
 	SearchEvents(ctx context.Context, params models.SearchParams, paginationParams models.PaginationParams) ([]models.Event, error)
+	AddEventToFavorites(ctx context.Context, newFavorite models.FavoriteEvent) error
+	DeleteEventFromFavorites(ctx context.Context, favorite models.FavoriteEvent) error
 }
 
 type ImageDB interface {
@@ -114,4 +116,12 @@ func (s *EventService) UpdateEvent(ctx context.Context, event models.Event, medi
 		s.ImageDB.DeleteImage(ctx, dbEvent.ImageURL)
 	}
 	return updatedEvent, nil
+}
+
+func (s *EventService) AddEventToFavorites(ctx context.Context, newFavorite models.FavoriteEvent) error {
+	return s.EventDB.AddEventToFavorites(ctx, newFavorite)
+}
+
+func (s *EventService) DeleteEventFromFavorites(ctx context.Context, favorite models.FavoriteEvent) error {
+	return s.EventDB.DeleteEventFromFavorites(ctx, favorite)
 }

@@ -1,7 +1,6 @@
 package events
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
@@ -15,11 +14,11 @@ import (
 )
 
 type UpdateEventRequest struct {
-	Title       string   `json:"title" valid:"length(3|100), omitempty"`
-	Description string   `json:"description"`
-	Location    string   `json:"location"`
-	Category    int      `json:"category_id"`
-	Capacity    int      `json:"capacity"`
+	Title       string   `json:"title" valid:"length(3|100)"`
+	Description string   `json:"description" valid:"length(3|1000)"`
+	Location    string   `json:"location" valid:"length(3|100)"`
+	Category    int      `json:"category_id" valid:"range(1|8)"`
+	Capacity    int      `json:"capacity" valid:"range(0|20000)"`
 	Tag         []string `json:"tag"`
 	EventStart  string   `json:"event_start" valid:"rfc3339"`
 	EventEnd    string   `json:"event_end" valid:"rfc3339"`
@@ -32,9 +31,9 @@ type UpdateEventRequest struct {
 // @Accept  json
 // @Produce  json
 // @Param id path int true "Идентификатор события"
-// @Param json body UpdateEventRequest true "Данные для обновления события"
+// @Param json body NewEventRequest true "Данные для обновления события"
 // @Param image formData file false "Изображение события"
-// @Success 200 {object} EventResponse "Успешное обновление события"
+// @Success 200 {object} NewEventResponse "Успешное обновление события"
 // @Failure 400 {object} httpErrors.HttpError "Неверные данные"
 // @Failure 401 {object} httpErrors.HttpError "Неавторизован"
 // @Failure 403 {object} httpErrors.HttpError "Доступ запрещен"
@@ -48,6 +47,24 @@ func (h EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	req, media, reqErr := parseEventData(r)
+	if reqErr != nil {
+		utils.WriteResponse(w, http.StatusBadRequest, reqErr)
+		return
+	}
+
+	_, err := govalidator.ValidateStruct(&req)
+	if err != nil {
+		utils.ProcessValidationErrors(w, err)
+		return
+	}
+
+	reqErr = checkNewEventRequest(req)
+	if reqErr != nil {
+		utils.WriteResponse(w, http.StatusBadRequest, reqErr)
+		return
+	}
+
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
@@ -55,39 +72,8 @@ func (h EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req UpdateEventRequest
-	jsonData := r.FormValue("json")
-	err = json.Unmarshal([]byte(jsonData), &req)
-	if err != nil {
-		h.logger.Error(r.Context(), "update", err)
-		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
-		return
-	}
-
-	_, err = govalidator.ValidateStruct(&req)
-	if err != nil {
-		utils.ProcessValidationErrors(w, err)
-		return
-	}
-
-	event := models.Event{
-		ID:          id,
-		Title:       req.Title,
-		Description: req.Description,
-		EventStart:  req.EventStart,
-		EventEnd:    req.EventEnd,
-		AuthorID:    session.UserID,
-		Tag:         req.Tag,
-		Location:    req.Location,
-		CategoryID:  req.Category,
-		Capacity:    req.Capacity,
-	}
-
-	media, err := utils.HandleImageUpload(r)
-	if err != nil {
-		utils.WriteResponse(w, http.StatusBadRequest, err)
-		return
-	}
+	event := toModelEvent(req, session.UserID)
+	event.ID = id
 
 	event, err = h.service.UpdateEvent(r.Context(), event, media)
 	if err != nil {
@@ -101,6 +87,10 @@ func (h EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	resp := eventToEventResponse(event)
+
+	eventResp := eventToEventResponse(event)
+	resp := NewEventResponse{
+		Event: eventResp,
+	}
 	utils.WriteResponse(w, http.StatusOK, resp)
 }

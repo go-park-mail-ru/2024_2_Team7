@@ -24,7 +24,6 @@ import (
 // @Router /events/{id} [delete]
 func (h EventHandler) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 	session, ok := utils.GetSessionFromContext(r.Context())
-
 	if !ok {
 		utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrUnauthorized)
 		return

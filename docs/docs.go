@@ -75,12 +75,38 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "description": "Фильтры для поиска событий",
-                        "name": "SearchRequest",
-                        "in": "body",
-                        "schema": {
-                            "$ref": "#/definitions/events.SearchRequest"
-                        }
+                        "type": "string",
+                        "description": "Ключевые слова для поиска",
+                        "name": "query",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Дата начала события в формате YYYY-MM-DD",
+                        "name": "event_start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Дата окончания события в формате YYYY-MM-DD",
+                        "name": "event_end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Список тегов",
+                        "name": "tags",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID категории",
+                        "name": "category_id",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -123,7 +149,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/events.AddEventRequest"
+                            "$ref": "#/definitions/events.NewEventRequest"
                         }
                     }
                 ],
@@ -131,7 +157,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Событие успешно создано",
                         "schema": {
-                            "$ref": "#/definitions/events.CreateEventResponse"
+                            "$ref": "#/definitions/events.NewEventResponse"
                         }
                     },
                     "400": {
@@ -170,6 +196,108 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/events.GetEventsResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/events/favorites": {
+            "get": {
+                "description": "Возвращает избранные события",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "events"
+                ],
+                "summary": "Получение избранных событий",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Номер страницы (по умолчанию 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Количество событий на странице (по умолчанию 30)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/events.GetEventsResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/events/favorites/{id}": {
+            "post": {
+                "description": "Добавить событие в избранное",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "events"
+                ],
+                "summary": "Добавление события в изсбранное",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Удаляет событие из списка избранного",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "events"
+                ],
+                "summary": "Удаление события из избранного",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
                         }
                     },
                     "500": {
@@ -264,7 +392,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/events.UpdateEventRequest"
+                            "$ref": "#/definitions/events.NewEventRequest"
                         }
                     },
                     {
@@ -278,7 +406,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Успешное обновление события",
                         "schema": {
-                            "$ref": "#/definitions/events.EventResponse"
+                            "$ref": "#/definitions/events.NewEventResponse"
                         }
                     },
                     "400": {
@@ -649,46 +777,6 @@ const docTemplate = `{
                 }
             }
         },
-        "events.AddEventRequest": {
-            "type": "object",
-            "properties": {
-                "capacity": {
-                    "type": "integer"
-                },
-                "category_id": {
-                    "type": "integer"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "event_end": {
-                    "type": "string"
-                },
-                "event_start": {
-                    "type": "string"
-                },
-                "location": {
-                    "type": "string"
-                },
-                "tag": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "events.CreateEventResponse": {
-            "type": "object",
-            "properties": {
-                "event": {
-                    "$ref": "#/definitions/events.EventResponse"
-                }
-            }
-        },
         "events.EventResponse": {
             "type": "object",
             "properties": {
@@ -741,30 +829,7 @@ const docTemplate = `{
                 }
             }
         },
-        "events.SearchRequest": {
-            "type": "object",
-            "properties": {
-                "category_id": {
-                    "type": "integer"
-                },
-                "event_end": {
-                    "type": "string"
-                },
-                "event_start": {
-                    "type": "string"
-                },
-                "query": {
-                    "type": "string"
-                },
-                "tags": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
-        "events.UpdateEventRequest": {
+        "events.NewEventRequest": {
             "type": "object",
             "properties": {
                 "capacity": {
@@ -793,6 +858,14 @@ const docTemplate = `{
                 },
                 "title": {
                     "type": "string"
+                }
+            }
+        },
+        "events.NewEventResponse": {
+            "type": "object",
+            "properties": {
+                "event": {
+                    "$ref": "#/definitions/events.EventResponse"
                 }
             }
         },

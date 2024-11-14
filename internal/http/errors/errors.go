@@ -50,6 +50,7 @@ var (
 		Message: "Wrong or empty capacity",
 		Code:    "invalid_capacity",
 	}
+
 	ErrUsernameIsAlredyTaken = &HttpError{
 		Message: "Username is already taken",
 		Code:    "already_taken",
@@ -78,5 +79,25 @@ var (
 	ErrAccessDenied = &HttpError{
 		Message: "User doesn't own this event",
 		Code:    "access_denied",
+	}
+
+	ErrBadTagLength = &HttpError{
+		Message: "Tag length is limited, 20 symbols only, no empty tags",
+		Code:    "invalid_tag",
+	}
+
+	ErrTooManyTags = &HttpError{
+		Message: "Tags array length is limited 50 tags only",
+		Code:    "invalid_tags",
+	}
+
+	ErrEventStartAfterEventEnd = &HttpError{
+		Message: "Event start should be before event end",
+		Code:    "invalid_time",
+	}
+
+	ErrBadEventTiming = &HttpError{
+		Message: "Event start should not be in the past and event end should be before 2030",
+		Code:    "invalid_time",
 	}
 )

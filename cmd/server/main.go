@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
@@ -43,7 +42,6 @@ func main() {
 
 	pool, err := postgres.InitPostgres(conf.PostgresConfig, appLogger)
 	if err != nil {
-		fmt.Println(err)
 		log.Fatalf("Failed to connect to the postgres database")
 	}
 	defer pool.Close()
@@ -82,6 +80,9 @@ func main() {
 	r.HandleFunc("/events/{id:[0-9]+}", eventHandler.DeleteEvent).Methods("DELETE")
 	r.HandleFunc("/events", eventHandler.AddEvent).Methods("POST")
 	r.HandleFunc("/events/search", eventHandler.SearchEvents).Methods("GET")
+	r.HandleFunc("/events/favorites", eventHandler.GetFavorites).Methods("GET")
+	r.HandleFunc("/events/favorites/{id:[0-9]+}", eventHandler.AddEventToFavorites).Methods("POST")
+	r.HandleFunc("/events/favorites/{id:[0-9]+}", eventHandler.DeleteEventFromFavorites).Methods("DELETE")
 
 	whitelist := []string{
 		"/login",

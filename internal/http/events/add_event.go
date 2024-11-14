@@ -1,7 +1,6 @@
 package events
 
 import (
-	"encoding/json"
 	"net/http"
 
 	httpErrors "kudago/internal/http/errors"
@@ -11,29 +10,14 @@ import (
 	"github.com/asaskevich/govalidator"
 )
 
-type AddEventRequest struct {
-	Title       string   `json:"title" valid:"required,length(3|100)"`
-	Description string   `json:"description" valid:"required"`
-	Location    string   `json:"location"`
-	Category    int      `json:"category_id" valid:"required"`
-	Capacity    int      `json:"capacity"`
-	Tag         []string `json:"tag"`
-	EventStart  string   `json:"event_start" valid:"rfc3339,required"`
-	EventEnd    string   `json:"event_end" valid:"rfc3339,required"`
-}
-
-type CreateEventResponse struct {
-	Event EventResponse `json:"event"`
-}
-
 // AddEvent создает новое событие в системе.
 // @Summary Создание события
 // @Description Создает новое событие в системе. Необходимо передать JSON-объект с данными события.
 // @Tags events
 // @Accept  json
 // @Produce  json
-// @Param json body AddEventRequest true "Данные для создания события"
-// @Success 201 {object} CreateEventResponse "Событие успешно создано"
+// @Param json body NewEventRequest true "Данные для создания события"
+// @Success 201 {object} NewEventResponse "Событие успешно создано"
 // @Failure 400 {object} httpErrors.HttpError "Неверные данные"
 // @Failure 401 {object} httpErrors.HttpError "Неавторизован"
 // @Failure 500 {object} httpErrors.HttpError "Внутренняя ошибка сервера"
@@ -45,37 +29,25 @@ func (h EventHandler) AddEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req AddEventRequest
-	jsonData := r.FormValue("json")
-	err := json.Unmarshal([]byte(jsonData), &req)
-	if err != nil {
-		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
+	req, media, reqErr := parseEventData(r)
+	if reqErr != nil {
+		utils.WriteResponse(w, http.StatusBadRequest, reqErr)
 		return
 	}
 
-	_, err = govalidator.ValidateStruct(&req)
+	_, err := govalidator.ValidateStruct(&req)
 	if err != nil {
 		utils.ProcessValidationErrors(w, err)
 		return
 	}
 
-	event := models.Event{
-		Title:       req.Title,
-		Description: req.Description,
-		Location:    req.Location,
-		EventStart:  req.EventStart,
-		EventEnd:    req.EventEnd,
-		AuthorID:    session.UserID,
-		CategoryID:  req.Category,
-		Capacity:    req.Capacity,
-		Tag:         req.Tag,
-	}
-
-	media, err := utils.HandleImageUpload(r)
-	if err != nil {
-		utils.WriteResponse(w, http.StatusBadRequest, err)
+	reqErr = checkNewEventRequest(req)
+	if reqErr != nil {
+		utils.WriteResponse(w, http.StatusBadRequest, reqErr)
 		return
 	}
+
+	event := toModelEvent(req, session.UserID)
 
 	event, err = h.service.AddEvent(r.Context(), event, media)
 	if err != nil {
@@ -89,6 +61,10 @@ func (h EventHandler) AddEvent(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	resp := eventToEventResponse(event)
+
+	eventResp := eventToEventResponse(event)
+	resp := NewEventResponse{
+		Event: eventResp,
+	}
 	utils.WriteResponse(w, http.StatusOK, resp)
 }

@@ -36,7 +36,6 @@ func GetPostgresConfig() (PostgresConfig, error) {
 }
 
 func InitPostgres(config PostgresConfig, logger *logger.Logger) (*pgxpool.Pool, error) {
-	fmt.Println(config.URL)
 	dbConf, err := pgxpool.ParseConfig(config.URL)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse db URL: %v", err)

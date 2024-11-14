@@ -16,3 +16,8 @@ type Event struct {
 	Tag         []string  `json:"tag"`
 	ImageURL    string    `json:"image"`
 }
+
+type FavoriteEvent struct {
+	EventID int `json:"event_id"`
+	UserID  int `json:"user_id"`
+}

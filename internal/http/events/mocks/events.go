@@ -50,6 +50,20 @@ func (mr *MockEventServiceMockRecorder) AddEvent(ctx, event, media interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddEvent", reflect.TypeOf((*MockEventService)(nil).AddEvent), ctx, event, media)
 }
 
+// AddEventToFavorites mocks base method.
+func (m *MockEventService) AddEventToFavorites(ctx context.Context, newFavorite models.FavoriteEvent) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddEventToFavorites", ctx, newFavorite)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddEventToFavorites indicates an expected call of AddEventToFavorites.
+func (mr *MockEventServiceMockRecorder) AddEventToFavorites(ctx, newFavorite interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddEventToFavorites", reflect.TypeOf((*MockEventService)(nil).AddEventToFavorites), ctx, newFavorite)
+}
+
 // DeleteEvent mocks base method.
 func (m *MockEventService) DeleteEvent(ctx context.Context, ID, authorID int) error {
 	m.ctrl.T.Helper()
@@ -62,6 +76,20 @@ func (m *MockEventService) DeleteEvent(ctx context.Context, ID, authorID int) er
 func (mr *MockEventServiceMockRecorder) DeleteEvent(ctx, ID, authorID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteEvent", reflect.TypeOf((*MockEventService)(nil).DeleteEvent), ctx, ID, authorID)
+}
+
+// DeleteEventFromFavorites mocks base method.
+func (m *MockEventService) DeleteEventFromFavorites(ctx context.Context, newFavorite models.FavoriteEvent) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteEventFromFavorites", ctx, newFavorite)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteEventFromFavorites indicates an expected call of DeleteEventFromFavorites.
+func (mr *MockEventServiceMockRecorder) DeleteEventFromFavorites(ctx, newFavorite interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteEventFromFavorites", reflect.TypeOf((*MockEventService)(nil).DeleteEventFromFavorites), ctx, newFavorite)
 }
 
 // SearchEvents mocks base method.
@@ -175,6 +203,21 @@ func (m *MockEventsGetter) GetEventsByUser(ctx context.Context, userID int, pagi
 func (mr *MockEventsGetterMockRecorder) GetEventsByUser(ctx, userID, paginationParams interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEventsByUser", reflect.TypeOf((*MockEventsGetter)(nil).GetEventsByUser), ctx, userID, paginationParams)
+}
+
+// GetFavorites mocks base method.
+func (m *MockEventsGetter) GetFavorites(ctx context.Context, userID int, paginationParams models.PaginationParams) ([]models.Event, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFavorites", ctx, userID, paginationParams)
+	ret0, _ := ret[0].([]models.Event)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetFavorites indicates an expected call of GetFavorites.
+func (mr *MockEventsGetterMockRecorder) GetFavorites(ctx, userID, paginationParams interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFavorites", reflect.TypeOf((*MockEventsGetter)(nil).GetFavorites), ctx, userID, paginationParams)
 }
 
 // GetPastEvents mocks base method.
