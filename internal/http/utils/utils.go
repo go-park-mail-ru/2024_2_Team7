@@ -7,9 +7,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/microcosm-cc/bluemonday"
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -174,4 +176,25 @@ func HandleImageUpload(r *http.Request) (models.MediaFile, error) {
 		Filename: header.Filename,
 		File:     file,
 	}, nil
+}
+
+// SanitizeStruct чистит всех строковых полей структуры от XSS
+func SanitizeStruct(input interface{}) error {
+	v := reflect.ValueOf(input)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	if v.Kind() != reflect.Struct {
+		return fmt.Errorf("input is not a struct")
+	}
+
+	p := bluemonday.UGCPolicy()
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		if field.Kind() == reflect.String && field.CanSet() {
+			original := field.String()
+			field.SetString(p.Sanitize(original))
+		}
+	}
+	return nil
 }
