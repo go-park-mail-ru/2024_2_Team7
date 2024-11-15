@@ -4,7 +4,7 @@ CREATE TABLE "USER" (
                         id SERIAL PRIMARY KEY,
                         username TEXT UNIQUE NOT NULL,
                         email TEXT UNIQUE NOT NULL,
-                        password_hash TEXT NOT NULL,
+                        password_hash BYTEA NOT NULL,
                         URL_to_avatar TEXT,
                         created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                         modified_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP

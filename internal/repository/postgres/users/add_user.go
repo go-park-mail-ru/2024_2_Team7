@@ -2,6 +2,7 @@ package userRepository
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 
 	"kudago/internal/models"
@@ -13,11 +14,17 @@ const addUserQuery = `
 	RETURNING id,  created_at`
 
 func (d *UserDB) AddUser(ctx context.Context, user models.User) (models.User, error) {
+	salt := make([]byte, 8)
+	if _, err := rand.Read(salt); err != nil {
+		return models.User{}, fmt.Errorf("failed to generate salt: %w", err)
+	}
+	passwordHash := hashPass(salt, user.Password)
+
 	var userInfo UserInfo
 	err := d.pool.QueryRow(ctx, addUserQuery,
 		user.Username,
 		user.Email,
-		user.Password,
+		passwordHash,
 		user.ImageURL,
 	).Scan(
 		&userInfo.ID,
