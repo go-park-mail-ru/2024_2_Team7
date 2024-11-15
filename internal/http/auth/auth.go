@@ -28,6 +28,8 @@ type AuthService interface {
 	Register(ctx context.Context, registerDTO models.NewUserData) (models.User, error)
 	CreateSession(ctx context.Context, ID int) (models.Session, error)
 	DeleteSession(ctx context.Context, token string) error
+	Subscribe(ctx context.Context, subscription models.Subscription) error
+	Unsubscribe(ctx context.Context, subscription models.Subscription) error
 }
 
 type AuthResponse struct {

@@ -22,6 +22,8 @@ type UserDB interface {
 	UpdateUser(ctx context.Context, user models.User) (models.User, error)
 	CheckUsername(ctx context.Context, username string, ID int) (bool, error)
 	CheckEmail(ctx context.Context, email string, ID int) (bool, error)
+	Subscribe(ctx context.Context, subscription models.Subscription) error
+	Unsubscribe(ctx context.Context, subscription models.Subscription) error
 }
 
 type SessionDB interface {
@@ -98,6 +100,14 @@ func (a *authService) UpdateUser(ctx context.Context, data models.NewUserData) (
 
 func (a *authService) GetUserByID(ctx context.Context, ID int) (models.User, error) {
 	return a.UserDB.GetUserByID(ctx, ID)
+}
+
+func (a *authService) Subscribe(ctx context.Context, subscription models.Subscription) error {
+	return a.UserDB.Subscribe(ctx, subscription)
+}
+
+func (a *authService) Unsubscribe(ctx context.Context, subscription models.Subscription) error {
+	return a.UserDB.Unsubscribe(ctx, subscription)
 }
 
 func (a *authService) CheckCredentials(ctx context.Context, creds models.Credentials) (models.User, error) {

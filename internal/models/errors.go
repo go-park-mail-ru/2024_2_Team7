@@ -3,14 +3,17 @@ package models
 import "errors"
 
 var (
-	ErrEventNotFound      = errors.New("event not found")
-	ErrAccessDenied       = errors.New("user has no access to event")
-	ErrUserNotFound       = errors.New("user not found")
-	ErrInternal           = errors.New("internal error")
-	ErrInvalidCategory    = errors.New("invalid category")
-	ErrInvalidImageFormat = errors.New("invalid image format")
-	ErrInvalidImage       = errors.New("invalid image")
-	ErrUnsupportedFile    = errors.New("unsupported file type")
+	ErrEventNotFound       = errors.New("event not found")
+	ErrAccessDenied        = errors.New("user has no access to event")
+	ErrUserNotFound        = errors.New("user not found")
+	ErrInternal            = errors.New("internal error")
+	ErrInvalidCategory     = errors.New("invalid category")
+	ErrInvalidImageFormat  = errors.New("invalid image format")
+	ErrInvalidImage        = errors.New("invalid image")
+	ErrUnsupportedFile     = errors.New("unsupported file type")
+	ErrForeignKeyViolation = errors.New("violates foreign key constraint")
+	ErrNotFound            = errors.New("not found")
+	ErrNothingToInsert     = errors.New("nothing to insert")
 )
 
 const (

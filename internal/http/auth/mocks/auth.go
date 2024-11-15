@@ -124,6 +124,34 @@ func (mr *MockAuthServiceMockRecorder) Register(ctx, registerDTO interface{}) *g
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockAuthService)(nil).Register), ctx, registerDTO)
 }
 
+// Subscribe mocks base method.
+func (m *MockAuthService) Subscribe(ctx context.Context, subscription models.Subscription) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Subscribe", ctx, subscription)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Subscribe indicates an expected call of Subscribe.
+func (mr *MockAuthServiceMockRecorder) Subscribe(ctx, subscription interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subscribe", reflect.TypeOf((*MockAuthService)(nil).Subscribe), ctx, subscription)
+}
+
+// Unsubscribe mocks base method.
+func (m *MockAuthService) Unsubscribe(ctx context.Context, subscription models.Subscription) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Unsubscribe", ctx, subscription)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Unsubscribe indicates an expected call of Unsubscribe.
+func (mr *MockAuthServiceMockRecorder) Unsubscribe(ctx, subscription interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Unsubscribe", reflect.TypeOf((*MockAuthService)(nil).Unsubscribe), ctx, subscription)
+}
+
 // UpdateUser mocks base method.
 func (m *MockAuthService) UpdateUser(ctx context.Context, data models.NewUserData) (models.User, error) {
 	m.ctrl.T.Helper()

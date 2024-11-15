@@ -110,6 +110,34 @@ func (mr *MockUserDBMockRecorder) GetUserByID(ctx, ID interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByID", reflect.TypeOf((*MockUserDB)(nil).GetUserByID), ctx, ID)
 }
 
+// Subscribe mocks base method.
+func (m *MockUserDB) Subscribe(ctx context.Context, subscription models.Subscription) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Subscribe", ctx, subscription)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Subscribe indicates an expected call of Subscribe.
+func (mr *MockUserDBMockRecorder) Subscribe(ctx, subscription interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subscribe", reflect.TypeOf((*MockUserDB)(nil).Subscribe), ctx, subscription)
+}
+
+// Unsubscribe mocks base method.
+func (m *MockUserDB) Unsubscribe(ctx context.Context, subscription models.Subscription) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Unsubscribe", ctx, subscription)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Unsubscribe indicates an expected call of Unsubscribe.
+func (mr *MockUserDBMockRecorder) Unsubscribe(ctx, subscription interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Unsubscribe", reflect.TypeOf((*MockUserDB)(nil).Unsubscribe), ctx, subscription)
+}
+
 // UpdateUser mocks base method.
 func (m *MockUserDB) UpdateUser(ctx context.Context, user models.User) (models.User, error) {
 	m.ctrl.T.Helper()

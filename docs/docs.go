@@ -335,6 +335,38 @@ const docTemplate = `{
                 }
             }
         },
+        "/events/subscription": {
+            "get": {
+                "description": "Возвращает события пользователя",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "events"
+                ],
+                "summary": "Получение событий по подпискам пользователя",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/events.GetEventsResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Status forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    }
+                }
+            }
+        },
         "/events/{id}": {
             "get": {
                 "description": "Возвращает информацию о событии по его идентификатору",
@@ -703,6 +735,47 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/auth.AuthResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/subscribe/{id}": {
+            "post": {
+                "description": "Отписаться от пользователя пользователя",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Отписаться от  пользователя",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    },
+                    "409": {
+                        "description": "Self subscription",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
                         }
                     }
                 }

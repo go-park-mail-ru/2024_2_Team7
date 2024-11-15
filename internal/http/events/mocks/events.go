@@ -235,6 +235,21 @@ func (mr *MockEventsGetterMockRecorder) GetPastEvents(ctx, paginationParams inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPastEvents", reflect.TypeOf((*MockEventsGetter)(nil).GetPastEvents), ctx, paginationParams)
 }
 
+// GetSubscriptionEvents mocks base method.
+func (m *MockEventsGetter) GetSubscriptionEvents(ctx context.Context, userID int, paginationParams models.PaginationParams) ([]models.Event, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSubscriptionEvents", ctx, userID, paginationParams)
+	ret0, _ := ret[0].([]models.Event)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSubscriptionEvents indicates an expected call of GetSubscriptionEvents.
+func (mr *MockEventsGetterMockRecorder) GetSubscriptionEvents(ctx, userID, paginationParams interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSubscriptionEvents", reflect.TypeOf((*MockEventsGetter)(nil).GetSubscriptionEvents), ctx, userID, paginationParams)
+}
+
 // GetUpcomingEvents mocks base method.
 func (m *MockEventsGetter) GetUpcomingEvents(ctx context.Context, paginationParams models.PaginationParams) ([]models.Event, error) {
 	m.ctrl.T.Helper()

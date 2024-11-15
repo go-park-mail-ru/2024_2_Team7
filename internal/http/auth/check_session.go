@@ -24,6 +24,7 @@ func (h *AuthHandler) CheckSession(w http.ResponseWriter, r *http.Request) {
 		utils.WriteResponse(w, http.StatusNotFound, httpErrors.ErrUserNotFound)
 		return
 	}
+
 	userResponse := userToUserResponse(user)
 
 	resp := AuthResponse{

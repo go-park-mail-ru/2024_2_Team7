@@ -51,6 +51,11 @@ var (
 		Code:    "invalid_capacity",
 	}
 
+	ErrInvalidID = &HttpError{
+		Message: "Can't get ID",
+		Code:    "invalid_id",
+	}
+
 	ErrUsernameIsAlredyTaken = &HttpError{
 		Message: "Username is already taken",
 		Code:    "already_taken",
@@ -99,5 +104,20 @@ var (
 	ErrBadEventTiming = &HttpError{
 		Message: "Event start should not be in the past and event end should be before 2030",
 		Code:    "invalid_time",
+	}
+
+	ErrSelfSubscription = &HttpError{
+		Message: "Can't subscribe same user",
+		Code:    "invalid_id",
+	}
+
+	ErrSubscriptionAlreadyExists = &HttpError{
+		Message: "Already subscribed",
+		Code:    "already_subscribed",
+	}
+
+	ErrSubscriptionNotFound = &HttpError{
+		Message: "No subscription to delete",
+		Code:    "no_subscription",
 	}
 )

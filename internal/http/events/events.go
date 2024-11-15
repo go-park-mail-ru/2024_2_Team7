@@ -73,6 +73,7 @@ type EventsGetter interface {
 	GetCategories(ctx context.Context) ([]models.Category, error)
 	GetEventByID(ctx context.Context, ID int) (models.Event, error)
 	GetFavorites(ctx context.Context, userID int, paginationParams models.PaginationParams) ([]models.Event, error)
+	GetSubscriptionEvents(ctx context.Context, userID int, paginationParams models.PaginationParams) ([]models.Event, error)
 }
 
 func NewEventHandler(s EventService, g EventsGetter, logger *logger.Logger) *EventHandler {

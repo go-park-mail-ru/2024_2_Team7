@@ -29,7 +29,7 @@ func (h EventHandler) AddEventToFavorites(w http.ResponseWriter, r *http.Request
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidID)
 		return
 	}
 
