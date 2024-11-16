@@ -30,6 +30,7 @@ type AuthService interface {
 	DeleteSession(ctx context.Context, token string) error
 	Subscribe(ctx context.Context, subscription models.Subscription) error
 	Unsubscribe(ctx context.Context, subscription models.Subscription) error
+	GetSubscriptions(ctx context.Context, ID int) ([]models.User, error)
 }
 
 type AuthResponse struct {
@@ -41,6 +42,10 @@ type UserResponse struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	ImageURL string `json:"image"`
+}
+
+type GetUsersResponse struct {
+	Users []UserResponse `json:"users"`
 }
 
 var validPasswordRegex = regexp.MustCompile(`^[a-zA-Z0-9+\-*/.;=\]\[\}\{\?]+$`)
@@ -80,4 +85,14 @@ func userToUserResponse(user models.User) UserResponse {
 		Email:    user.Email,
 		ImageURL: user.ImageURL,
 	}
+}
+
+func writeUsersResponse(users []models.User, limit int) GetUsersResponse {
+	resp := GetUsersResponse{make([]UserResponse, 0, limit)}
+
+	for _, user := range users {
+		userResp := userToUserResponse(user)
+		resp.Users = append(resp.Users, userResp)
+	}
+	return resp
 }

@@ -24,6 +24,7 @@ type UserDB interface {
 	CheckEmail(ctx context.Context, email string, ID int) (bool, error)
 	Subscribe(ctx context.Context, subscription models.Subscription) error
 	Unsubscribe(ctx context.Context, subscription models.Subscription) error
+	GetSubscriptions(ctx context.Context, id int) ([]models.User, error)
 }
 
 type SessionDB interface {
@@ -104,6 +105,10 @@ func (a *authService) GetUserByID(ctx context.Context, ID int) (models.User, err
 
 func (a *authService) Subscribe(ctx context.Context, subscription models.Subscription) error {
 	return a.UserDB.Subscribe(ctx, subscription)
+}
+
+func (a *authService) GetSubscriptions(ctx context.Context, id int) ([]models.User, error) {
+	return a.UserDB.GetSubscriptions(ctx, id)
 }
 
 func (a *authService) Unsubscribe(ctx context.Context, subscription models.Subscription) error {

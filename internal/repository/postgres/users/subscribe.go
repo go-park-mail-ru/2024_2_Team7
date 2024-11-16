@@ -4,11 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 
 	"kudago/internal/models"
 
-	"github.com/jackc/pgconn"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 const insertSubscription = `
@@ -20,7 +19,6 @@ func (db *UserDB) Subscribe(ctx context.Context, subscription models.Subscriptio
 	result, err := db.pool.Exec(ctx, insertSubscription, subscription.SubscriberID, subscription.FollowsID)
 	if err != nil {
 		var pgErr *pgconn.PgError
-		fmt.Println(errors.As(err, &pgErr), reflect.TypeOf(err))
 		if errors.As(err, &pgErr) {
 			return models.ErrForeignKeyViolation
 		}

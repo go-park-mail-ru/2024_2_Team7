@@ -95,6 +95,21 @@ func (mr *MockUserDBMockRecorder) CheckUsername(ctx, username, ID interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckUsername", reflect.TypeOf((*MockUserDB)(nil).CheckUsername), ctx, username, ID)
 }
 
+// GetSubscriptions mocks base method.
+func (m *MockUserDB) GetSubscriptions(ctx context.Context, id int) ([]models.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSubscriptions", ctx, id)
+	ret0, _ := ret[0].([]models.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSubscriptions indicates an expected call of GetSubscriptions.
+func (mr *MockUserDBMockRecorder) GetSubscriptions(ctx, id interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSubscriptions", reflect.TypeOf((*MockUserDB)(nil).GetSubscriptions), ctx, id)
+}
+
 // GetUserByID mocks base method.
 func (m *MockUserDB) GetUserByID(ctx context.Context, ID int) (models.User, error) {
 	m.ctrl.T.Helper()

@@ -67,11 +67,12 @@ func main() {
 	r.HandleFunc("/logout", authHandler.Logout).Methods(http.MethodPost)
 	r.HandleFunc("/session", authHandler.CheckSession).Methods(http.MethodGet)
 
-	r.HandleFunc("/profile", authHandler.Profile).Methods(http.MethodGet)
+	r.HandleFunc("/profile/{id}", authHandler.Profile).Methods(http.MethodGet)
 	r.HandleFunc("/profile", authHandler.UpdateUser).Methods(http.MethodPut)
 
-	r.HandleFunc("/users/subscribe/{id:[0-9]+}", authHandler.Subscribe).Methods(http.MethodPost)
-	r.HandleFunc("/users/subscribe/{id:[0-9]+}", authHandler.Unsubscribe).Methods(http.MethodDelete)
+	r.HandleFunc("/profile/subscribe/{id:[0-9]+}", authHandler.Subscribe).Methods(http.MethodPost)
+	r.HandleFunc("/profile/subscribe/{id:[0-9]+}", authHandler.GetSubscriptions).Methods(http.MethodGet)
+	r.HandleFunc("/profile/subscribe/{id:[0-9]+}", authHandler.Unsubscribe).Methods(http.MethodDelete)
 
 	r.HandleFunc("/events/{id:[0-9]+}", eventHandler.GetEventByID).Methods(http.MethodGet)
 	r.HandleFunc("/events/categories/{category}", eventHandler.GetEventsByCategory).Methods(http.MethodGet)
@@ -80,7 +81,7 @@ func main() {
 	r.HandleFunc("/events/subscription", eventHandler.GetSubscriptionEvents).Methods(http.MethodGet)
 
 	r.HandleFunc("/categories", eventHandler.GetCategories).Methods(http.MethodGet)
-	r.HandleFunc("/events/my", eventHandler.GetEventsByUser).Methods(http.MethodGet)
+	r.HandleFunc("/events/user/{id:[0-9]+}", eventHandler.GetEventsByUser).Methods(http.MethodGet)
 	r.HandleFunc("/events/{id:[0-9]+}", eventHandler.UpdateEvent).Methods(http.MethodPut)
 	r.HandleFunc("/events/{id:[0-9]+}", eventHandler.DeleteEvent).Methods(http.MethodDelete)
 	r.HandleFunc("/events", eventHandler.AddEvent).Methods(http.MethodPost)
@@ -99,6 +100,7 @@ func main() {
 		"/docs",
 		"/categories",
 		"/swagger",
+		"/profile",
 	}
 
 	handlerWithAuth := middleware.AuthMiddleware(whitelist, sessionDB, r)

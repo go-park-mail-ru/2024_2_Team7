@@ -94,6 +94,21 @@ func (mr *MockAuthServiceMockRecorder) DeleteSession(ctx, token interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteSession", reflect.TypeOf((*MockAuthService)(nil).DeleteSession), ctx, token)
 }
 
+// GetSubscriptions mocks base method.
+func (m *MockAuthService) GetSubscriptions(ctx context.Context, ID int) ([]models.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSubscriptions", ctx, ID)
+	ret0, _ := ret[0].([]models.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSubscriptions indicates an expected call of GetSubscriptions.
+func (mr *MockAuthServiceMockRecorder) GetSubscriptions(ctx, ID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSubscriptions", reflect.TypeOf((*MockAuthService)(nil).GetSubscriptions), ctx, ID)
+}
+
 // GetUserByID mocks base method.
 func (m *MockAuthService) GetUserByID(ctx context.Context, ID int) (models.User, error) {
 	m.ctrl.T.Helper()

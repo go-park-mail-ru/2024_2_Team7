@@ -2,10 +2,13 @@ package auth
 
 import (
 	"net/http"
+	"strconv"
 
 	httpErrors "kudago/internal/http/errors"
 	"kudago/internal/http/utils"
 	"kudago/internal/models"
+
+	"github.com/gorilla/mux"
 )
 
 type ProfileResponse struct {
@@ -20,14 +23,16 @@ type ProfileResponse struct {
 // @Tags profile
 // @Success 200 {object} ProfileResponse
 // @Failure 401 {object} httpErrors.HttpError "Unauthorized"
-// @Router /profile [get]
+// @Router /profile/{id} [get]
 func (h *AuthHandler) Profile(w http.ResponseWriter, r *http.Request) {
-	session, ok := utils.GetSessionFromContext(r.Context())
-	if !ok {
-		utils.WriteResponse(w, http.StatusUnauthorized, httpErrors.ErrUnauthorized)
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidID)
 		return
 	}
-	user, err := h.service.GetUserByID(r.Context(), session.UserID)
+
+	user, err := h.service.GetUserByID(r.Context(), id)
 	if err != nil {
 		utils.WriteResponse(w, http.StatusNotFound, httpErrors.ErrUserNotFound)
 		return

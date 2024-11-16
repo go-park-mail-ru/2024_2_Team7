@@ -2,9 +2,12 @@ package events
 
 import (
 	"net/http"
+	"strconv"
 
 	httpErrors "kudago/internal/http/errors"
 	"kudago/internal/http/utils"
+
+	"github.com/gorilla/mux"
 )
 
 // @Summary Получение событий пользователя
@@ -13,17 +16,18 @@ import (
 // @Produce  json
 // @Success 200 {object} GetEventsResponse
 // @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
-// @Router /events/my [get]
+// @Router /events/user/{id} [get]
 func (h EventHandler) GetEventsByUser(w http.ResponseWriter, r *http.Request) {
 	paginationParams := utils.GetPaginationParams(r)
 
-	session, ok := utils.GetSessionFromContext(r.Context())
-	if !ok {
-		utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrUnauthorized)
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidID)
 		return
 	}
 
-	events, err := h.getter.GetEventsByUser(r.Context(), session.UserID, paginationParams)
+	events, err := h.getter.GetEventsByUser(r.Context(), id, paginationParams)
 	if err != nil {
 
 		switch err {
