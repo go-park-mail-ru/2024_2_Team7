@@ -59,6 +59,13 @@ func (h EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err = utils.SanitizeStruct(&req)
+	if err != nil {
+		h.logger.Error(r.Context(), "sanitize error", err)
+		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
+		return
+	}
+
 	reqErr = checkNewEventRequest(req)
 	if reqErr != nil {
 		utils.WriteResponse(w, http.StatusBadRequest, reqErr)

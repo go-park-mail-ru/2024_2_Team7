@@ -1,7 +1,7 @@
 -- +goose Up
 -- +goose StatementBegin
 INSERT INTO "USER" (id, username, email, password_hash, URL_to_avatar)
-VALUES (0, 'default_user', '123@mail.ru', '123', 'static/images/profile1.jpeg');
+VALUES (0, 'default_user', '123@mail.ru', E'\\xACCD573F35180773D3EE7A2D8A456E95A422914545EFD733A7486F687522A37AEC7D56AFBEFE292D', 'static/images/profile1.jpeg');
 
 INSERT INTO EVENT (title, description, event_start, event_finish, location, capacity, user_id, category_id)
 VALUES

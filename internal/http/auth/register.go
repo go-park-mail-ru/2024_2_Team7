@@ -47,6 +47,13 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err = utils.SanitizeStruct(&req)
+	if err != nil {
+		h.logger.Error(r.Context(), "sanitize error", err)
+		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
+		return
+	}
+
 	_, err = govalidator.ValidateStruct(&req)
 	if err != nil {
 		h.logger.Error(r.Context(), "register", err)
