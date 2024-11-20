@@ -33,6 +33,8 @@ type ValidationErrResponse struct {
 	Errors []models.AuthError `json:"errors"`
 }
 
+var sanitizePolicy = bluemonday.UGCPolicy()
+
 type sessionKeyType struct{}
 
 var sessionKey sessionKeyType
@@ -188,12 +190,11 @@ func SanitizeStruct(input interface{}) error {
 		return fmt.Errorf("input is not a struct")
 	}
 
-	p := bluemonday.UGCPolicy()
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
 		if field.Kind() == reflect.String && field.CanSet() {
 			original := field.String()
-			field.SetString(p.Sanitize(original))
+			field.SetString(sanitizePolicy.Sanitize(original))
 		}
 	}
 	return nil

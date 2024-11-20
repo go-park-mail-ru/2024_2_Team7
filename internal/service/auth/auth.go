@@ -3,7 +3,9 @@
 package authService
 
 import (
+	"bytes"
 	"context"
+	"golang.org/x/crypto/argon2"
 
 	"kudago/internal/models"
 )
@@ -17,7 +19,7 @@ type authService struct {
 type UserDB interface {
 	AddUser(ctx context.Context, user models.User) (models.User, error)
 	GetUserByID(ctx context.Context, ID int) (models.User, error)
-	CheckCredentials(ctx context.Context, username string, password string) (models.User, error)
+	CheckCredentials(ctx context.Context, username string, password string) (models.User, []byte, error)
 	UserExists(ctx context.Context, username, email string) (bool, error)
 	UpdateUser(ctx context.Context, user models.User) (models.User, error)
 	CheckUsername(ctx context.Context, username string, ID int) (bool, error)
@@ -111,7 +113,17 @@ func (a *authService) Unsubscribe(ctx context.Context, subscription models.Subsc
 }
 
 func (a *authService) CheckCredentials(ctx context.Context, creds models.Credentials) (models.User, error) {
-	return a.UserDB.CheckCredentials(ctx, creds.Username, creds.Password)
+	user, passHash, err := a.UserDB.CheckCredentials(ctx, creds.Username, creds.Password)
+	salt := make([]byte, 8)
+	copy(salt, passHash[:8])
+	hashedPass := argon2.IDKey([]byte(creds.Password), []byte(salt), 1, 64*1024, 4, 32)
+	userPassHash := append(salt, hashedPass...)
+
+	if !bytes.Equal(userPassHash, passHash) {
+		return user, models.ErrInvalidPassword
+	}
+
+	return user, err
 }
 
 func (a *authService) Register(ctx context.Context, data models.NewUserData) (models.User, error) {

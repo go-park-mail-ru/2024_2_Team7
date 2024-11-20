@@ -15,7 +15,7 @@ const checkCredentialsQuery = `
 	FROM "USER"
 	WHERE username = $1`
 
-func (d UserDB) CheckCredentials(ctx context.Context, username, password string) (models.User, error) {
+func (d UserDB) CheckCredentials(ctx context.Context, username, password string) (models.User, []byte, error) {
 	var userInfo UserInfo
 	var storedPassHash []byte
 
@@ -29,14 +29,11 @@ func (d UserDB) CheckCredentials(ctx context.Context, username, password string)
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return models.User{}, fmt.Errorf("%s: %w", models.LevelDB, models.ErrUserNotFound)
+			return models.User{}, storedPassHash, fmt.Errorf("%s: %w", models.LevelDB, models.ErrUserNotFound)
 		}
-		return models.User{}, fmt.Errorf("%s: %w", models.LevelDB, err)
-	}
-	if !checkPass(storedPassHash, password) {
-		return models.User{}, fmt.Errorf("%s: %w", models.LevelDB, models.ErrInvalidPassword)
+		return models.User{}, storedPassHash, fmt.Errorf("%s: %w", models.LevelDB, err)
 	}
 
 	user := toDomainUser(userInfo)
-	return user, nil
+	return user, storedPassHash, nil
 }
