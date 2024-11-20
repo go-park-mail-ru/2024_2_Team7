@@ -35,19 +35,19 @@ func (m *MockUserDB) EXPECT() *MockUserDBMockRecorder {
 	return m.recorder
 }
 
-// AddUser mocks base method.
-func (m *MockUserDB) AddUser(ctx context.Context, user models.User) (models.User, error) {
+// CreateUser mocks base method.
+func (m *MockUserDB) CreateUser(ctx context.Context, user models.User) (models.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddUser", ctx, user)
+	ret := m.ctrl.Call(m, "CreateUser", ctx, user)
 	ret0, _ := ret[0].(models.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// AddUser indicates an expected call of AddUser.
-func (mr *MockUserDBMockRecorder) AddUser(ctx, user interface{}) *gomock.Call {
+// CreateUser indicates an expected call of CreateUser.
+func (mr *MockUserDBMockRecorder) CreateUser(ctx, user interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddUser", reflect.TypeOf((*MockUserDB)(nil).AddUser), ctx, user)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockUserDB)(nil).CreateUser), ctx, user)
 }
 
 // CheckCredentials mocks base method.

@@ -7,14 +7,14 @@ import (
 	"kudago/internal/models"
 )
 
-const addUserQuery = `
+const createUserQuery = `
 	INSERT INTO "USER" (username, email, password_hash, url_to_avatar)
 	VALUES ($1, $2, $3, $4)
 	RETURNING id,  created_at`
 
-func (d *UserDB) AddUser(ctx context.Context, user models.User) (models.User, error) {
+func (d *UserDB) CreateUser(ctx context.Context, user models.User) (models.User, error) {
 	var userInfo UserInfo
-	err := d.pool.QueryRow(ctx, addUserQuery,
+	err := d.pool.QueryRow(ctx, createUserQuery,
 		user.Username,
 		user.Email,
 		user.Password,

@@ -15,11 +15,24 @@ const (
 	SessionKey   = "session"
 )
 
+var whitelist = []string{
+	"/login",
+	"/register",
+	"/events",
+	"/static",
+	"/session",
+	"/logout",
+	"/docs",
+	"/categories",
+	"/swagger",
+	"/profile",
+}
+
 type sessionChecker interface {
 	CheckSession(ctx context.Context, cookie string) (models.Session, error)
 }
 
-func AuthMiddleware(whitelist []string, sessionChecker sessionChecker, next http.Handler) http.Handler {
+func AuthMiddleware(sessionChecker sessionChecker, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie(SessionToken)
 		if err == nil {

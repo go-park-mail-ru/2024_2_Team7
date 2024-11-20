@@ -24,7 +24,7 @@ const (
 	uploadPath    = "./static/images"
 	defaultPage   = 0
 	defaultLimit  = 30
-	maxUploadSize = 1 * 1024 * 1024 // 1Mb
+	maxUploadSize = 10 * 1024 * 1024 // 10Mb
 )
 
 type ValidationErrResponse struct {

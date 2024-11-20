@@ -15,7 +15,7 @@ type authService struct {
 }
 
 type UserDB interface {
-	AddUser(ctx context.Context, user models.User) (models.User, error)
+	CreateUser(ctx context.Context, user models.User) (models.User, error)
 	GetUserByID(ctx context.Context, ID int) (models.User, error)
 	CheckCredentials(ctx context.Context, username string, password string) (models.User, error)
 	UserExists(ctx context.Context, username, email string) (bool, error)
@@ -144,7 +144,7 @@ func (a *authService) Register(ctx context.Context, data models.NewUserData) (mo
 		return models.User{}, models.ErrEmailIsUsed
 	}
 
-	user, err = a.UserDB.AddUser(ctx, user)
+	user, err = a.UserDB.CreateUser(ctx, user)
 	if err != nil {
 		if user.ImageURL != "" {
 			a.ImageDB.DeleteImage(ctx, user.ImageURL)

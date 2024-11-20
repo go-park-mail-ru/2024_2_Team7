@@ -1,9 +1,10 @@
 version: '3.8'
 services:
   api:
+    restart: always
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.api
     ports:
       - "8080:8080"
     depends_on:
@@ -30,8 +31,12 @@ services:
   redis:
     image: redis:latest
     ports:
-    - "6379:6379" 
+      - "6379:6379" 
 
 volumes:
   postgres_data:
     driver: local
+networks:
+  default:
+    name: team7_network
+

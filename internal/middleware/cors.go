@@ -13,8 +13,6 @@ func CORSMiddleware(next http.Handler) http.Handler {
 			"http://vyhodnoy.online", // Другой разрешенный домен
 			"http://37.139.40.252",
 			"http://37.139.40.252:8080",
-			"37.139.40.252",
-			"127.0.0.1:8080",
 			"http://127.0.0.1",
 			"http://127.0.0.1:8080",
 		}
