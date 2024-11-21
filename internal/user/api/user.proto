@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+option go_package = "./;user";
+
+package user;
+
+service UserService {
+    rpc GetUserByID (GetUserByIDRequest) returns (User);  
+    rpc Subscribe (Subscription) returns (Empty);
+    rpc Unsubscribe (Subscription) returns (Empty);
+    rpc GetSubscriptions (GetSubscriptionsRequest) returns (GetSubscriptionsResponse);
+    }
+
+    message GetUserByIDRequest {
+        int32 ID = 1;
+    }
+
+    message GetSubscriptionsRequest {
+        int32 ID = 1;
+    }
+
+    message GetSubscriptionsResponse {
+        repeated User users = 1;
+    }
+
+    message Subscription {
+        int32 subscriberID = 1;
+        int32 followsID = 2;
+    }
+
+    message User {
+        int32 ID = 1;
+        string username = 2;
+        string email = 3;
+        string avatar_url = 4;
+    }
+
+    message Empty{}

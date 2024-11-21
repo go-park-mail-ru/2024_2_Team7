@@ -1,8 +1,7 @@
-package gateway
+package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	pb "kudago/internal/auth/api"
@@ -23,7 +22,7 @@ type RegisterRequest struct {
 	Password string `json:"password" valid:"password,required,length(3|50)"`
 }
 
-func (g *Gateway) Register(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandlers) Register(w http.ResponseWriter, r *http.Request) {
 	_, ok := utils.GetSessionFromContext(r.Context())
 	if ok {
 		utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrUserIsAuthorized)
@@ -50,9 +49,8 @@ func (g *Gateway) Register(w http.ResponseWriter, r *http.Request) {
 		Email:    req.Email,
 	}
 
-	user, err := g.authClient.Register(r.Context(), registerRequest)
+	user, err := h.Gateway.AuthService.Register(r.Context(), registerRequest)
 	if err != nil {
-		fmt.Println(err)
 		st, ok := grpcStatus.FromError(err)
 		if ok {
 			switch st.Code() {
@@ -60,23 +58,29 @@ func (g *Gateway) Register(w http.ResponseWriter, r *http.Request) {
 				utils.WriteResponse(w, http.StatusConflict, httpErrors.ErrUsernameIsAlredyTaken)
 				return
 			case grpcCodes.Internal:
+				h.Gateway.Logger.Error(r.Context(), "register", st.Err())
 				utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 				return
 			default:
+				h.Gateway.Logger.Error(r.Context(), "register", st.Err())
 				utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
 				return
 			}
 		}
 
+		h.Gateway.Logger.Error(r.Context(), "register", err)
+
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
 
-	err = g.setSessionCookie(w, r, int(user.ID))
+	err = h.setSessionCookie(w, r, int(user.ID))
 	if err != nil {
+		h.Gateway.Logger.Error(r.Context(), "set cookie", err)
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
+
 	resp := userToUserResponse(user)
 
 	utils.WriteResponse(w, http.StatusOK, resp)

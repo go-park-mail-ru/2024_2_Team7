@@ -3,22 +3,18 @@ package main
 import (
 	"log"
 	"net/http"
-	"os"
 
 	"kudago/config"
 	_ "kudago/docs"
-	"kudago/internal/grpc/gateway"
-	"kudago/internal/http/auth"
+	"kudago/internal/gateway"
+	authHandlers "kudago/internal/gateway/auth"
+	userHandlers "kudago/internal/gateway/user"
 	"kudago/internal/http/events"
 	"kudago/internal/logger"
 	"kudago/internal/middleware"
 	imageRepository "kudago/internal/repository/images"
 	"kudago/internal/repository/postgres"
 	eventRepository "kudago/internal/repository/postgres/events"
-	userRepository "kudago/internal/repository/postgres/users"
-	sessionRepository "kudago/internal/repository/redis/session"
-	authService "kudago/internal/service/auth"
-
 	eventService "kudago/internal/service/events"
 
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -48,25 +44,18 @@ func main() {
 	}
 	defer pool.Close()
 
-	authServiceAddr := os.Getenv("AUTH_SERVICE_ADDR")
-	if authServiceAddr == "" {
-		log.Fatalf("AUTH_SERVICE_ADDR не задан")
-	}
+	eventDB := eventRepository.NewDB(pool)
+	imageDB := imageRepository.NewDB(conf.ImageConfig)
 
-	gateway, err := gateway.NewGateway(authServiceAddr)
+	gateway, err := gateway.NewGateway(conf.AuthServiceAddr, conf.UserServiceAddr, appLogger)
 	if err != nil {
 		log.Fatalf("Ошибка инициализации Gateway: %v", err)
 	}
 
-	userDB := userRepository.NewDB(pool)
-	sessionDB := sessionRepository.NewDB(&conf.RedisConfig)
-	eventDB := eventRepository.NewDB(pool)
-	imageDB := imageRepository.NewDB(conf.ImageConfig)
-
-	authService := authService.NewService(userDB, sessionDB, imageDB)
 	eventService := eventService.NewService(eventDB, imageDB)
 
-	authHandler := auth.NewAuthHandler(&authService, appLogger)
+	authHandler := authHandlers.NewAuthHandlers(gateway)
+	userHandler := userHandlers.NewUserHandlers(gateway)
 	eventHandler := events.NewEventHandler(&eventService, eventDB, appLogger)
 
 	r := mux.NewRouter()
@@ -75,17 +64,17 @@ func main() {
 	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fs))
 	r.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 
-	r.HandleFunc("/register", gateway.Register).Methods(http.MethodPost)
-	r.HandleFunc("/login", gateway.Login).Methods(http.MethodPost)
-	r.HandleFunc("/logout", gateway.Logout).Methods(http.MethodPost)
-	r.HandleFunc("/session", gateway.CheckSession).Methods(http.MethodGet)
+	r.HandleFunc("/register", authHandler.Register).Methods(http.MethodPost)
+	r.HandleFunc("/login", authHandler.Login).Methods(http.MethodPost)
+	r.HandleFunc("/logout", authHandler.Logout).Methods(http.MethodPost)
+	r.HandleFunc("/session", authHandler.CheckSession).Methods(http.MethodGet)
 
-	r.HandleFunc("/profile/{id}", authHandler.Profile).Methods(http.MethodGet)
-	r.HandleFunc("/profile", authHandler.UpdateUser).Methods(http.MethodPut)
+	r.HandleFunc("/profile/{id}", userHandler.Profile).Methods(http.MethodGet)
+	// r.HandleFunc("/profile", userHandler.UpdateUser).Methods(http.MethodPut)
 
-	r.HandleFunc("/profile/subscribe/{id:[0-9]+}", authHandler.Subscribe).Methods(http.MethodPost)
-	r.HandleFunc("/profile/subscribe/{id:[0-9]+}", authHandler.GetSubscriptions).Methods(http.MethodGet)
-	r.HandleFunc("/profile/subscribe/{id:[0-9]+}", authHandler.Unsubscribe).Methods(http.MethodDelete)
+	r.HandleFunc("/profile/subscribe/{id:[0-9]+}", userHandler.Subscribe).Methods(http.MethodPost)
+	r.HandleFunc("/profile/subscribe/{id:[0-9]+}", userHandler.GetSubscriptions).Methods(http.MethodGet)
+	r.HandleFunc("/profile/subscribe/{id:[0-9]+}", userHandler.Unsubscribe).Methods(http.MethodDelete)
 
 	r.HandleFunc("/events/{id:[0-9]+}", eventHandler.GetEventByID).Methods(http.MethodGet)
 	r.HandleFunc("/events/categories/{category}", eventHandler.GetEventsByCategory).Methods(http.MethodGet)
@@ -103,7 +92,7 @@ func main() {
 	r.HandleFunc("/events/favorites/{id:[0-9]+}", eventHandler.AddEventToFavorites).Methods(http.MethodPost)
 	r.HandleFunc("/events/favorites/{id:[0-9]+}", eventHandler.DeleteEventFromFavorites).Methods(http.MethodDelete)
 
-	handlerWithAuth := middleware.AuthMiddleware(sessionDB, r)
+	handlerWithAuth := middleware.AuthMiddleware(gateway.AuthService, r)
 	handlerWithCORS := middleware.CORSMiddleware(handlerWithAuth)
 	handlerWithLogging := middleware.LoggingMiddleware(handlerWithCORS, appLogger.Logger)
 	handler := middleware.PanicMiddleware(handlerWithLogging)

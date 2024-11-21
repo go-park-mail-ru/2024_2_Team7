@@ -1,12 +1,12 @@
-package gateway
+package handlers
 
 import (
 	"encoding/json"
 	"net/http"
 
 	pb "kudago/internal/auth/api"
+	"kudago/internal/gateway/utils"
 	httpErrors "kudago/internal/http/errors"
-	"kudago/internal/http/utils"
 
 	"github.com/asaskevich/govalidator"
 	grpcCodes "google.golang.org/grpc/codes"
@@ -18,7 +18,7 @@ type LoginRequest struct {
 	Password string `json:"password" valid:"password,required,length(3|50)"`
 }
 
-func (g *Gateway) Login(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandlers) Login(w http.ResponseWriter, r *http.Request) {
 	_, ok := utils.GetSessionFromContext(r.Context())
 	if ok {
 		utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrUserAlreadyLoggedIn)
@@ -42,7 +42,7 @@ func (g *Gateway) Login(w http.ResponseWriter, r *http.Request) {
 		Password: req.Password,
 	}
 
-	user, err := g.authClient.Login(r.Context(), creds)
+	user, err := h.Gateway.AuthService.Login(r.Context(), creds)
 	if err != nil {
 		st, ok := grpcStatus.FromError(err)
 		if ok {
@@ -51,20 +51,24 @@ func (g *Gateway) Login(w http.ResponseWriter, r *http.Request) {
 				utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrWrongCredentials)
 				return
 			case grpcCodes.Internal:
+				h.Gateway.Logger.Error(r.Context(), "login", st.Err())
 				utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 				return
 			default:
+				h.Gateway.Logger.Error(r.Context(), "login", st.Err())
 				utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
 				return
 			}
 		}
-
+		h.Gateway.Logger.Error(r.Context(), "login", err)
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
 
-	err = g.setSessionCookie(w, r, int(user.ID))
+	err = h.setSessionCookie(w, r, int(user.ID))
 	if err != nil {
+		h.Gateway.Logger.Error(r.Context(), "set cookie", err)
+
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}

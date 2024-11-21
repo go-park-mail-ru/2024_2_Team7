@@ -1,14 +1,33 @@
-package gateway
+package handlers
 
 import (
-	"context"
 	"net/http"
+	"regexp"
 	"time"
 
 	pb "kudago/internal/auth/api"
+	"kudago/internal/gateway"
 
 	"kudago/internal/models"
+
+	"github.com/asaskevich/govalidator"
 )
+
+type AuthHandlers struct {
+	Gateway *gateway.Gateway
+}
+
+var validPasswordRegex = regexp.MustCompile(`^[a-zA-Z0-9+\-*/.;=\]\[\}\{\?]+$`)
+
+func init() {
+	govalidator.TagMap["password"] = govalidator.Validator(func(str string) bool {
+		return validPasswordRegex.MatchString(str)
+	})
+}
+
+func NewAuthHandlers(gw *gateway.Gateway) *AuthHandlers {
+	return &AuthHandlers{Gateway: gw}
+}
 
 type AuthResponse struct {
 	User UserResponse `json:"user"`
@@ -33,18 +52,10 @@ func userToUserResponse(user *pb.User) AuthResponse {
 	return resp
 }
 
-type sessionKeyType struct{}
-
-var sessionKey sessionKeyType
-
-func SetSessionInContext(ctx context.Context, session models.Session) context.Context {
-	return context.WithValue(ctx, sessionKey, session)
-}
-
-func (g *Gateway) setSessionCookie(w http.ResponseWriter, r *http.Request, ID int) error {
+func (h *AuthHandlers) setSessionCookie(w http.ResponseWriter, r *http.Request, ID int) error {
 	req := &pb.CreateSessionRequest{ID: int32(ID)}
 
-	session, err := g.authClient.CreateSession(r.Context(), req)
+	session, err := h.Gateway.AuthService.CreateSession(r.Context(), req)
 	if err != nil {
 		return models.ErrInternal
 	}

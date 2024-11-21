@@ -22,6 +22,7 @@ const (
 	AuthService_Register_FullMethodName      = "/auth.AuthService/Register"
 	AuthService_Login_FullMethodName         = "/auth.AuthService/Login"
 	AuthService_CheckSession_FullMethodName  = "/auth.AuthService/CheckSession"
+	AuthService_GetUser_FullMethodName       = "/auth.AuthService/GetUser"
 	AuthService_Logout_FullMethodName        = "/auth.AuthService/Logout"
 	AuthService_CreateSession_FullMethodName = "/auth.AuthService/CreateSession"
 	AuthService_DeleteSession_FullMethodName = "/auth.AuthService/DeleteSession"
@@ -33,9 +34,10 @@ const (
 type AuthServiceClient interface {
 	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*User, error)
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*User, error)
-	CheckSession(ctx context.Context, in *CheckSessionRequest, opts ...grpc.CallOption) (*User, error)
+	CheckSession(ctx context.Context, in *CheckSessionRequest, opts ...grpc.CallOption) (*Session, error)
+	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*User, error)
 	Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*Empty, error)
-	CreateSession(ctx context.Context, in *CreateSessionRequest, opts ...grpc.CallOption) (*CreateSessionResponse, error)
+	CreateSession(ctx context.Context, in *CreateSessionRequest, opts ...grpc.CallOption) (*Session, error)
 	DeleteSession(ctx context.Context, in *DeleteSessionRequest, opts ...grpc.CallOption) (*Empty, error)
 }
 
@@ -67,10 +69,20 @@ func (c *authServiceClient) Login(ctx context.Context, in *LoginRequest, opts ..
 	return out, nil
 }
 
-func (c *authServiceClient) CheckSession(ctx context.Context, in *CheckSessionRequest, opts ...grpc.CallOption) (*User, error) {
+func (c *authServiceClient) CheckSession(ctx context.Context, in *CheckSessionRequest, opts ...grpc.CallOption) (*Session, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Session)
+	err := c.cc.Invoke(ctx, AuthService_CheckSession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*User, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(User)
-	err := c.cc.Invoke(ctx, AuthService_CheckSession_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, AuthService_GetUser_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -87,9 +99,9 @@ func (c *authServiceClient) Logout(ctx context.Context, in *LogoutRequest, opts 
 	return out, nil
 }
 
-func (c *authServiceClient) CreateSession(ctx context.Context, in *CreateSessionRequest, opts ...grpc.CallOption) (*CreateSessionResponse, error) {
+func (c *authServiceClient) CreateSession(ctx context.Context, in *CreateSessionRequest, opts ...grpc.CallOption) (*Session, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CreateSessionResponse)
+	out := new(Session)
 	err := c.cc.Invoke(ctx, AuthService_CreateSession_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -113,9 +125,10 @@ func (c *authServiceClient) DeleteSession(ctx context.Context, in *DeleteSession
 type AuthServiceServer interface {
 	Register(context.Context, *RegisterRequest) (*User, error)
 	Login(context.Context, *LoginRequest) (*User, error)
-	CheckSession(context.Context, *CheckSessionRequest) (*User, error)
+	CheckSession(context.Context, *CheckSessionRequest) (*Session, error)
+	GetUser(context.Context, *GetUserRequest) (*User, error)
 	Logout(context.Context, *LogoutRequest) (*Empty, error)
-	CreateSession(context.Context, *CreateSessionRequest) (*CreateSessionResponse, error)
+	CreateSession(context.Context, *CreateSessionRequest) (*Session, error)
 	DeleteSession(context.Context, *DeleteSessionRequest) (*Empty, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
@@ -133,13 +146,16 @@ func (UnimplementedAuthServiceServer) Register(context.Context, *RegisterRequest
 func (UnimplementedAuthServiceServer) Login(context.Context, *LoginRequest) (*User, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Login not implemented")
 }
-func (UnimplementedAuthServiceServer) CheckSession(context.Context, *CheckSessionRequest) (*User, error) {
+func (UnimplementedAuthServiceServer) CheckSession(context.Context, *CheckSessionRequest) (*Session, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CheckSession not implemented")
+}
+func (UnimplementedAuthServiceServer) GetUser(context.Context, *GetUserRequest) (*User, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUser not implemented")
 }
 func (UnimplementedAuthServiceServer) Logout(context.Context, *LogoutRequest) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Logout not implemented")
 }
-func (UnimplementedAuthServiceServer) CreateSession(context.Context, *CreateSessionRequest) (*CreateSessionResponse, error) {
+func (UnimplementedAuthServiceServer) CreateSession(context.Context, *CreateSessionRequest) (*Session, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateSession not implemented")
 }
 func (UnimplementedAuthServiceServer) DeleteSession(context.Context, *DeleteSessionRequest) (*Empty, error) {
@@ -220,6 +236,24 @@ func _AuthService_CheckSession_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_GetUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).GetUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_GetUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).GetUser(ctx, req.(*GetUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AuthService_Logout_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(LogoutRequest)
 	if err := dec(in); err != nil {
@@ -292,6 +326,10 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CheckSession",
 			Handler:    _AuthService_CheckSession_Handler,
+		},
+		{
+			MethodName: "GetUser",
+			Handler:    _AuthService_GetUser_Handler,
 		},
 		{
 			MethodName: "Logout",

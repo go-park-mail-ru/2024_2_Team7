@@ -40,7 +40,7 @@ func main() {
 
 	listener, err := net.Listen("tcp", authServiceAddr)
 	if err != nil {
-		log.Fatalf("Не удалось запустить gRPC-сервер: %v", err)
+		log.Fatalf("Не удалось запустить gRPC-сервер auth: %v", err)
 	}
 
 	userDB := userRepository.NewDB(pool)
@@ -54,6 +54,6 @@ func main() {
 
 	log.Printf("gRPC сервер запущен на %s", authServiceAddr)
 	if err := grpcServer.Serve(listener); err != nil {
-		log.Fatalf("Ошибка запуска gRPC-сервера: %v", err)
+		log.Fatalf("Ошибка запуска gRPC-сервера auth: %v", err)
 	}
 }

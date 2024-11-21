@@ -7,9 +7,10 @@ package auth;
 service AuthService {
     rpc Register (RegisterRequest) returns (User);  
     rpc Login (LoginRequest) returns (User);
-    rpc CheckSession (CheckSessionRequest) returns (User);
+    rpc CheckSession (CheckSessionRequest) returns (Session);
+    rpc GetUser (GetUserRequest) returns (User);
     rpc Logout (LogoutRequest) returns (Empty);
-    rpc CreateSession (CreateSessionRequest) returns (CreateSessionResponse);
+    rpc CreateSession (CreateSessionRequest) returns (Session);
     rpc DeleteSession (DeleteSessionRequest) returns (Empty);
 
     }
@@ -28,6 +29,10 @@ service AuthService {
     }
 
     message CheckSessionRequest {
+        string Cookie = 1;
+    }
+
+    message GetUserRequest {
         int32 ID = 1;
     }
     
@@ -48,7 +53,7 @@ service AuthService {
         int32 ID = 1;
     }
 
-    message CreateSessionResponse{
+    message Session{
         int32 UserID = 1;
         string Token = 2;
         string Expires = 3;

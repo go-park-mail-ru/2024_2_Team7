@@ -1,4 +1,4 @@
-package gateway
+package handlers
 
 import (
 	"net/http"
@@ -9,7 +9,7 @@ import (
 	"kudago/internal/models"
 )
 
-func (g *Gateway) Logout(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandlers) Logout(w http.ResponseWriter, r *http.Request) {
 	session, ok := utils.GetSessionFromContext(r.Context())
 	if !ok {
 		utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrUnauthorized)
@@ -20,8 +20,10 @@ func (g *Gateway) Logout(w http.ResponseWriter, r *http.Request) {
 		Token: session.Token,
 	}
 
-	_, err := g.authClient.Logout(r.Context(), req)
+	_, err := h.Gateway.AuthService.Logout(r.Context(), req)
 	if err != nil {
+		h.Gateway.Logger.Error(r.Context(), "logout", err)
+
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}

@@ -15,10 +15,12 @@ const (
 )
 
 type Config struct {
-	Port           string
-	PostgresConfig postgres.PostgresConfig
-	RedisConfig    sessionRepository.RedisConfig
-	ImageConfig    imageRepository.ImageConfig
+	Port            string
+	PostgresConfig  postgres.PostgresConfig
+	RedisConfig     sessionRepository.RedisConfig
+	ImageConfig     imageRepository.ImageConfig
+	AuthServiceAddr string
+	UserServiceAddr string
 }
 
 func LoadConfig() (Config, error) {
@@ -46,5 +48,14 @@ func LoadConfig() (Config, error) {
 		Path: "./static/images",
 	}
 
+	conf.AuthServiceAddr = os.Getenv("AUTH_SERVICE_ADDR")
+	if conf.AuthServiceAddr == "" {
+		return Config{}, errors.New("Failed to connect to get service address")
+	}
+
+	conf.UserServiceAddr = os.Getenv("USER_SERVICE_ADDR")
+	if conf.UserServiceAddr == "" {
+		return Config{}, errors.New("Failed to connect to get service address")
+	}
 	return conf, nil
 }
