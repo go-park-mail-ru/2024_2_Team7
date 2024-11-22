@@ -70,4 +70,19 @@ var (
 		Message: "User doesn't own this event",
 		Code:    "access_denied",
 	}
+
+	ErrCSRFTokenMissing = &HttpError{
+		Message: "CSRF token is missing or invalid",
+		Code:    "csrf_missing",
+	}
+
+	ErrInvalidCSRFToken = &HttpError{
+		Message: "Invalid CSRF token",
+		Code:    "invalid_csrf_token",
+	}
+
+	ErrCSRFTokenGenerationFailed = &HttpError{
+		Message: "Failed to generate CSRF token",
+		Code:    "csrf_token_generation_failed",
+	}
 )

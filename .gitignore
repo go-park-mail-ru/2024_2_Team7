@@ -6,3 +6,4 @@ c.out
 .env
 pgdata
 auth_test.go
+static

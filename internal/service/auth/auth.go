@@ -2,6 +2,12 @@ package authService
 
 import (
 	"context"
+	"crypto/aes"
+	"crypto/cipher"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"time"
 
 	"kudago/internal/models"
 )
@@ -27,7 +33,7 @@ type SessionDB interface {
 
 type CsrfDB interface {
 	CreateCSRF(ctx context.Context, encryptionKey []byte, s *models.Session) (string, error)
-	CheckCSRF(ctx context.Context, encryptionKey []byte, s *models.Session, inputToken string) (bool, error)
+	GetCSRF(ctx context.Context, s *models.Session) (string, error)
 }
 
 func NewService(userDB UserDB, sessionDB SessionDB, csrfDB CsrfDB) authService {
@@ -73,5 +79,50 @@ func (a *authService) CreateCSRF(ctx context.Context, encryptionKey []byte, s *m
 }
 
 func (a *authService) CheckCSRF(ctx context.Context, encryptionKey []byte, s *models.Session, inputToken string) (bool, error) {
-	return a.CsrfDB.CheckCSRF(ctx, encryptionKey, s, inputToken)
+	storedToken, err := a.CsrfDB.GetCSRF(ctx, s)
+	if err != nil {
+		return false, err
+	}
+
+	if storedToken != inputToken {
+		return false, fmt.Errorf("invalid token")
+	}
+
+	block, err := aes.NewCipher(encryptionKey)
+	if err != nil {
+		return false, err
+	}
+
+	aesgcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return false, err
+	}
+
+	ciphertext, err := base64.StdEncoding.DecodeString(inputToken)
+	if err != nil {
+		return false, err
+	}
+
+	nonceSize := aesgcm.NonceSize()
+	if len(ciphertext) < nonceSize {
+		return false, fmt.Errorf("short ciphertext")
+	}
+
+	nonce, ciphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
+	plaintext, err := aesgcm.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		return false, fmt.Errorf("decrypt fail: %v", err)
+	}
+
+	td := &models.TokenData{}
+	err = json.Unmarshal(plaintext, &td)
+	if err != nil {
+		return false, fmt.Errorf("bad json: %v", err)
+	}
+
+	if td.Exp.Unix() < time.Now().Unix() {
+		return false, fmt.Errorf("token expired")
+	}
+
+	return s.Token == td.SessionToken && s.UserID == td.UserID, nil
 }

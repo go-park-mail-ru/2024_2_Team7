@@ -24,7 +24,7 @@ var sessionKey sessionKeyType
 
 type csrfKeyType struct{}
 
-var csrfKey sessionKeyType
+var csrfKey csrfKeyType
 
 type requestIDKeyType struct{}
 
