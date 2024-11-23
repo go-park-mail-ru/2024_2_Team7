@@ -20,9 +20,9 @@ func (h *AuthHandlers) Logout(w http.ResponseWriter, r *http.Request) {
 		Token: session.Token,
 	}
 
-	_, err := h.Gateway.AuthService.Logout(r.Context(), req)
+	_, err := h.AuthService.Logout(r.Context(), req)
 	if err != nil {
-		h.Gateway.Logger.Error(r.Context(), "logout", err)
+		h.logger.Error(r.Context(), "logout", err)
 
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return

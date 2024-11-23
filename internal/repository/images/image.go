@@ -1,6 +1,7 @@
 package images
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -8,8 +9,6 @@ import (
 	"path/filepath"
 
 	"kudago/internal/models"
-
-	"golang.org/x/net/context"
 )
 
 type ImageDB struct {
@@ -24,7 +23,7 @@ func NewDB(config ImageConfig) *ImageDB {
 	return &ImageDB{UploadPath: config.Path}
 }
 
-func (r *ImageDB) SaveImage(ctx context.Context, media models.MediaFile) (string, error) {
+func (r *ImageDB) UploadImage(ctx context.Context, media models.MediaFile) (string, error) {
 	defer media.File.Close()
 
 	buffer := make([]byte, 512)
@@ -37,12 +36,8 @@ func (r *ImageDB) SaveImage(ctx context.Context, media models.MediaFile) (string
 		return "", fmt.Errorf("%s: %w", models.LevelDB, models.ErrUnsupportedFile)
 	}
 
-	if seeker, ok := media.File.(io.Seeker); ok {
-		if _, err := seeker.Seek(0, io.SeekStart); err != nil {
-			return "", fmt.Errorf("%s: %w", models.LevelDB, models.ErrUnsupportedFile)
-		}
-	} else {
-		return "", fmt.Errorf("%s: %w", models.LevelDB, models.ErrUnsupportedFile)
+	if _, err := media.File.Seek(0, io.SeekStart); err != nil {
+		return "", fmt.Errorf("%s: %w", models.LevelDB, err)
 	}
 
 	newPath := filepath.Join(r.UploadPath, media.Filename)
@@ -65,7 +60,7 @@ func (r *ImageDB) SaveImage(ctx context.Context, media models.MediaFile) (string
 
 func (r *ImageDB) DeleteImage(ctx context.Context, imagePath string) error {
 	if _, err := os.Stat(imagePath); os.IsNotExist(err) {
-		return fmt.Errorf("%s: %w", models.LevelDB, models.ErrUnsupportedFile)
+		return fmt.Errorf("%s: %w", models.LevelDB, models.ErrNotFound)
 	}
 
 	if err := os.Remove(imagePath); err != nil {

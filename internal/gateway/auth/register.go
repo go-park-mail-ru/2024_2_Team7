@@ -5,13 +5,13 @@ import (
 	"net/http"
 
 	pb "kudago/internal/auth/api"
+	"kudago/internal/gateway/utils"
 	httpErrors "kudago/internal/http/errors"
-
-	grpcStatus "google.golang.org/grpc/status"
-
-	"kudago/internal/http/utils"
+	pbImage "kudago/internal/image/api"
+	"kudago/internal/models"
 
 	grpcCodes "google.golang.org/grpc/codes"
+	grpcStatus "google.golang.org/grpc/status"
 
 	"github.com/asaskevich/govalidator"
 )
@@ -29,27 +29,31 @@ func (h *AuthHandlers) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req RegisterRequest
-	jsonData := r.FormValue("json")
-	err := json.Unmarshal([]byte(jsonData), &req)
-	if err != nil {
-		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
+	req, media, reqErr := parseRegisterData(r)
+	if reqErr != nil {
+		utils.WriteResponse(w, http.StatusBadRequest, reqErr)
 		return
 	}
 
-	_, err = govalidator.ValidateStruct(&req)
+	_, err := govalidator.ValidateStruct(&req)
 	if err != nil {
 		utils.ProcessValidationErrors(w, err)
 		return
 	}
 
-	registerRequest := &pb.RegisterRequest{
-		Username: req.Username,
-		Password: req.Password,
-		Email:    req.Email,
+	url, err := h.uploadImage(r.Context(), media, w)
+	if err != nil {
+		return
 	}
 
-	user, err := h.Gateway.AuthService.Register(r.Context(), registerRequest)
+	registerRequest := &pb.RegisterRequest{
+		Username:  req.Username,
+		Password:  req.Password,
+		Email:     req.Email,
+		AvatarUrl: url,
+	}
+
+	user, err := h.AuthService.Register(r.Context(), registerRequest)
 	if err != nil {
 		st, ok := grpcStatus.FromError(err)
 		if ok {
@@ -58,17 +62,17 @@ func (h *AuthHandlers) Register(w http.ResponseWriter, r *http.Request) {
 				utils.WriteResponse(w, http.StatusConflict, httpErrors.ErrUsernameIsAlredyTaken)
 				return
 			case grpcCodes.Internal:
-				h.Gateway.Logger.Error(r.Context(), "register", st.Err())
+				h.logger.Error(r.Context(), "register", st.Err())
 				utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 				return
 			default:
-				h.Gateway.Logger.Error(r.Context(), "register", st.Err())
+				h.logger.Error(r.Context(), "register", st.Err())
 				utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
 				return
 			}
 		}
 
-		h.Gateway.Logger.Error(r.Context(), "register", err)
+		h.logger.Error(r.Context(), "register", err)
 
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
@@ -76,7 +80,7 @@ func (h *AuthHandlers) Register(w http.ResponseWriter, r *http.Request) {
 
 	err = h.setSessionCookie(w, r, int(user.ID))
 	if err != nil {
-		h.Gateway.Logger.Error(r.Context(), "set cookie", err)
+		h.logger.Error(r.Context(), "set cookie", err)
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
@@ -85,4 +89,20 @@ func (h *AuthHandlers) Register(w http.ResponseWriter, r *http.Request) {
 
 	utils.WriteResponse(w, http.StatusOK, resp)
 	return
+}
+
+func parseRegisterData(r *http.Request) (models.User, *pbImage.UploadRequest, *httpErrors.HttpError) {
+	var req models.User
+	jsonData := r.FormValue("json")
+	err := json.Unmarshal([]byte(jsonData), &req)
+	if err != nil {
+		return req, nil, httpErrors.ErrInvalidData
+	}
+
+	media, err := utils.HandleImageUpload(r)
+	if err != nil {
+		return req, nil, httpErrors.ErrInvalidImage
+	}
+
+	return req, media, nil
 }

@@ -46,7 +46,7 @@ func (h *UserHandlers) Subscribe(w http.ResponseWriter, r *http.Request) {
 		FollowsID:    int32(id),
 	}
 
-	_, err = h.Gateway.UserService.Subscribe(r.Context(), &subscription)
+	_, err = h.UserService.Subscribe(r.Context(), &subscription)
 	if err != nil {
 		switch err {
 		case models.ErrForeignKeyViolation:

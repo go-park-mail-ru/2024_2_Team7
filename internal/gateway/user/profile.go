@@ -33,7 +33,7 @@ func (h *UserHandlers) Profile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.Gateway.UserService.GetUserByID(r.Context(), &pb.GetUserByIDRequest{ID: int32(id)})
+	user, err := h.UserService.GetUserByID(r.Context(), &pb.GetUserByIDRequest{ID: int32(id)})
 	if err != nil {
 		utils.WriteResponse(w, http.StatusNotFound, httpErrors.ErrUserNotFound)
 		return

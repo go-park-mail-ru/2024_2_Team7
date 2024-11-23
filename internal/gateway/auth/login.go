@@ -42,7 +42,7 @@ func (h *AuthHandlers) Login(w http.ResponseWriter, r *http.Request) {
 		Password: req.Password,
 	}
 
-	user, err := h.Gateway.AuthService.Login(r.Context(), creds)
+	user, err := h.AuthService.Login(r.Context(), creds)
 	if err != nil {
 		st, ok := grpcStatus.FromError(err)
 		if ok {
@@ -51,23 +51,23 @@ func (h *AuthHandlers) Login(w http.ResponseWriter, r *http.Request) {
 				utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrWrongCredentials)
 				return
 			case grpcCodes.Internal:
-				h.Gateway.Logger.Error(r.Context(), "login", st.Err())
+				h.logger.Error(r.Context(), "login", st.Err())
 				utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 				return
 			default:
-				h.Gateway.Logger.Error(r.Context(), "login", st.Err())
+				h.logger.Error(r.Context(), "login", st.Err())
 				utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
 				return
 			}
 		}
-		h.Gateway.Logger.Error(r.Context(), "login", err)
+		h.logger.Error(r.Context(), "login", err)
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
 
 	err = h.setSessionCookie(w, r, int(user.ID))
 	if err != nil {
-		h.Gateway.Logger.Error(r.Context(), "set cookie", err)
+		h.logger.Error(r.Context(), "set cookie", err)
 
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return

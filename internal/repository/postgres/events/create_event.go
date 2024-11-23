@@ -7,12 +7,12 @@ import (
 	"kudago/internal/models"
 )
 
-const addEventQuery = `
+const createEventQuery = `
 	INSERT INTO event (title, description, event_start, event_finish, location, capacity, user_id, category_id)
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	RETURNING id`
 
-func (db *EventDB) AddEvent(ctx context.Context, event models.Event) (models.Event, error) {
+func (db *EventDB) CreateEvent(ctx context.Context, event models.Event) (models.Event, error) {
 	tx, err := db.pool.Begin(ctx)
 	if err != nil {
 		return models.Event{}, fmt.Errorf("%s: %w", models.LevelDB, err)
@@ -20,7 +20,7 @@ func (db *EventDB) AddEvent(ctx context.Context, event models.Event) (models.Eve
 	defer tx.Rollback(ctx)
 
 	var id int
-	err = tx.QueryRow(ctx, addEventQuery, event.Title, event.Description, event.EventStart, event.EventEnd, event.Location, event.Capacity, event.AuthorID, event.CategoryID).Scan(&id)
+	err = tx.QueryRow(ctx, createEventQuery, event.Title, event.Description, event.EventStart, event.EventEnd, event.Location, event.Capacity, event.AuthorID, event.CategoryID).Scan(&id)
 	if err != nil {
 		return models.Event{}, fmt.Errorf("%s: %w", models.LevelDB, err)
 	}

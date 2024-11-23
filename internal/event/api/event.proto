@@ -1,0 +1,105 @@
+syntax = "proto3";
+
+option go_package = "./;event";
+
+package event;
+
+service EventService {
+    rpc AddEvent(Event) returns(Event);
+    rpc AddEventToFavorites (FavoriteEvent) returns (Empty);  
+    rpc DeleteEventFromFavorites (FavoriteEvent) returns (Empty);  
+    rpc DeleteEvent (DeleteEventRequest) returns (Empty);  
+    rpc GetCategories (Empty) returns (GetCategoriesResponse);  
+    rpc GetEventByID (ID) returns (Event);  
+    rpc GetEventsByCategory (GetEventsByCategoryRequest) returns (Events);  
+    rpc GetEventsByUser (GetEventsByUserRequest) returns (Events);  
+    rpc GetFavorites(GetFavoritesRequest) returns(Events);
+    rpc GetPastEvents(PaginationParams) returns(Events);
+    rpc GetUpcomingEvents(PaginationParams) returns(Events);
+    rpc GetSubscriptionsEvents(GetSubscriptionsRequest) returns(Events);
+    rpc UpdateEvent(Event) returns(Event);
+    rpc SearchEvents(SearchParams) returns(Events);
+    }
+
+    message ID {
+        int32 ID = 1;
+    }
+
+    message GetSubscriptionsRequest {
+        int32 ID = 1;
+        PaginationParams params = 2;
+    }
+
+    message GetEventsByCategoryRequest {
+        int32 CategoryID = 1;
+        PaginationParams params = 2;
+    }
+
+    message GetEventsByUserRequest {
+        int32 UserID = 1;
+        PaginationParams params = 2;
+    }
+
+    message GetFavoritesRequest {
+        int32 UserID = 1;
+        PaginationParams params = 2;
+    }
+
+
+    message DeleteEventRequest {
+        int32 EventID = 1;
+        int32 AuthorID = 2;
+    }
+
+    message PaginationParams{
+        int32 Limit = 1;
+        int32 Offset = 2;
+    }
+
+    message Events {
+        repeated Event events = 1;
+    }
+
+    message GetCategoriesResponse {
+        repeated Category categories = 1;
+    }
+
+    message FavoriteEvent {
+        int32 UserID = 1;
+        int32 EventID = 2;
+    }
+
+    message Category {
+        int32 ID = 1;
+        string name = 2;
+    }
+
+    message Event {
+        int32 ID = 1;
+        string title = 2;
+        string description = 3;
+        string location = 4;
+        int32 category_iD = 5;
+        int32 capacity = 6;
+        repeated string tag = 7;
+        int32 author_iD = 8;
+        string event_start = 9;
+        string event_end = 10;
+        string image = 11;
+    }
+
+    message File {
+        bytes file = 1;
+        string filename = 2;
+      }
+
+    message SearchParams {
+        string query = 1;
+        int32 category_iD = 2;
+        repeated string tag = 3;
+        string event_start = 4;
+        string event_end = 5; 
+        PaginationParams params = 6;   
+    }
+
+    message Empty{}

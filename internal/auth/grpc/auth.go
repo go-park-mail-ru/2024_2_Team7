@@ -17,7 +17,7 @@ type ServerAPI struct {
 
 type AuthService interface {
 	CheckCredentials(ctx context.Context, creds models.Credentials) (models.User, error)
-	Register(ctx context.Context, registerDTO models.NewUserData) (models.User, error)
+	Register(ctx context.Context, user models.User) (models.User, error)
 	GetUserByID(ctx context.Context, ID int) (models.User, error)
 }
 

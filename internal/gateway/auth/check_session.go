@@ -22,7 +22,7 @@ func (h *AuthHandlers) CheckSession(w http.ResponseWriter, r *http.Request) {
 		ID: int32(session.UserID),
 	}
 
-	user, err := h.Gateway.AuthService.GetUser(r.Context(), getUserRequest)
+	user, err := h.AuthService.GetUser(r.Context(), getUserRequest)
 	if err != nil {
 		st, ok := grpcStatus.FromError(err)
 		if ok {
@@ -31,16 +31,16 @@ func (h *AuthHandlers) CheckSession(w http.ResponseWriter, r *http.Request) {
 				utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrUserNotFound)
 				return
 			case grpcCodes.Internal:
-				h.Gateway.Logger.Error(r.Context(), "check session", st.Err())
+				h.logger.Error(r.Context(), "check session", st.Err())
 				utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 				return
 			default:
-				h.Gateway.Logger.Error(r.Context(), "check session", st.Err())
+				h.logger.Error(r.Context(), "check session", st.Err())
 				utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
 				return
 			}
 		}
-		h.Gateway.Logger.Error(r.Context(), "check session", err)
+		h.logger.Error(r.Context(), "check session", err)
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}

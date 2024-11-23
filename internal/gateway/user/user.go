@@ -1,12 +1,28 @@
 package handlers
 
 import (
-	"kudago/internal/gateway"
+	"kudago/internal/logger"
 	pb "kudago/internal/user/api"
+	user "kudago/internal/user/api"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type UserHandlers struct {
-	Gateway *gateway.Gateway
+	UserService pb.UserServiceClient
+	logger      *logger.Logger
+}
+
+func NewUserHandlers(userServiceAddr string, logger *logger.Logger) (*UserHandlers, error) {
+	authConn, err := grpc.NewClient(userServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, err
+	}
+	return &UserHandlers{
+		UserService: user.NewUserServiceClient(authConn),
+		logger:      logger,
+	}, nil
 }
 
 type AuthResponse struct {
@@ -22,10 +38,6 @@ type UserResponse struct {
 
 type GetUsersResponse struct {
 	Users []UserResponse `json:"users"`
-}
-
-func NewUserHandlers(gw *gateway.Gateway) *UserHandlers {
-	return &UserHandlers{Gateway: gw}
 }
 
 func userToUserResponse(user *pb.User) UserResponse {

@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+option go_package = "./;image";
+
+package image;
+
+service ImageService {
+    rpc UploadImage(UploadRequest) returns(UploadResponse);
+    rpc DeleteImage(DeleteRequest) returns(Empty);
+    }
+
+    message UploadRequest {
+        bytes file = 1;
+        string filename = 2;
+      }
+      
+      message UploadResponse {
+        string file_url = 1;
+      }
+      
+      message DeleteRequest {
+        string file_url = 1;
+      }
+      
+      message Empty {
+      }

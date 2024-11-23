@@ -3,14 +3,12 @@ package main
 import (
 	"log"
 	"net"
-	"os"
 
-	"kudago/config"
+	"kudago/cmd/auth/config"
 	proto "kudago/internal/auth/api"
-	grpcAuth "kudago/internal/auth/http"
+	grpcAuth "kudago/internal/auth/grpc"
 	authService "kudago/internal/auth/service"
 	"kudago/internal/logger"
-	imageRepository "kudago/internal/repository/images"
 	"kudago/internal/repository/postgres"
 	userRepository "kudago/internal/repository/postgres/users"
 	sessionRepository "kudago/internal/repository/redis/session"
@@ -20,6 +18,9 @@ import (
 
 func main() {
 	conf, err := config.LoadConfig()
+	if err != nil {
+		log.Fatalf("Failed to get config: %v", err)
+	}
 
 	appLogger, err := logger.NewLogger()
 	if err != nil {
@@ -33,26 +34,20 @@ func main() {
 	}
 	defer pool.Close()
 
-	authServiceAddr := os.Getenv("AUTH_SERVICE_ADDR")
-	if authServiceAddr == "" {
-		log.Fatalf("AUTH_SERVICE_ADDR не задан")
-	}
-
-	listener, err := net.Listen("tcp", authServiceAddr)
+	listener, err := net.Listen("tcp", conf.ServiceAddr)
 	if err != nil {
 		log.Fatalf("Не удалось запустить gRPC-сервер auth: %v", err)
 	}
 
 	userDB := userRepository.NewDB(pool)
 	sessionDB := sessionRepository.NewDB(&conf.RedisConfig)
-	imageDB := imageRepository.NewDB(conf.ImageConfig)
 
-	authService := authService.NewService(userDB, imageDB)
+	authService := authService.NewService(userDB)
 	grpcServer := grpc.NewServer()
 	authServer := grpcAuth.NewServerAPI(&authService, sessionDB, appLogger)
 	proto.RegisterAuthServiceServer(grpcServer, authServer)
 
-	log.Printf("gRPC сервер запущен на %s", authServiceAddr)
+	log.Printf("gRPC сервер запущен на %s", conf.ServiceAddr)
 	if err := grpcServer.Serve(listener); err != nil {
 		log.Fatalf("Ошибка запуска gRPC-сервера auth: %v", err)
 	}

@@ -36,7 +36,7 @@ func (h *UserHandlers) Unsubscribe(w http.ResponseWriter, r *http.Request) {
 		FollowsID:    int32(id),
 	}
 
-	_, err = h.Gateway.UserService.Unsubscribe(r.Context(), &subscription)
+	_, err = h.UserService.Unsubscribe(r.Context(), &subscription)
 	if err != nil {
 		switch err {
 		case models.ErrNotFound:

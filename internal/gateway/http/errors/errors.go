@@ -42,6 +42,11 @@ var (
 	}
 
 	ErrInvalidImage = &HttpError{
+		Message: "Invalid image",
+		Code:    "invalid_image",
+	}
+
+	ErrInvalidImageFormat = &HttpError{
 		Message: "Wrong or empty image format",
 		Code:    "invalid_image",
 	}

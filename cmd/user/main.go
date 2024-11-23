@@ -3,20 +3,22 @@ package main
 import (
 	"log"
 	"net"
-	"os"
 
-	"kudago/config"
+	"kudago/cmd/user/config"
 	"kudago/internal/logger"
 	"kudago/internal/repository/postgres"
 	userRepository "kudago/internal/repository/postgres/users"
 	proto "kudago/internal/user/api"
-	grpcUser "kudago/internal/user/http"
+	grpcUser "kudago/internal/user/grpc"
 
 	"google.golang.org/grpc"
 )
 
 func main() {
 	conf, err := config.LoadConfig()
+	if err != nil {
+		log.Fatalf("Failed to get config: %v", err)
+	}
 
 	appLogger, err := logger.NewLogger()
 	if err != nil {
@@ -30,12 +32,7 @@ func main() {
 	}
 	defer pool.Close()
 
-	userServiceAddr := os.Getenv("USER_SERVICE_ADDR")
-	if userServiceAddr == "" {
-		log.Fatalf("USER_SERVICE_ADDR не задан")
-	}
-
-	listener, err := net.Listen("tcp", userServiceAddr)
+	listener, err := net.Listen("tcp", conf.ServiceAddr)
 	if err != nil {
 		log.Fatalf("Не удалось запустить gRPC-сервер user: %v", err)
 	}
@@ -46,7 +43,7 @@ func main() {
 	userServer := grpcUser.NewServerAPI(userDB, appLogger)
 	proto.RegisterUserServiceServer(grpcServer, userServer)
 
-	log.Printf("gRPC сервер запущен на %s", userServiceAddr)
+	log.Printf("gRPC сервер запущен на %s", conf.ServiceAddr)
 	if err := grpcServer.Serve(listener); err != nil {
 		log.Fatalf("Ошибка запуска gRPC-сервера: %v", err)
 	}

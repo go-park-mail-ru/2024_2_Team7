@@ -12,17 +12,15 @@ import (
 )
 
 func (s *ServerAPI) Register(ctx context.Context, in *pb.RegisterRequest) (*pb.User, error) {
-	registerDTO := models.NewUserData{
-		User: models.User{
-			Username: in.Username,
-			Password: in.Password,
-			Email:    in.Email,
-		},
+	user := models.User{
+		Username: in.Username,
+		Password: in.Password,
+		Email:    in.Email,
+		ImageURL: in.AvatarUrl,
 	}
 
-	userData, err := s.service.Register(ctx, registerDTO)
+	userData, err := s.service.Register(ctx, user)
 	if err != nil {
-
 		if errors.Is(err, models.ErrEmailIsUsed) {
 			return nil, status.Error(codes.AlreadyExists, errUsernameOrEmailIsTaken)
 		}
@@ -30,7 +28,7 @@ func (s *ServerAPI) Register(ctx context.Context, in *pb.RegisterRequest) (*pb.U
 		return nil, status.Error(codes.Internal, errInternal)
 	}
 
-	user := userToUserPb(userData)
+	resp := userToUserPb(userData)
 
-	return user, nil
+	return resp, nil
 }

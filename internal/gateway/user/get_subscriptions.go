@@ -20,7 +20,7 @@ func (h *UserHandlers) GetSubscriptions(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	users, err := h.Gateway.UserService.GetSubscriptions(r.Context(), &pb.GetSubscriptionsRequest{ID: int32(id)})
+	users, err := h.UserService.GetSubscriptions(r.Context(), &pb.GetSubscriptionsRequest{ID: int32(id)})
 	if err != nil {
 		switch err {
 		default:

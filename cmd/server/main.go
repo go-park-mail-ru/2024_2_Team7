@@ -4,18 +4,14 @@ import (
 	"log"
 	"net/http"
 
-	"kudago/config"
+	"kudago/cmd/server/config"
 	_ "kudago/docs"
-	"kudago/internal/gateway"
 	authHandlers "kudago/internal/gateway/auth"
+	eventHandlers "kudago/internal/gateway/event"
 	userHandlers "kudago/internal/gateway/user"
-	"kudago/internal/http/events"
+
 	"kudago/internal/logger"
 	"kudago/internal/middleware"
-	imageRepository "kudago/internal/repository/images"
-	"kudago/internal/repository/postgres"
-	eventRepository "kudago/internal/repository/postgres/events"
-	eventService "kudago/internal/service/events"
 
 	httpSwagger "github.com/swaggo/http-swagger"
 
@@ -31,6 +27,9 @@ import (
 
 func main() {
 	conf, err := config.LoadConfig()
+	if err != nil {
+		log.Fatalf("Failed to get config: %v", err)
+	}
 
 	appLogger, err := logger.NewLogger()
 	if err != nil {
@@ -38,25 +37,20 @@ func main() {
 	}
 	defer appLogger.Logger.Sync()
 
-	pool, err := postgres.InitPostgres(conf.PostgresConfig, appLogger)
+	authHandler, err := authHandlers.NewAuthHandlers(conf.AuthServiceAddr, conf.ImageServiceAddr, appLogger)
 	if err != nil {
-		log.Fatalf("Failed to connect to the postgres database", err)
-	}
-	defer pool.Close()
-
-	eventDB := eventRepository.NewDB(pool)
-	imageDB := imageRepository.NewDB(conf.ImageConfig)
-
-	gateway, err := gateway.NewGateway(conf.AuthServiceAddr, conf.UserServiceAddr, appLogger)
-	if err != nil {
-		log.Fatalf("Ошибка инициализации Gateway: %v", err)
+		log.Fatalf("Failed to connect to auth service: %v", err)
 	}
 
-	eventService := eventService.NewService(eventDB, imageDB)
+	userHandler, err := userHandlers.NewUserHandlers(conf.UserServiceAddr, appLogger)
+	if err != nil {
+		log.Fatalf("Failed to connect to user service: %v", err)
+	}
 
-	authHandler := authHandlers.NewAuthHandlers(gateway)
-	userHandler := userHandlers.NewUserHandlers(gateway)
-	eventHandler := events.NewEventHandler(&eventService, eventDB, appLogger)
+	eventHandler, err := eventHandlers.NewEventHandlers(conf.EventServiceAddr, conf.ImageServiceAddr, appLogger)
+	if err != nil {
+		log.Fatalf("Failed to connect to event service: %v", err)
+	}
 
 	r := mux.NewRouter()
 
@@ -69,7 +63,7 @@ func main() {
 	r.HandleFunc("/logout", authHandler.Logout).Methods(http.MethodPost)
 	r.HandleFunc("/session", authHandler.CheckSession).Methods(http.MethodGet)
 
-	r.HandleFunc("/profile/{id}", userHandler.Profile).Methods(http.MethodGet)
+	r.HandleFunc("/profile/{id:[0-9]+}", userHandler.Profile).Methods(http.MethodGet)
 	// r.HandleFunc("/profile", userHandler.UpdateUser).Methods(http.MethodPut)
 
 	r.HandleFunc("/profile/subscribe/{id:[0-9]+}", userHandler.Subscribe).Methods(http.MethodPost)
@@ -92,7 +86,7 @@ func main() {
 	r.HandleFunc("/events/favorites/{id:[0-9]+}", eventHandler.AddEventToFavorites).Methods(http.MethodPost)
 	r.HandleFunc("/events/favorites/{id:[0-9]+}", eventHandler.DeleteEventFromFavorites).Methods(http.MethodDelete)
 
-	handlerWithAuth := middleware.AuthMiddleware(gateway.AuthService, r)
+	handlerWithAuth := middleware.AuthMiddleware(authHandler.AuthService, r)
 	handlerWithCORS := middleware.CORSMiddleware(handlerWithAuth)
 	handlerWithLogging := middleware.LoggingMiddleware(handlerWithCORS, appLogger.Logger)
 	handler := middleware.PanicMiddleware(handlerWithLogging)

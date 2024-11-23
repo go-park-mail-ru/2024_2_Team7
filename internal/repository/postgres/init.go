@@ -31,7 +31,6 @@ func GetPostgresConfig() (PostgresConfig, error) {
 	config.Port = os.Getenv("POSTGRES_PORT")
 	config.DB = os.Getenv("POSTGRES_DB")
 	config.URL = fmt.Sprintf("postgres://%s:%s@%s:%s/%s", config.User, config.Password, config.Host, config.Port, config.DB)
-
 	return config, nil
 }
 
@@ -40,8 +39,8 @@ func InitPostgres(config PostgresConfig, logger *logger.Logger) (*pgxpool.Pool, 
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse db URL: %v", err)
 	}
-	dbConf.ConnConfig.Tracer = logger
 
+	dbConf.ConnConfig.Tracer = logger
 	pool, err := pgxpool.NewWithConfig(context.Background(), dbConf)
 	if err != nil {
 		return nil, fmt.Errorf("unable to connect to db pgxpool: %v", err)

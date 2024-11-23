@@ -21,6 +21,7 @@ func GetRedisConfig() (*RedisConfig, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error in loading .env: %v", err)
 	}
+
 	var config RedisConfig
 	config.Password = os.Getenv("REDIS_PASSWORD")
 	config.Host = os.Getenv("REDIS_HOST")

@@ -27,8 +27,8 @@ type ImageDB interface {
 	DeleteImage(ctx context.Context, imagePath string) error
 }
 
-func NewService(userDB UserDB, imageDB ImageDB) authService {
-	return authService{UserDB: userDB, ImageDB: imageDB}
+func NewService(userDB UserDB) authService {
+	return authService{UserDB: userDB}
 }
 
 func (a *authService) GetUserByID(ctx context.Context, ID int) (models.User, error) {
@@ -39,22 +39,7 @@ func (a *authService) CheckCredentials(ctx context.Context, creds models.Credent
 	return a.UserDB.CheckCredentials(ctx, creds.Username, creds.Password)
 }
 
-func (a *authService) Register(ctx context.Context, data models.NewUserData) (models.User, error) {
-	user := data.User
-
-	if data.Media.Filename != "" && data.Media.File != nil {
-		media := models.MediaFile{
-			Filename: data.Media.Filename,
-			File:     data.Media.File,
-		}
-		path, err := a.ImageDB.SaveImage(ctx, media)
-		if err != nil {
-			return models.User{}, err
-		}
-
-		user.ImageURL = path
-	}
-
+func (a *authService) Register(ctx context.Context, user models.User) (models.User, error) {
 	userExists, err := a.UserDB.UserExists(ctx, user.Username, user.Email)
 	if err != nil {
 		return models.User{}, err
@@ -66,9 +51,6 @@ func (a *authService) Register(ctx context.Context, data models.NewUserData) (mo
 
 	user, err = a.UserDB.CreateUser(ctx, user)
 	if err != nil {
-		if user.ImageURL != "" {
-			a.ImageDB.DeleteImage(ctx, user.ImageURL)
-		}
 		return models.User{}, err
 	}
 	return user, nil
