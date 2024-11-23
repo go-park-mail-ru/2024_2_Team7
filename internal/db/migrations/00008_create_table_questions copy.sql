@@ -14,25 +14,22 @@ CREATE TABLE IF NOT EXISTS QUESTION(
                             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS INTERVIEWED(
+CREATE TABLE IF NOT EXISTS ANSWERS(
                             id SERIAL PRIMARY KEY,
-                            test_id INT NOT NULL,
+                            question_id INT NOT NULL,
                             user_id INT NOT NULL,
+                            answer INT,
                             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                            FOREIGN KEY (test_id) REFERENCES TEST (id) ON DELETE CASCADE,
+                            FOREIGN KEY (question_id) REFERENCES QUESTION (id) ON DELETE CASCADE,
                             FOREIGN KEY (user_id) REFERENCES "USER" (id) ON DELETE CASCADE,
-                            CONSTRAINT unique_interviewed UNIQUE (test_id, user_id)
+                            CONSTRAINT unique_interviewed UNIQUE (question_id, user_id)
 );
-INSERT INTO test (title)
-VALUES ('test 1');
 
-INSERT INTO question (test_id, question)
-VALUES ('1', 'who?'), ('1', 'why?');
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
-DROP TABLE IF EXISTS INTERVIEWED;
+DROP TABLE IF EXISTS ANSWERS;
 DROP TABLE IF EXISTS QUESTION;
 DROP TABLE IF EXISTS TEST;
 -- +goose StatementEnd

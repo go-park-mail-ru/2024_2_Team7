@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 
 	"kudago/internal/models"
 
@@ -72,4 +73,30 @@ func (db *CSATDB) GetTest(ctx context.Context, query string) (models.Test, error
 	}
 
 	return test, nil
+}
+
+const insertAnswersQuery = `
+	INSERT INTO answers (question_id, user_id, answer) 
+	VALUES ($1, $2, $3)`
+
+func (db *CSATDB) AddAnswers(ctx context.Context, answers []models.Answer, userID int) error {
+	fmt.Println(answers)
+	tx, err := db.pool.Begin(ctx)
+	if err != nil {
+		return  fmt.Errorf("%s: %w", models.LevelDB, err)
+	}
+	defer tx.Rollback(ctx)
+
+	for _, answer := range answers {
+		_, err := tx.Exec(ctx, insertAnswersQuery, answer.QuestionID, userID, answer.Value)
+		if err != nil {
+			return fmt.Errorf("%s: %w", models.LevelDB, err)
+		}
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		return  fmt.Errorf("%s: %w", models.LevelDB, err)
+	}
+	return nil
 }

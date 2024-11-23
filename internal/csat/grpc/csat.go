@@ -25,6 +25,7 @@ type ServerAPI struct {
 
 type CSATService interface {
 	GetTest(ctx context.Context, query string) (models.Test, error)
+	AddAnswers(ctx context.Context, answers []models.Answer, userID int) ( error)
 }
 
 func NewServerAPI(service CSATService, logger *logger.Logger) *ServerAPI {
@@ -35,6 +36,20 @@ func NewServerAPI(service CSATService, logger *logger.Logger) *ServerAPI {
 }
 
 func (s *ServerAPI) AddAnswers(ctx context.Context, req *pb.AddAnswersRequest) (*pb.Empty, error) {
+	answers:=make([]models.Answer, 0, len(req.Answers))
+	for _, answer:=range req.Answers{
+		temp:=models.Answer{
+			QuestionID: int(answer.QuestionID),
+			Value: int(answer.Value),
+		}
+
+		answers=append(answers, temp)
+	}
+
+	err:=s.service.AddAnswers(ctx, answers, int(req.UserID))
+	if err!=nil{
+		return nil, status.Error(codes.Internal, errInternal)
+	}
 	return nil, nil
 }
 

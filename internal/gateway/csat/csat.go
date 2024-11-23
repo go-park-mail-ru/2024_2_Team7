@@ -1,6 +1,7 @@
 package csat
 
 import (
+	"encoding/json"
 	"net/http"
 
 	pb "kudago/internal/csat/api"
@@ -54,10 +55,10 @@ func (h *CSATHandlers) GetTest(w http.ResponseWriter, r *http.Request) {
 			case grpcCodes.NotFound:
 				utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrTestNotFound)
 				return
-			// case grpcCodes.Internal:
-			// 	h.logger.Error(r.Context(), "check session", st.Err())
-			// 	utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
-			// 	return
+			case grpcCodes.Internal:
+				h.logger.Error(r.Context(), "get test", st.Err())
+				utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
+				return
 			default:
 				h.logger.Error(r.Context(), "get test", st.Err())
 				utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
@@ -72,6 +73,61 @@ func (h *CSATHandlers) GetTest(w http.ResponseWriter, r *http.Request) {
 	resp := toTestModel(test)
 
 	utils.WriteResponse(w, http.StatusOK, resp)
+	return
+}
+
+func (h *CSATHandlers) AddAnswers(w http.ResponseWriter, r *http.Request) {
+	session, ok := utils.GetSessionFromContext(r.Context())
+	if !ok {
+		utils.WriteResponse(w, http.StatusOK, httpErrors.ErrUnauthorized)
+		return
+	}
+
+	var answers models.AddAnswers
+	err := json.NewDecoder(r.Body).Decode(&answers)
+	if err != nil {
+		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
+		return
+	}
+	
+	answersReq:=make([]*pb.Answer, 0, len(answers.Answers))
+	for _, answer:=range answers.Answers{
+		temp:=&pb.Answer{
+			QuestionID: int32(answer.QuestionID),
+			Value: int32(answer.Value),
+		}
+		answersReq=append(answersReq, temp)
+	}
+
+	req := &pb.AddAnswersRequest{
+		UserID:  int32(session.UserID),
+		Answers: answersReq,
+	}
+
+	_, err = h.CSATService.AddAnswers(r.Context(), req)
+	if err != nil {
+		st, ok := grpcStatus.FromError(err)
+		if ok {
+			switch st.Code() {
+			case grpcCodes.NotFound:
+				utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrTestNotFound)
+				return
+			case grpcCodes.Internal:
+				h.logger.Error(r.Context(), "get test", st.Err())
+				utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
+				return
+			default:
+				h.logger.Error(r.Context(), "get test", st.Err())
+				utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
+				return
+			}
+		}
+		h.logger.Error(r.Context(), "get test", err)
+		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 	return
 }
 
