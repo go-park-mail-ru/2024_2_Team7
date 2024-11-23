@@ -19,8 +19,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	CSATService_GetTest_FullMethodName    = "/csat.CSATService/GetTest"
-	CSATService_AddAnswers_FullMethodName = "/csat.CSATService/AddAnswers"
+	CSATService_GetTest_FullMethodName       = "/csat.CSATService/GetTest"
+	CSATService_AddAnswers_FullMethodName    = "/csat.CSATService/AddAnswers"
+	CSATService_GetStatistics_FullMethodName = "/csat.CSATService/GetStatistics"
 )
 
 // CSATServiceClient is the client API for CSATService service.
@@ -29,6 +30,7 @@ const (
 type CSATServiceClient interface {
 	GetTest(ctx context.Context, in *GetTestRequest, opts ...grpc.CallOption) (*GetTestResponse, error)
 	AddAnswers(ctx context.Context, in *AddAnswersRequest, opts ...grpc.CallOption) (*Empty, error)
+	GetStatistics(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*GetStatisticsResponse, error)
 }
 
 type cSATServiceClient struct {
@@ -59,12 +61,23 @@ func (c *cSATServiceClient) AddAnswers(ctx context.Context, in *AddAnswersReques
 	return out, nil
 }
 
+func (c *cSATServiceClient) GetStatistics(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*GetStatisticsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetStatisticsResponse)
+	err := c.cc.Invoke(ctx, CSATService_GetStatistics_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CSATServiceServer is the server API for CSATService service.
 // All implementations must embed UnimplementedCSATServiceServer
 // for forward compatibility.
 type CSATServiceServer interface {
 	GetTest(context.Context, *GetTestRequest) (*GetTestResponse, error)
 	AddAnswers(context.Context, *AddAnswersRequest) (*Empty, error)
+	GetStatistics(context.Context, *Empty) (*GetStatisticsResponse, error)
 	mustEmbedUnimplementedCSATServiceServer()
 }
 
@@ -80,6 +93,9 @@ func (UnimplementedCSATServiceServer) GetTest(context.Context, *GetTestRequest) 
 }
 func (UnimplementedCSATServiceServer) AddAnswers(context.Context, *AddAnswersRequest) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddAnswers not implemented")
+}
+func (UnimplementedCSATServiceServer) GetStatistics(context.Context, *Empty) (*GetStatisticsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetStatistics not implemented")
 }
 func (UnimplementedCSATServiceServer) mustEmbedUnimplementedCSATServiceServer() {}
 func (UnimplementedCSATServiceServer) testEmbeddedByValue()                     {}
@@ -138,6 +154,24 @@ func _CSATService_AddAnswers_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CSATService_GetStatistics_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CSATServiceServer).GetStatistics(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CSATService_GetStatistics_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CSATServiceServer).GetStatistics(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CSATService_ServiceDesc is the grpc.ServiceDesc for CSATService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -152,6 +186,10 @@ var CSATService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AddAnswers",
 			Handler:    _CSATService_AddAnswers_Handler,
+		},
+		{
+			MethodName: "GetStatistics",
+			Handler:    _CSATService_GetStatistics_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -7,7 +7,7 @@ package csat;
 service CSATService {
     rpc GetTest (GetTestRequest) returns (GetTestResponse);  
     rpc AddAnswers (AddAnswersRequest) returns (Empty);  
-    //rpc GetStatistics (GetStatisticsRequest) returns (GetStatisticsResponse);
+    rpc GetStatistics (Empty) returns (GetStatisticsResponse);
     }
 
     message GetTestRequest {
@@ -36,4 +36,13 @@ service CSATService {
         int32 value = 2;
     }
 
+    message GetStatisticsResponse {
+        repeated Stats statistics = 1;
+    }
+
+    message Stats {
+        int32 iD=1;
+        string question = 2;
+        int32 value = 3;
+    }
     message Empty{}

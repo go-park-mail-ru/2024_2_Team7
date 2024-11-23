@@ -84,6 +84,7 @@ func main() {
 
 	r.HandleFunc("/test", csatHandler.GetTest).Methods(http.MethodGet)
 	r.HandleFunc("/test", csatHandler.AddAnswers).Methods(http.MethodPost)
+	r.HandleFunc("/stats", csatHandler.GetStatistics).Methods(http.MethodGet)
 
 	r.HandleFunc("/categories", eventHandler.GetCategories).Methods(http.MethodGet)
 	r.HandleFunc("/events/user/{id:[0-9]+}", eventHandler.GetEventsByUser).Methods(http.MethodGet)

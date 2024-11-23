@@ -83,7 +83,7 @@ func (db *CSATDB) AddAnswers(ctx context.Context, answers []models.Answer, userI
 	fmt.Println(answers)
 	tx, err := db.pool.Begin(ctx)
 	if err != nil {
-		return  fmt.Errorf("%s: %w", models.LevelDB, err)
+		return fmt.Errorf("%s: %w", models.LevelDB, err)
 	}
 	defer tx.Rollback(ctx)
 
@@ -96,7 +96,52 @@ func (db *CSATDB) AddAnswers(ctx context.Context, answers []models.Answer, userI
 
 	err = tx.Commit(ctx)
 	if err != nil {
-		return  fmt.Errorf("%s: %w", models.LevelDB, err)
+		return fmt.Errorf("%s: %w", models.LevelDB, err)
 	}
 	return nil
+}
+
+const getStatsQuery = `
+	SELECT 
+		q.id AS question_id,
+		q.question,
+		AVG(a.answer) AS average_answer
+	FROM   QUESTION q
+	LEFT JOIN  ANSWERS a ON q.id = a.question_id
+	GROUP BY   q.id, q.question
+	ORDER BY  q.id;
+
+`
+
+func (db *CSATDB) GetStatistics(ctx context.Context) ([]models.Stats, error) {
+	rows, err := db.pool.Query(ctx, getStatsQuery)
+	if err != nil {
+		return nil, errors.Wrap(err, models.LevelDB)
+	}
+	defer rows.Close()
+
+	statistics := []models.Stats{}
+
+	for rows.Next() {
+		var (
+			questionID *int
+			question   *string
+			value      *int
+		)
+
+		err := rows.Scan(&questionID, &question, &value)
+		if err != nil {
+			return nil, errors.Wrap(err, models.LevelDB)
+		}
+
+		if questionID != nil && value !=nil {
+			statistics = append(statistics, models.Stats{
+				ID: *questionID,
+				Question: *question,
+				Value:    *value,
+			})
+		}
+	}
+
+	return statistics, nil
 }

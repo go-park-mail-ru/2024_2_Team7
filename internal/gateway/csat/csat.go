@@ -76,6 +76,40 @@ func (h *CSATHandlers) GetTest(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+
+func (h *CSATHandlers) GetStatistics(w http.ResponseWriter, r *http.Request) {
+	_, ok := utils.GetSessionFromContext(r.Context())
+	if !ok {
+		utils.WriteResponse(w, http.StatusOK, httpErrors.ErrUnauthorized)
+		return
+	}
+
+	stats, err := h.CSATService.GetStatistics(r.Context(), nil)
+	if err != nil {
+		st, ok := grpcStatus.FromError(err)
+		if ok {
+			switch st.Code() {
+			case grpcCodes.Internal:
+				h.logger.Error(r.Context(), "get stats", st.Err())
+				utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
+				return
+			default:
+				h.logger.Error(r.Context(), "get stats", st.Err())
+				utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
+				return
+			}
+		}
+		h.logger.Error(r.Context(), "get stats", err)
+		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
+		return
+	}
+
+	resp := toStatisticsModel(stats)
+
+	utils.WriteResponse(w, http.StatusOK, resp)
+	return
+}
+
 func (h *CSATHandlers) AddAnswers(w http.ResponseWriter, r *http.Request) {
 	session, ok := utils.GetSessionFromContext(r.Context())
 	if !ok {
@@ -146,9 +180,32 @@ func toTestModel(test *pb.GetTestResponse) models.Test {
 	}
 }
 
+
+func toStatisticsModel(stats *pb.GetStatisticsResponse) models.Statistics {
+	statistics := make([]models.Stats, 0, len(stats.Statistics))
+
+	for _, stat := range stats.Statistics {
+		q := toStatsModel(stat)
+		statistics = append(statistics, q)
+	}
+
+	return models.Statistics{
+	Statistics: statistics,
+	}
+}
+
+
 func toQuestionModel(question *pb.Question) models.Question {
 	return models.Question{
 		ID:   int(question.Id),
 		Text: question.Text,
+	}
+}
+
+func toStatsModel(stats *pb.Stats) models.Stats {
+	return models.Stats{
+		ID: int(stats.ID),
+		Question:   stats.Question,
+		Value: int(stats.Value),
 	}
 }

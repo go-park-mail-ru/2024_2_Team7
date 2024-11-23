@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	pb "kudago/internal/csat/api"
 	"kudago/internal/logger"
@@ -25,7 +26,8 @@ type ServerAPI struct {
 
 type CSATService interface {
 	GetTest(ctx context.Context, query string) (models.Test, error)
-	AddAnswers(ctx context.Context, answers []models.Answer, userID int) ( error)
+	AddAnswers(ctx context.Context, answers []models.Answer, userID int) error
+	GetStatistics(ctx context.Context) ([]models.Stats, error)
 }
 
 func NewServerAPI(service CSATService, logger *logger.Logger) *ServerAPI {
@@ -36,18 +38,18 @@ func NewServerAPI(service CSATService, logger *logger.Logger) *ServerAPI {
 }
 
 func (s *ServerAPI) AddAnswers(ctx context.Context, req *pb.AddAnswersRequest) (*pb.Empty, error) {
-	answers:=make([]models.Answer, 0, len(req.Answers))
-	for _, answer:=range req.Answers{
-		temp:=models.Answer{
+	answers := make([]models.Answer, 0, len(req.Answers))
+	for _, answer := range req.Answers {
+		temp := models.Answer{
 			QuestionID: int(answer.QuestionID),
-			Value: int(answer.Value),
+			Value:      int(answer.Value),
 		}
 
-		answers=append(answers, temp)
+		answers = append(answers, temp)
 	}
 
-	err:=s.service.AddAnswers(ctx, answers, int(req.UserID))
-	if err!=nil{
+	err := s.service.AddAnswers(ctx, answers, int(req.UserID))
+	if err != nil {
 		return nil, status.Error(codes.Internal, errInternal)
 	}
 	return nil, nil
@@ -68,6 +70,18 @@ func (s *ServerAPI) GetTest(ctx context.Context, in *pb.GetTestRequest) (*pb.Get
 	return resp, nil
 }
 
+func (s *ServerAPI) GetStatistics(ctx context.Context, in *pb.Empty) (*pb.GetStatisticsResponse, error) {
+	statistics, err := s.service.GetStatistics(ctx)
+	if err != nil {
+		s.logger.Error(ctx, "get stats", err)
+		return nil, status.Error(codes.Internal, errInternal)
+	}
+	fmt.Println(statistics)
+	resp := toStatisticsPB(statistics)
+
+	return resp, nil
+}
+
 func toTestPB(test models.Test) *pb.GetTestResponse {
 	questions := make([]*pb.Question, 0, len(test.Questions))
 
@@ -80,6 +94,23 @@ func toTestPB(test models.Test) *pb.GetTestResponse {
 		Id:        int32(test.ID),
 		Title:     test.Title,
 		Questions: questions,
+	}
+}
+
+func toStatisticsPB(statistics []models.Stats) *pb.GetStatisticsResponse {
+	stats := make([]*pb.Stats, 0, len(statistics))
+
+	for _, stat := range statistics {
+		temp := &pb.Stats{
+			ID: int32(stat.ID),
+			Question: stat.Question,
+			Value:    int32(stat.Value),
+		}
+		stats = append(stats, temp)
+	}
+
+	return &pb.GetStatisticsResponse{
+		Statistics: stats,
 	}
 }
 

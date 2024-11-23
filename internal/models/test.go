@@ -19,3 +19,13 @@ type Answer struct {
 type AddAnswers struct {
 	Answers []Answer `json:"answers"`
 }
+
+type Stats struct {
+	ID int `json:"id"`
+	Question string `json:"question"`
+	Value    int `json:"value"`
+}
+
+type Statistics struct {
+	Statistics []Stats `json:"statistics"`
+}
