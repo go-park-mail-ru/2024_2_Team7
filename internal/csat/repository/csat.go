@@ -25,8 +25,7 @@ const getTestQuery = `
 		t.title AS test_title, 
 		t.created_at AS test_created_at,
 		q.id AS question_id, 
-		q.question AS question_text, 
-		q.created_at AS question_created_at
+		q.question AS question_text
 	FROM test t
 	LEFT JOIN question q ON t.id = q.test_id
 	WHERE LOWER(t.title) ILIKE $1
