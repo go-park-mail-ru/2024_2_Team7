@@ -3,7 +3,6 @@ package grpc
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	pb "kudago/internal/csat/api"
 	"kudago/internal/logger"
@@ -39,8 +38,7 @@ func (s *ServerAPI) AddAnswers(ctx context.Context, req *pb.AddAnswersRequest) (
 	return nil, nil
 }
 
-func (s *ServerAPI) GetTest(ctx context.Context,in  *pb.GetTestRequest) (*pb.GetTestResponse, error) {
-	fmt.Println("get test")
+func (s *ServerAPI) GetTest(ctx context.Context, in *pb.GetTestRequest) (*pb.GetTestResponse, error) {
 	test, err := s.service.GetTest(ctx, in.Query)
 	if err != nil {
 		if errors.Is(err, models.ErrNotFound) {
@@ -54,7 +52,6 @@ func (s *ServerAPI) GetTest(ctx context.Context,in  *pb.GetTestRequest) (*pb.Get
 
 	return resp, nil
 }
-
 
 func toTestPB(test models.Test) *pb.GetTestResponse {
 	questions := make([]*pb.Question, 0, len(test.Questions))

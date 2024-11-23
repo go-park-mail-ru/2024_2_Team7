@@ -23,7 +23,6 @@ const getTestQuery = `
 	SELECT 
 		t.id AS test_id, 
 		t.title AS test_title, 
-		t.created_at AS test_created_at,
 		q.id AS question_id, 
 		q.question AS question_text
 	FROM test t
@@ -46,12 +45,11 @@ func (db *CSATDB) GetTest(ctx context.Context, query string) (models.Test, error
 		var (
 			testID       int
 			testTitle    string
-			testCreated  string
 			questionID   *int
 			questionText *string
 		)
 
-		err := rows.Scan(&testID, &testTitle, &testCreated, &questionID, &questionText)
+		err := rows.Scan(&testID, &testTitle, &questionID, &questionText)
 		if err != nil {
 			return models.Test{}, errors.Wrap(err, models.LevelDB)
 		}
