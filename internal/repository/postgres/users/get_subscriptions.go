@@ -10,7 +10,7 @@ import (
 const getSubscriptionsQuery = `
 	SELECT u.id, u.username, u.email, u.url_to_avatar
 	FROM "USER" u
-	JOIN SUBSCRIPTION s ON s.subscribed_id = u.id
+	JOIN SUBSCRIPTION s ON s.follows_id = u.id
 	WHERE s.subscriber_id = $1;
 `
 

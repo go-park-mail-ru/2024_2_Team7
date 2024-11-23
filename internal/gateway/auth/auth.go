@@ -9,7 +9,7 @@ import (
 	auth "kudago/internal/auth/api"
 	pb "kudago/internal/auth/api"
 	httpErrors "kudago/internal/http/errors"
-	"kudago/internal/http/utils"
+	"kudago/internal/gateway/utils"
 	pbImage "kudago/internal/image/api"
 	"kudago/internal/logger"
 	"kudago/internal/models"

@@ -20,6 +20,7 @@ func LoadConfig() (Config, error) {
 	if err != nil {
 		return conf, err
 	}
+	
 	postgresConfig, err := postgres.GetPostgresConfig()
 	if err != nil {
 		return Config{}, errors.New("Failed to connect to the postgres database")

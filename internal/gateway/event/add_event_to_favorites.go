@@ -6,7 +6,7 @@ import (
 
 	pb "kudago/internal/event/api"
 	httpErrors "kudago/internal/http/errors"
-	"kudago/internal/http/utils"
+	"kudago/internal/gateway/utils"
 
 	"github.com/gorilla/mux"
 )

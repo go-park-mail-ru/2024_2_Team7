@@ -8,7 +8,7 @@ import (
 
 	pb "kudago/internal/auth/api"
 	httpErrors "kudago/internal/http/errors"
-	"kudago/internal/http/utils"
+	"kudago/internal/gateway/utils"
 	"kudago/internal/models"
 
 	"google.golang.org/grpc"

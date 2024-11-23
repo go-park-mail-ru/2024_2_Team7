@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	httpErrors "kudago/internal/http/errors"
-	"kudago/internal/http/utils"
+	"kudago/internal/gateway/utils"
 	"kudago/internal/models"
 
 	"github.com/asaskevich/govalidator"

@@ -11,7 +11,7 @@ import (
 )
 
 const insertSubscription = `
-	INSERT INTO SUBSCRIPTION (subscriber_id, subscribed_id)
+	INSERT INTO SUBSCRIPTION (subscriber_id, follows_id)
 	VALUES ($1, $2)
 	ON CONFLICT DO NOTHING`
 
