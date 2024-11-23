@@ -23,11 +23,16 @@ CREATE TABLE IF NOT EXISTS INTERVIEWED(
                             FOREIGN KEY (user_id) REFERENCES "USER" (id) ON DELETE CASCADE,
                             CONSTRAINT unique_interviewed UNIQUE (test_id, user_id)
 );
+INSERT INTO test (title)
+VALUES ('test 1');
+
+INSERT INTO question (test_id, question)
+VALUES ('1', 'who?'), ('1', 'why?');
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
-DROP TABLE IF EXISTS TEST;
-DROP TABLE IF EXISTS QUESTION;
 DROP TABLE IF EXISTS INTERVIEWED;
+DROP TABLE IF EXISTS QUESTION;
+DROP TABLE IF EXISTS TEST;
 -- +goose StatementEnd
