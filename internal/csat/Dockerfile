@@ -12,10 +12,10 @@ RUN go mod download
 COPY . .
 
 # Build
-RUN go build -o /server_run ./cmd/server/main.go
+RUN go build -o /csat_run ./cmd/csat/main.go
 
 #
-EXPOSE 50054
+EXPOSE 50055
 
 # Run
-CMD ["/server_run"]
+CMD ["/csat_run"]

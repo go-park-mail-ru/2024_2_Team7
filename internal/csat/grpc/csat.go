@@ -3,7 +3,6 @@ package grpc
 import (
 	"context"
 
-	pb "kudago/internal/csat/api"
 	"kudago/internal/logger"
 	"kudago/internal/models"
 )
@@ -30,5 +29,6 @@ func NewServerAPI(service CSATService, logger *logger.Logger) *ServerAPI {
 	}
 }
 
-func (s *ServerAPI) AddAnswers(ctx context.Context, req *pb.AddAnswersRequest) (*pb.Empty, error) {
+/*func (s *ServerAPI) AddAnswers(ctx context.Context, req *pb.AddAnswersRequest) (*pb.Empty, error) {
 }
+*/

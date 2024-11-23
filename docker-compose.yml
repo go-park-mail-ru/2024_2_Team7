@@ -65,6 +65,21 @@ services:
     volumes:
       - .:/app
 
+  csat_service:
+    build:
+      context: .
+      dockerfile: ./internal/csat/Dockerfile
+    ports:
+      - "50055:50055"
+    depends_on:
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_started
+    env_file:
+      - .env
+    volumes:
+      - .:/app
 
   server_service:
     build:

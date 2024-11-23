@@ -15,7 +15,7 @@ COPY . .
 RUN go build -o /server_run ./cmd/server/main.go
 
 #
-EXPOSE 8080
+EXPOSE 50052
 
 # Run
 CMD ["/server_run"]
