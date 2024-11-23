@@ -8,8 +8,8 @@ import (
 
 	auth "kudago/internal/auth/api"
 	pb "kudago/internal/auth/api"
-	httpErrors "kudago/internal/http/errors"
 	"kudago/internal/gateway/utils"
+	httpErrors "kudago/internal/http/errors"
 	pbImage "kudago/internal/image/api"
 	"kudago/internal/logger"
 	"kudago/internal/models"

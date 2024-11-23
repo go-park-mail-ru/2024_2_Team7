@@ -86,6 +86,11 @@ var (
 		Code:    "not_found",
 	}
 
+	ErrTestNotFound = &HttpError{
+		Message: "Test not found",
+		Code:    "not_found",
+	}
+
 	ErrAccessDenied = &HttpError{
 		Message: "User doesn't own this event",
 		Code:    "access_denied",

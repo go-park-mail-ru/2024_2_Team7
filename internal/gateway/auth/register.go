@@ -77,6 +77,7 @@ func (h *AuthHandlers) Register(w http.ResponseWriter, r *http.Request) {
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
+	h.logger.Error(r.Context(), "set cookie", err)
 
 	err = h.setSessionCookie(w, r, int(user.ID))
 	if err != nil {

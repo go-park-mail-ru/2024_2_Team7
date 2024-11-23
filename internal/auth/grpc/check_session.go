@@ -2,9 +2,11 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	pb "kudago/internal/auth/api"
+	"kudago/internal/models"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -14,6 +16,9 @@ func (s *ServerAPI) CheckSession(ctx context.Context, in *pb.CheckSessionRequest
 	session, err := s.sessionManager.CheckSession(ctx, in.Cookie)
 	if err != nil {
 		s.logger.Error(ctx, "check session", err)
+		if errors.Is(err, models.ErrUserNotFound) {
+			return nil, status.Error(codes.NotFound, errUserNotFound)
+		}
 		return nil, status.Error(codes.Internal, errInternal)
 	}
 

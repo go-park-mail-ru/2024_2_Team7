@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	pb "kudago/internal/auth/api"
-	httpErrors "kudago/internal/http/errors"
 	"kudago/internal/gateway/utils"
+	httpErrors "kudago/internal/http/errors"
 
 	grpcCodes "google.golang.org/grpc/codes"
 	grpcStatus "google.golang.org/grpc/status"
@@ -17,13 +17,14 @@ func (h *AuthHandlers) CheckSession(w http.ResponseWriter, r *http.Request) {
 		utils.WriteResponse(w, http.StatusOK, httpErrors.ErrUnauthorized)
 		return
 	}
-
 	getUserRequest := &pb.GetUserRequest{
 		ID: int32(session.UserID),
 	}
 
 	user, err := h.AuthService.GetUser(r.Context(), getUserRequest)
 	if err != nil {
+
+		h.logger.Error(r.Context(), "check session", err)
 		st, ok := grpcStatus.FromError(err)
 		if ok {
 			switch st.Code() {
