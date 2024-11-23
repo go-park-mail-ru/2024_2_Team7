@@ -44,7 +44,6 @@ func (db *SessionDB) CreateSession(ctx context.Context, ID int) (models.Session,
 		Token:   sessionToken,
 		Expires: expiration,
 	}
-
 	err := db.client.Set(ctx, sessionToken, session.UserID, expirationTime).Err()
 	if err != nil {
 		return models.Session{}, fmt.Errorf("%s: %w", models.LevelDB, err)

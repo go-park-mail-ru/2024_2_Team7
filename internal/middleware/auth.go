@@ -7,8 +7,8 @@ import (
 	"time"
 
 	pb "kudago/internal/auth/api"
-	httpErrors "kudago/internal/http/errors"
 	"kudago/internal/gateway/utils"
+	httpErrors "kudago/internal/http/errors"
 	"kudago/internal/models"
 
 	"google.golang.org/grpc"
@@ -45,9 +45,8 @@ func AuthMiddleware(sessionChecker sessionChecker, next http.Handler) http.Handl
 			}
 
 			sessionPB, err := sessionChecker.CheckSession(r.Context(), req)
-			session := sessionPBToSession(sessionPB)
-
 			if err == nil {
+				session := sessionPBToSession(sessionPB)
 				ctx := utils.SetSessionInContext(r.Context(), session)
 				r = r.WithContext(ctx)
 				next.ServeHTTP(w, r)

@@ -17,6 +17,7 @@ type Config struct {
 	UserServiceAddr  string
 	EventServiceAddr string
 	ImageServiceAddr string
+	CSATServiceAddr  string
 }
 
 func LoadConfig() (Config, error) {
@@ -50,6 +51,11 @@ func LoadConfig() (Config, error) {
 	conf.ImageServiceAddr = os.Getenv("IMAGE_SERVICE_ADDR")
 	if conf.ImageServiceAddr == "" {
 		return Config{}, errors.New("Failed to get image service address")
+	}
+
+	conf.CSATServiceAddr = os.Getenv("CSAT_SERVICE_ADDR")
+	if conf.CSATServiceAddr == "" {
+		return Config{}, errors.New("Failed to get csat service address")
 	}
 	return conf, nil
 }
