@@ -16,9 +16,41 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/categories": {
+            "get": {
+                "description": "Получить список всех доступных категорий событий",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "categories"
+                ],
+                "summary": "Получить все категории",
+                "responses": {
+                    "200": {
+                        "description": "Список категорий",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Category"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    }
+                }
+            }
+        },
         "/events": {
             "get": {
-                "description": "Получить все существующие события",
+                "description": "Поиск событий по ключевым словам, датам, тегам и категории",
                 "consumes": [
                     "application/json"
                 ],
@@ -28,18 +60,78 @@ const docTemplate = `{
                 "tags": [
                     "events"
                 ],
-                "summary": "Получить все события",
+                "summary": "Поиск событий",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Номер страницы (по умолчанию 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Количество событий на странице (по умолчанию 30)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Ключевые слова для поиска",
+                        "name": "query",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Дата начала события в формате YYYY-MM-DD",
+                        "name": "event_start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Дата окончания события в формате YYYY-MM-DD",
+                        "name": "event_end",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Список тегов",
+                        "name": "tags",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID категории",
+                        "name": "category_id",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Список событий",
                         "schema": {
                             "$ref": "#/definitions/events.GetEventsResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid Data",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
                         }
                     }
                 }
             },
             "post": {
-                "description": "Создает новое событие в системе",
+                "description": "Создает новое событие в системе. Необходимо передать JSON-объект с данными события.",
                 "consumes": [
                     "application/json"
                 ],
@@ -50,21 +142,218 @@ const docTemplate = `{
                     "events"
                 ],
                 "summary": "Создание события",
+                "parameters": [
+                    {
+                        "description": "Данные для создания события",
+                        "name": "json",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/events.NewEventRequest"
+                        }
+                    }
+                ],
                 "responses": {
                     "201": {
-                        "description": "Created",
+                        "description": "Событие успешно создано",
                         "schema": {
-                            "$ref": "#/definitions/events.EventResponse"
+                            "$ref": "#/definitions/events.NewEventResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid Data",
+                        "description": "Неверные данные",
                         "schema": {
                             "$ref": "#/definitions/httpErrors.HttpError"
                         }
                     },
                     "401": {
+                        "description": "Неавторизован",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/events/categories/{category}": {
+            "get": {
+                "description": "Возвращает события по ID категории",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "events"
+                ],
+                "summary": "Получение событий по категори",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/events.GetEventsResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/events/favorites": {
+            "get": {
+                "description": "Возвращает избранные события",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "events"
+                ],
+                "summary": "Получение избранных событий",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Номер страницы (по умолчанию 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Количество событий на странице (по умолчанию 30)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/events.GetEventsResponse"
+                        }
+                    },
+                    "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/events/favorites/{id}": {
+            "post": {
+                "description": "Добавить событие в избранное",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "events"
+                ],
+                "summary": "Добавление события в изсбранное",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Удаляет событие из списка избранного",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "events"
+                ],
+                "summary": "Удаление события из избранного",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/events/my": {
+            "get": {
+                "description": "Возвращает события пользователя",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "events"
+                ],
+                "summary": "Получение событий пользователя",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/events.GetEventsResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/events/subscription": {
+            "get": {
+                "description": "Возвращает события пользователя",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "events"
+                ],
+                "summary": "Получение событий по подпискам пользователя",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/events.GetEventsResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Status forbidden",
                         "schema": {
                             "$ref": "#/definitions/httpErrors.HttpError"
                         }
@@ -110,7 +399,7 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "description": "Обновляет данные существующего события",
+                "description": "Обновляет данные существующего события. Необходимо передать JSON-объект с данными события и идентификатором события в URL.",
                 "consumes": [
                     "application/json"
                 ],
@@ -121,39 +410,63 @@ const docTemplate = `{
                     "events"
                 ],
                 "summary": "Обновление события",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Идентификатор события",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Данные для обновления события",
+                        "name": "json",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/events.NewEventRequest"
+                        }
+                    },
+                    {
+                        "type": "file",
+                        "description": "Изображение события",
+                        "name": "image",
+                        "in": "formData"
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "Успешное обновление события",
                         "schema": {
-                            "$ref": "#/definitions/events.EventResponse"
+                            "$ref": "#/definitions/events.NewEventResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid Data",
+                        "description": "Неверные данные",
                         "schema": {
                             "$ref": "#/definitions/httpErrors.HttpError"
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Неавторизован",
                         "schema": {
                             "$ref": "#/definitions/httpErrors.HttpError"
                         }
                     },
                     "403": {
-                        "description": "Access Denied",
+                        "description": "Доступ запрещен",
                         "schema": {
                             "$ref": "#/definitions/httpErrors.HttpError"
                         }
                     },
                     "404": {
-                        "description": "Event Not Found",
+                        "description": "Событие не найдено",
                         "schema": {
                             "$ref": "#/definitions/httpErrors.HttpError"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Внутренняя ошибка сервера",
                         "schema": {
                             "$ref": "#/definitions/httpErrors.HttpError"
                         }
@@ -189,32 +502,6 @@ const docTemplate = `{
                         "description": "Event Not Found",
                         "schema": {
                             "$ref": "#/definitions/httpErrors.HttpError"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/httpErrors.HttpError"
-                        }
-                    }
-                }
-            }
-        },
-        "/events/{tag}": {
-            "get": {
-                "description": "Возвращает события по тегу",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "events"
-                ],
-                "summary": "Получение событий по тегу",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/events.GetEventsResponse"
                         }
                     },
                     "500": {
@@ -314,11 +601,73 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "put": {
+                "description": "Позволяет пользователю обновить свой профиль, включая аватарку. Для этого необходимо передать JSON-объект с полями ` + "`" + `username` + "`" + ` и ` + "`" + `email` + "`" + `, а также загрузить новый файл изображения.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Обновление информации о профиле пользователя",
+                "parameters": [
+                    {
+                        "description": "Данные для обновления профиля",
+                        "name": "json",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.UpdateRequest"
+                        }
+                    },
+                    {
+                        "type": "file",
+                        "description": "Аватарка пользователя",
+                        "name": "image",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Успешное обновление профиля",
+                        "schema": {
+                            "$ref": "#/definitions/auth.ProfileResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверные данные",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    },
+                    "404": {
+                        "description": "Пользователь не найден",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    },
+                    "409": {
+                        "description": "Конфликт данных, пользователь с таким email или именем уже существует",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    }
+                }
             }
         },
         "/register": {
             "post": {
-                "description": "Создает нового пользователя",
+                "description": "Создает нового пользователя. Необходимо передать JSON-объект с полями ` + "`" + `username` + "`" + `, ` + "`" + `email` + "`" + ` и ` + "`" + `password` + "`" + `. Если пользователь уже авторизован, запрос будет отклонен.",
                 "consumes": [
                     "application/json"
                 ],
@@ -329,27 +678,44 @@ const docTemplate = `{
                     "auth"
                 ],
                 "summary": "Регистрация пользователя",
+                "parameters": [
+                    {
+                        "description": "Данные для регистрации пользователя",
+                        "name": "json",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/auth.RegisterRequest"
+                        }
+                    },
+                    {
+                        "type": "file",
+                        "description": "Аватарка пользователя",
+                        "name": "image",
+                        "in": "formData"
+                    }
+                ],
                 "responses": {
                     "201": {
-                        "description": "Created",
+                        "description": "Успешная регистрация пользователя",
                         "schema": {
-                            "$ref": "#/definitions/auth.UserResponse"
+                            "$ref": "#/definitions/auth.AuthResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid Data / Username or Email already taken",
+                        "description": "Неверные данные / Имя пользователя или электронная почта уже заняты",
                         "schema": {
                             "$ref": "#/definitions/httpErrors.HttpError"
                         }
                     },
                     "401": {
-                        "description": "Validation error",
+                        "description": "Ошибка валидации",
                         "schema": {
                             "$ref": "#/definitions/utils.ValidationErrResponse"
                         }
                     },
                     "500": {
-                        "description": "Internal Server Error",
+                        "description": "Внутренняя ошибка сервера",
                         "schema": {
                             "$ref": "#/definitions/httpErrors.HttpError"
                         }
@@ -369,6 +735,47 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/auth.AuthResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/subscribe/{id}": {
+            "post": {
+                "description": "Отписаться от пользователя пользователя",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Отписаться от  пользователя",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    },
+                    "409": {
+                        "description": "Self subscription",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
                         }
                     }
                 }
@@ -401,6 +808,31 @@ const docTemplate = `{
                 }
             }
         },
+        "auth.RegisterRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "auth.UpdateRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
         "auth.UserResponse": {
             "type": "object",
             "properties": {
@@ -424,17 +856,29 @@ const docTemplate = `{
                 "author": {
                     "type": "integer"
                 },
-                "date_end": {
-                    "type": "string"
+                "capacity": {
+                    "type": "integer"
                 },
-                "date_start": {
-                    "type": "string"
+                "category_id": {
+                    "type": "integer"
                 },
                 "description": {
                     "type": "string"
                 },
+                "event_end": {
+                    "type": "string"
+                },
+                "event_start": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
+                },
+                "image": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
                 },
                 "tag": {
                     "type": "array",
@@ -458,6 +902,46 @@ const docTemplate = `{
                 }
             }
         },
+        "events.NewEventRequest": {
+            "type": "object",
+            "properties": {
+                "capacity": {
+                    "type": "integer"
+                },
+                "category_id": {
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "event_end": {
+                    "type": "string"
+                },
+                "event_start": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "tag": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "events.NewEventResponse": {
+            "type": "object",
+            "properties": {
+                "event": {
+                    "$ref": "#/definitions/events.EventResponse"
+                }
+            }
+        },
         "httpErrors.HttpError": {
             "type": "object",
             "properties": {
@@ -476,6 +960,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "field": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.Category": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
                     "type": "string"
                 }
             }

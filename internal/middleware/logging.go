@@ -4,6 +4,9 @@ import (
 	"net/http"
 	"time"
 
+	"kudago/internal/http/utils"
+
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -12,8 +15,10 @@ type responseWriter struct {
 	statusCode int
 }
 
-func NewResponseWriter(w http.ResponseWriter) *responseWriter {
-	return &responseWriter{w, http.StatusOK}
+func NewResponseWriter(w http.ResponseWriter, requestID string) *responseWriter {
+	rw := responseWriter{w, http.StatusOK}
+	rw.Header().Add("X-Request-ID", requestID)
+	return &rw
 }
 
 func (rw *responseWriter) WriteHeader(code int) {
@@ -24,15 +29,11 @@ func (rw *responseWriter) WriteHeader(code int) {
 func LoggingMiddleware(next http.Handler, logger *zap.SugaredLogger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		wrappedWriter := NewResponseWriter(w)
-		next.ServeHTTP(wrappedWriter, r)
+		requestID := uuid.New().String()
 
-		logger.Info(r.URL.Path,
-			zap.String("method", r.Method),
-			zap.String("remote_addr", r.RemoteAddr),
-			zap.String("url", r.URL.Path),
-			zap.Duration("work_time", time.Since(start)),
-			zap.Int("status_code", wrappedWriter.statusCode),
-		)
+		r = r.WithContext(utils.SetRequestIDInContext(r.Context(), requestID))
+		wrappedWriter := NewResponseWriter(w, requestID)
+		next.ServeHTTP(wrappedWriter, r)
+		utils.LogRequestData(r.Context(), logger, "http request", wrappedWriter.statusCode, r.Method, r.URL.Path, r.RemoteAddr, time.Since(start), nil)
 	})
 }

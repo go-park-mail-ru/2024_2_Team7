@@ -7,3 +7,13 @@ type User struct {
 	Password string `json:"password"`
 	ImageURL string `json:"image"`
 }
+
+type NewUserData struct {
+	User  User
+	Media MediaFile
+}
+
+type Subscription struct {
+	SubscriberID int `json:"subscriber_id"`
+	FollowsID    int `json:"subscribed_id"`
+}
