@@ -198,7 +198,7 @@ func eventToEventResponse(event *pbEvent.Event) EventResponse {
 		Category:    int(event.CategoryID),
 		ImageURL:    event.Image,
 		Capacity:    int(event.Capacity),
-		Longitude:   float64(event.Latitude),
+		Longitude:   float64(event.Longitude),
 		Latitude:    float64(event.Latitude),
 	}
 }
