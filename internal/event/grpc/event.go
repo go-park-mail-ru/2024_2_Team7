@@ -9,7 +9,10 @@ import (
 )
 
 const (
-	errInternal = "internal error"
+	errInternal           = "internal error"
+	errEventNotFound      = "event not found"
+	errAlreadyInFavorites = "event is already in favorites"
+	errBadData            = "bad data request"
 )
 
 type ServerAPI struct {

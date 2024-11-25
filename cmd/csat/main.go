@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net"
 
@@ -43,7 +42,6 @@ func main() {
 	grpcServer := grpc.NewServer()
 	csatServer := grpcCSAT.NewServerAPI(csatDB, appLogger)
 	proto.RegisterCSATServiceServer(grpcServer, csatServer)
-	fmt.Println(conf.PostgresConfig)
 	log.Printf("gRPC сервер запущен на %s", conf.ServiceAddr)
 	if err := grpcServer.Serve(listener); err != nil {
 		log.Fatalf("Ошибка запуска gRPC-сервера: %v", err)

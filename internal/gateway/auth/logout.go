@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	pb "kudago/internal/auth/api"
-	httpErrors "kudago/internal/http/errors"
-	"kudago/internal/http/utils"
+	httpErrors "kudago/internal/gateway/errors"
+	"kudago/internal/gateway/utils"
 	"kudago/internal/models"
 )
 

@@ -3,7 +3,6 @@ package grpc
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	pb "kudago/internal/csat/api"
 	"kudago/internal/logger"
@@ -14,8 +13,9 @@ import (
 )
 
 const (
-	errInternal     = "internal error"
-	errTestNotFound = "test not found"
+	errInternal      = "internal error"
+	errTestNotFound  = "test not found"
+	errAlreadyExists = "already answered"
 )
 
 type ServerAPI struct {
@@ -50,6 +50,10 @@ func (s *ServerAPI) AddAnswers(ctx context.Context, req *pb.AddAnswersRequest) (
 
 	err := s.service.AddAnswers(ctx, answers, int(req.UserID))
 	if err != nil {
+		if errors.Is(err, models.ErrForeignKeyViolation) {
+			return nil, status.Error(codes.AlreadyExists, errAlreadyExists)
+		}
+		s.logger.Error(ctx, "add answers", err)
 		return nil, status.Error(codes.Internal, errInternal)
 	}
 	return nil, nil
@@ -76,7 +80,6 @@ func (s *ServerAPI) GetStatistics(ctx context.Context, in *pb.Empty) (*pb.GetSta
 		s.logger.Error(ctx, "get stats", err)
 		return nil, status.Error(codes.Internal, errInternal)
 	}
-	fmt.Println(statistics)
 	resp := toStatisticsPB(statistics)
 
 	return resp, nil
@@ -102,7 +105,7 @@ func toStatisticsPB(statistics []models.Stats) *pb.GetStatisticsResponse {
 
 	for _, stat := range statistics {
 		temp := &pb.Stats{
-			ID: int32(stat.ID),
+			ID:       int32(stat.ID),
 			Question: stat.Question,
 			Value:    int32(stat.Value),
 		}

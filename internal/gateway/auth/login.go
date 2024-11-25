@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	pb "kudago/internal/auth/api"
+	httpErrors "kudago/internal/gateway/errors"
 	"kudago/internal/gateway/utils"
-	httpErrors "kudago/internal/http/errors"
 
 	"github.com/asaskevich/govalidator"
 	grpcCodes "google.golang.org/grpc/codes"

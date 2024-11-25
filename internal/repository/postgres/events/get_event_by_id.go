@@ -6,7 +6,7 @@ import (
 
 	"kudago/internal/models"
 
-	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/v5"
 	"github.com/pkg/errors"
 )
 

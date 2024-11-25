@@ -4,11 +4,13 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gorilla/mux"
 	pb "kudago/internal/event/api"
-	httpErrors "kudago/internal/http/errors"
-	"kudago/internal/http/utils"
-	"kudago/internal/models"
+	httpErrors "kudago/internal/gateway/errors"
+	"kudago/internal/gateway/utils"
+
+	"github.com/gorilla/mux"
+	grpcCodes "google.golang.org/grpc/codes"
+	grpcStatus "google.golang.org/grpc/status"
 )
 
 // @Summary Получение событий по категори
@@ -19,7 +21,7 @@ import (
 // @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
 // @Router /events/categories/{category} [get]
 func (h EventHandler) GetEventsByCategory(w http.ResponseWriter, r *http.Request) {
-	paginationParams := utils.GetPaginationParams(r)
+	paginationParams := GetPaginationParams(r)
 	vars := mux.Vars(r)
 	category := vars["category"]
 	categoryID, err := strconv.Atoi(category)
@@ -31,24 +33,28 @@ func (h EventHandler) GetEventsByCategory(w http.ResponseWriter, r *http.Request
 
 	req := &pb.GetEventsByCategoryRequest{
 		CategoryID: int32(categoryID),
-		Params:     &pb.PaginationParams{},
+		Params:     paginationParams,
 	}
 
 	events, err := h.EventService.GetEventsByCategory(r.Context(), req)
 	if err != nil {
-		h.logger.Error(r.Context(), "getEventsByCategory", err)
-		switch err {
-		case models.ErrInvalidCategory:
-			utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidCategory)
+		if err != nil {
+			st, ok := grpcStatus.FromError(err)
+			if ok {
+				switch st.Code() {
+				case grpcCodes.InvalidArgument:
+					utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidCategory)
+					return
+				}
+			}
 
-		///TODO пока оставлю так, когда будет более четкая бд и ошибки для обработки, поправлю
-		default:
+			h.logger.Error(r.Context(), "get events by category", err)
 			utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
+			return
 		}
-		return
 	}
 
-	resp := writeEventsResponse(events.Events, paginationParams.Limit)
+	resp := writeEventsResponse(events.Events, int(paginationParams.Limit))
 
 	utils.WriteResponse(w, http.StatusOK, resp)
 }

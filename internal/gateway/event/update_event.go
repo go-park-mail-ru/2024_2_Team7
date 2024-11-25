@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
-	httpErrors "kudago/internal/http/errors"
-	"kudago/internal/http/utils"
+	httpErrors "kudago/internal/gateway/errors"
+	"kudago/internal/gateway/utils"
 	"kudago/internal/models"
 
 	"github.com/asaskevich/govalidator"
@@ -84,7 +84,6 @@ func (h EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 	event, err = h.EventService.UpdateEvent(r.Context(), event)
 	if err != nil {
 		h.deleteImage(r.Context(), url)
-
 		switch {
 		case errors.Is(err, models.ErrEventNotFound):
 			utils.WriteResponse(w, http.StatusNotFound, httpErrors.ErrEventNotFound)

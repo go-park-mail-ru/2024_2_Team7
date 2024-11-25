@@ -4,9 +4,9 @@ import (
 	"net/http"
 
 	pb "kudago/internal/event/api"
-	httpErrors "kudago/internal/http/errors"
+	httpErrors "kudago/internal/gateway/errors"
 
-	"kudago/internal/http/utils"
+	"kudago/internal/gateway/utils"
 )
 
 // @Summary Получение избранных событий

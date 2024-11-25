@@ -70,14 +70,14 @@ func main() {
 	r.HandleFunc("/session", authHandler.CheckSession).Methods(http.MethodGet)
 
 	r.HandleFunc("/profile/{id:[0-9]+}", userHandler.Profile).Methods(http.MethodGet)
-	// r.HandleFunc("/profile", userHandler.UpdateUser).Methods(http.MethodPut)
+	r.HandleFunc("/profile", userHandler.UpdateUser).Methods(http.MethodPut)
 
 	r.HandleFunc("/profile/subscribe/{id:[0-9]+}", userHandler.Subscribe).Methods(http.MethodPost)
 	r.HandleFunc("/profile/subscribe/{id:[0-9]+}", userHandler.GetSubscriptions).Methods(http.MethodGet)
 	r.HandleFunc("/profile/subscribe/{id:[0-9]+}", userHandler.Unsubscribe).Methods(http.MethodDelete)
 
 	r.HandleFunc("/events/{id:[0-9]+}", eventHandler.GetEventByID).Methods(http.MethodGet)
-	r.HandleFunc("/events/categories/{category}", eventHandler.GetEventsByCategory).Methods(http.MethodGet)
+	r.HandleFunc("/events/categories/{category:[0-9]+}", eventHandler.GetEventsByCategory).Methods(http.MethodGet)
 	r.HandleFunc("/events", eventHandler.GetUpcomingEvents).Methods(http.MethodGet)
 	r.HandleFunc("/events/past", eventHandler.GetPastEvents).Methods(http.MethodGet)
 	r.HandleFunc("/events/subscription", eventHandler.GetSubscriptionEvents).Methods(http.MethodGet)

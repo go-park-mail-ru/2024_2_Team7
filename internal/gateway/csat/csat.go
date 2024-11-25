@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	pb "kudago/internal/csat/api"
+	httpErrors "kudago/internal/gateway/errors"
 	"kudago/internal/gateway/utils"
-	httpErrors "kudago/internal/http/errors"
 	"kudago/internal/logger"
 	"kudago/internal/models"
 
@@ -52,9 +52,6 @@ func (h *CSATHandlers) GetTest(w http.ResponseWriter, r *http.Request) {
 		st, ok := grpcStatus.FromError(err)
 		if ok {
 			switch st.Code() {
-			case grpcCodes.NotFound:
-				utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrTestNotFound)
-				return
 			case grpcCodes.Internal:
 				h.logger.Error(r.Context(), "get test", st.Err())
 				utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
@@ -75,7 +72,6 @@ func (h *CSATHandlers) GetTest(w http.ResponseWriter, r *http.Request) {
 	utils.WriteResponse(w, http.StatusOK, resp)
 	return
 }
-
 
 func (h *CSATHandlers) GetStatistics(w http.ResponseWriter, r *http.Request) {
 	_, ok := utils.GetSessionFromContext(r.Context())
@@ -120,17 +116,17 @@ func (h *CSATHandlers) AddAnswers(w http.ResponseWriter, r *http.Request) {
 	var answers models.AddAnswers
 	err := json.NewDecoder(r.Body).Decode(&answers)
 	if err != nil {
-		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
+		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrUserAlreadyDidTest)
 		return
 	}
-	
-	answersReq:=make([]*pb.Answer, 0, len(answers.Answers))
-	for _, answer:=range answers.Answers{
-		temp:=&pb.Answer{
+
+	answersReq := make([]*pb.Answer, 0, len(answers.Answers))
+	for _, answer := range answers.Answers {
+		temp := &pb.Answer{
 			QuestionID: int32(answer.QuestionID),
-			Value: int32(answer.Value),
+			Value:      int32(answer.Value),
 		}
-		answersReq=append(answersReq, temp)
+		answersReq = append(answersReq, temp)
 	}
 
 	req := &pb.AddAnswersRequest{
@@ -143,8 +139,9 @@ func (h *CSATHandlers) AddAnswers(w http.ResponseWriter, r *http.Request) {
 		st, ok := grpcStatus.FromError(err)
 		if ok {
 			switch st.Code() {
-			case grpcCodes.NotFound:
-				utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrTestNotFound)
+			case grpcCodes.AlreadyExists:
+				h.logger.Error(r.Context(), "get stats", st.Err())
+				utils.WriteResponse(w, http.StatusConflict, httpErrors.ErrUserAlreadyDidTest)
 				return
 			case grpcCodes.Internal:
 				h.logger.Error(r.Context(), "get test", st.Err())
@@ -180,7 +177,6 @@ func toTestModel(test *pb.GetTestResponse) models.Test {
 	}
 }
 
-
 func toStatisticsModel(stats *pb.GetStatisticsResponse) models.Statistics {
 	statistics := make([]models.Stats, 0, len(stats.Statistics))
 
@@ -190,10 +186,9 @@ func toStatisticsModel(stats *pb.GetStatisticsResponse) models.Statistics {
 	}
 
 	return models.Statistics{
-	Statistics: statistics,
+		Statistics: statistics,
 	}
 }
-
 
 func toQuestionModel(question *pb.Question) models.Question {
 	return models.Question{
@@ -204,8 +199,8 @@ func toQuestionModel(question *pb.Question) models.Question {
 
 func toStatsModel(stats *pb.Stats) models.Stats {
 	return models.Stats{
-		ID: int(stats.ID),
-		Question:   stats.Question,
-		Value: int(stats.Value),
+		ID:       int(stats.ID),
+		Question: stats.Question,
+		Value:    int(stats.Value),
 	}
 }

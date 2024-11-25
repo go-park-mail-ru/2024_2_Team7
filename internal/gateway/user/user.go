@@ -1,17 +1,30 @@
 package handlers
 
 import (
+	"regexp"
+
+	pbImage "kudago/internal/image/api"
 	"kudago/internal/logger"
 	pb "kudago/internal/user/api"
 	user "kudago/internal/user/api"
 
+	"github.com/asaskevich/govalidator"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+var validPasswordRegex = regexp.MustCompile(`^[a-zA-Z0-9+\-*/.;=\]\[\}\{\?]+$`)
+
+func init() {
+	govalidator.TagMap["password"] = govalidator.Validator(func(str string) bool {
+		return validPasswordRegex.MatchString(str)
+	})
+}
+
 type UserHandlers struct {
-	UserService pb.UserServiceClient
-	logger      *logger.Logger
+	UserService  pb.UserServiceClient
+	ImageService pbImage.ImageServiceClient
+	logger       *logger.Logger
 }
 
 func NewUserHandlers(userServiceAddr string, logger *logger.Logger) (*UserHandlers, error) {
@@ -19,6 +32,7 @@ func NewUserHandlers(userServiceAddr string, logger *logger.Logger) (*UserHandle
 	if err != nil {
 		return nil, err
 	}
+
 	return &UserHandlers{
 		UserService: user.NewUserServiceClient(authConn),
 		logger:      logger,
@@ -45,7 +59,7 @@ func userToUserResponse(user *pb.User) UserResponse {
 		ID:       int(user.ID),
 		Username: user.Username,
 		Email:    user.Email,
-		// ImageURL: user.ImageURL,
+		ImageURL: user.AvatarUrl,
 	}
 }
 

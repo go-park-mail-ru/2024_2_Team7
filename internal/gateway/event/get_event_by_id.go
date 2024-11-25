@@ -1,15 +1,15 @@
 package events
 
 import (
-	"errors"
 	"net/http"
 	"strconv"
 
-	httpErrors "kudago/internal/http/errors"
-	"kudago/internal/http/utils"
-	"kudago/internal/models"
+	httpErrors "kudago/internal/gateway/errors"
+	"kudago/internal/gateway/utils"
 
 	"github.com/gorilla/mux"
+	grpcCodes "google.golang.org/grpc/codes"
+	grpcStatus "google.golang.org/grpc/status"
 )
 
 // @Summary Получение события по ID
@@ -30,14 +30,22 @@ func (h EventHandler) GetEventByID(w http.ResponseWriter, r *http.Request) {
 
 	event, err := h.EventService.GetEventByID(r.Context(), toIDPB(id))
 	if err != nil {
-		switch {
-		case errors.Is(err, models.ErrEventNotFound):
-			w.WriteHeader(http.StatusNoContent)
-		default:
+		if err != nil {
+			st, ok := grpcStatus.FromError(err)
+			if ok {
+				switch st.Code() {
+				case grpcCodes.NotFound:
+					utils.WriteResponse(w, http.StatusConflict, httpErrors.ErrEventNotFound)
+					return
+				}
+			}
+
+			h.logger.Error(r.Context(), "get event by id", err)
 			utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
+			return
 		}
-		return
 	}
+
 	resp := eventToEventResponse(event)
 	utils.WriteResponse(w, http.StatusOK, resp)
 }

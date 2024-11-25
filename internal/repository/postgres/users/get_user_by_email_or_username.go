@@ -10,11 +10,22 @@ import (
 	"github.com/pkg/errors"
 )
 
-const getUserByEmailOrUsernameQuery = `SELECT 1 FROM "USER" WHERE email=$1 OR username = $2 LIMIT 1`
+const getUserByEmailOrUsernameQuery = `
+		SELECT id 
+		FROM "USER" 
+		WHERE (username = $1 OR email = $2)`
 
-func (d *UserDB) UserExists(ctx context.Context, username, email string) (bool, error) {
+func (d *UserDB) UserExists(ctx context.Context, user models.User) (bool, error) {
 	var exists int
-	err := d.pool.QueryRow(ctx, getUserByEmailOrUsernameQuery, email, username).Scan(&exists)
+	query := getUserByEmailOrUsernameQuery
+	args := []interface{}{user.Username, user.Email}
+
+	if user.ID > 0 {
+		query += " AND id != $3"
+		args = append(args, user.ID)
+	}
+
+	err := d.pool.QueryRow(ctx, query, args...).Scan(&exists)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return false, nil

@@ -11,6 +11,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	"kudago/internal/models"
 
 	"github.com/asaskevich/govalidator"
+	"go.uber.org/zap"
 )
 
 const (
@@ -129,4 +131,58 @@ func ProcessValidationErrors(w http.ResponseWriter, err error) {
 		}
 	}
 	WriteResponse(w, http.StatusBadRequest, resp)
+}
+
+func GetPaginationParams(r *http.Request) models.PaginationParams {
+	page := GetQueryParamInt(r, "page", defaultPage)
+	limit := GetQueryParamInt(r, "limit", defaultLimit)
+	offset := page * limit
+	return models.PaginationParams{
+		Offset: offset,
+		Limit:  limit,
+	}
+}
+
+func GetQueryParamInt(r *http.Request, key string, defaultValue int) int {
+	valueStr := r.URL.Query().Get(key)
+	value, err := strconv.Atoi(valueStr)
+
+	if err != nil || value <= 0 {
+		return defaultValue
+	}
+	return value
+}
+
+func GetRequestIDFromContext(ctx context.Context) string {
+	ID, _ := ctx.Value(requestIDKey).(string)
+	return ID
+}
+
+func SetRequestIDInContext(ctx context.Context, ID string) context.Context {
+	return context.WithValue(ctx, requestIDKey, ID)
+}
+
+func LogRequestData(ctx context.Context, logger *zap.SugaredLogger, msg string, statusCode int, method, url, remoteAddr string, duration time.Duration, data map[string]interface{}) {
+	requestID := GetRequestIDFromContext(ctx)
+
+	if data != nil {
+		logger.Infow(msg,
+			"request_id", requestID,
+			"method", method,
+			"url", url,
+			"remote_addr", remoteAddr,
+			"status_code", statusCode,
+			"work_time", duration,
+			"data", data,
+		)
+	} else {
+		logger.Infow(msg,
+			"request_id", requestID,
+			"method", method,
+			"url", url,
+			"remote_addr", remoteAddr,
+			"status_code", statusCode,
+			"work_time", duration,
+		)
+	}
 }

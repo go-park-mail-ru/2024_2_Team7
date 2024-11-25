@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	pb "kudago/internal/event/api"
-	httpErrors "kudago/internal/http/errors"
-	"kudago/internal/http/utils"
+	httpErrors "kudago/internal/gateway/errors"
+	"kudago/internal/gateway/utils"
 )
 
 // @Summary Поиск событий

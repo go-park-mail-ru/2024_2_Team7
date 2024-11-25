@@ -25,8 +25,6 @@ services:
     depends_on:
       postgres:
         condition: service_started
-      redis:
-        condition: service_started
     env_file:
       - .env
     volumes:
@@ -41,8 +39,6 @@ services:
     depends_on:
       postgres:
         condition: service_started
-      redis:
-        condition: service_started
     env_file:
       - .env
     volumes:
@@ -55,11 +51,6 @@ services:
       dockerfile: ./internal/image/Dockerfile
     ports:
       - "50054:50054"
-    depends_on:
-      postgres:
-        condition: service_started
-      redis:
-        condition: service_started
     env_file:
       - .env
     volumes:
@@ -74,8 +65,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_started
     env_file:
       - .env
     volumes:
@@ -88,10 +77,6 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
       auth_service:
         condition: service_started
       user_service:

@@ -3,7 +3,7 @@ package logger
 import (
 	"context"
 
-	"kudago/internal/http/utils"
+	"kudago/internal/gateway/utils"
 
 	"github.com/jackc/pgx/v5"
 	"go.uber.org/zap"
@@ -44,5 +44,5 @@ func (l *Logger) TraceQueryEnd(ctx context.Context, conn *pgx.Conn, data pgx.Tra
 
 func (l *Logger) Error(ctx context.Context, method string, err error) {
 	requestID := utils.GetRequestIDFromContext(ctx)
-	l.Logger.Errorf("request_id: %s, method: %s, failed : %s", requestID, method, zap.Error(err))
+	l.Logger.Errorf("request_id: %s, method: %s, failed : %v", requestID, method, zap.Error(err))
 }

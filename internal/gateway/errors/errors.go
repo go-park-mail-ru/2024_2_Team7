@@ -11,6 +11,16 @@ var (
 		Code:    "already_authorized",
 	}
 
+	ErrUserAlreadyDidTest = &HttpError{
+		Message: "User already did test",
+		Code:    "already_answered",
+	}
+
+	ErrEventAlreadyAddedToFavorites = &HttpError{
+		Message: "User already added event to favorites",
+		Code:    "already_added",
+	}
+
 	ErrUserAlreadyLoggedIn = &HttpError{
 		Message: "Already logged in",
 		Code:    "already_logged",

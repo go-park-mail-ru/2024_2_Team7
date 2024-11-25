@@ -17,7 +17,7 @@ type UserDB interface {
 	CreateUser(ctx context.Context, user models.User) (models.User, error)
 	GetUserByID(ctx context.Context, ID int) (models.User, error)
 	CheckCredentials(ctx context.Context, username string, password string) (models.User, error)
-	UserExists(ctx context.Context, username, email string) (bool, error)
+	UserExists(ctx context.Context, user models.User) (bool, error)
 	CheckUsername(ctx context.Context, username string, ID int) (bool, error)
 	CheckEmail(ctx context.Context, email string, ID int) (bool, error)
 }
@@ -40,7 +40,7 @@ func (a *authService) CheckCredentials(ctx context.Context, creds models.Credent
 }
 
 func (a *authService) Register(ctx context.Context, user models.User) (models.User, error) {
-	userExists, err := a.UserDB.UserExists(ctx, user.Username, user.Email)
+	userExists, err := a.UserDB.UserExists(ctx, user)
 	if err != nil {
 		return models.User{}, err
 	}

@@ -5,8 +5,6 @@ import (
 	"fmt"
 
 	"kudago/internal/models"
-
-	"github.com/jackc/pgx/v5"
 )
 
 const updateUserQuery = `
@@ -21,16 +19,6 @@ const updateUserQuery = `
 `
 
 func (db *UserDB) UpdateUser(ctx context.Context, updatedUser models.User) (models.User, error) {
-	var existingID int
-	row := db.pool.QueryRow(ctx, getUserByEmailOrUsernameQuery, updatedUser.Email, updatedUser.Username)
-	if err := row.Scan(&existingID); err != pgx.ErrNoRows && err != nil {
-		return models.User{}, fmt.Errorf("%s: %w", models.LevelDB, err)
-	}
-
-	if existingID != 0 {
-		return models.User{}, models.ErrEmailIsUsed
-	}
-
 	var user models.User
 	err := db.pool.QueryRow(ctx, updateUserQuery,
 		updatedUser.ID,

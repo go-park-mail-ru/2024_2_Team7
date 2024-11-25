@@ -6,6 +6,7 @@ import (
 
 	"kudago/internal/models"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pkg/errors"
 )
@@ -80,7 +81,6 @@ const insertAnswersQuery = `
 	VALUES ($1, $2, $3)`
 
 func (db *CSATDB) AddAnswers(ctx context.Context, answers []models.Answer, userID int) error {
-	fmt.Println(answers)
 	tx, err := db.pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("%s: %w", models.LevelDB, err)
@@ -90,6 +90,10 @@ func (db *CSATDB) AddAnswers(ctx context.Context, answers []models.Answer, userI
 	for _, answer := range answers {
 		_, err := tx.Exec(ctx, insertAnswersQuery, answer.QuestionID, userID, answer.Value)
 		if err != nil {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) {
+				return models.ErrForeignKeyViolation
+			}
 			return fmt.Errorf("%s: %w", models.LevelDB, err)
 		}
 	}
@@ -134,9 +138,9 @@ func (db *CSATDB) GetStatistics(ctx context.Context) ([]models.Stats, error) {
 			return nil, errors.Wrap(err, models.LevelDB)
 		}
 
-		if questionID != nil && value !=nil {
+		if questionID != nil && value != nil {
 			statistics = append(statistics, models.Stats{
-				ID: *questionID,
+				ID:       *questionID,
 				Question: *question,
 				Value:    *value,
 			})

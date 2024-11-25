@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	pb "kudago/internal/auth/api"
+	httpErrors "kudago/internal/gateway/errors"
 	"kudago/internal/gateway/utils"
-	httpErrors "kudago/internal/http/errors"
 	pbImage "kudago/internal/image/api"
 	"kudago/internal/models"
 
@@ -55,6 +55,7 @@ func (h *AuthHandlers) Register(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.AuthService.Register(r.Context(), registerRequest)
 	if err != nil {
+		h.deleteImage(r.Context(), url)
 		st, ok := grpcStatus.FromError(err)
 		if ok {
 			switch st.Code() {

@@ -4,9 +4,11 @@ import (
 	"net/http"
 	"strconv"
 
+	grpcCodes "google.golang.org/grpc/codes"
+	grpcStatus "google.golang.org/grpc/status"
 	pb "kudago/internal/event/api"
+	httpErrors "kudago/internal/gateway/errors"
 	"kudago/internal/gateway/utils"
-	httpErrors "kudago/internal/http/errors"
 
 	"github.com/gorilla/mux"
 )
@@ -40,7 +42,21 @@ func (h EventHandler) AddEventToFavorites(w http.ResponseWriter, r *http.Request
 
 	_, err = h.EventService.AddEventToFavorites(r.Context(), newFavorite)
 	if err != nil {
-		utils.WriteResponse(w, http.StatusConflict, err)
+		st, ok := grpcStatus.FromError(err)
+		if ok {
+			switch st.Code() {
+			case grpcCodes.NotFound:
+				utils.WriteResponse(w, http.StatusConflict, httpErrors.ErrEventNotFound)
+				return
+			case grpcCodes.AlreadyExists:
+				utils.WriteResponse(w, http.StatusConflict, httpErrors.ErrEventAlreadyAddedToFavorites)
+				return
+			}
+		}
+		h.logger.Error(r.Context(), "add event to favorites", err)
+		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
+		return
 	}
+
 	w.WriteHeader(http.StatusOK)
 }

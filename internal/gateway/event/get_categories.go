@@ -3,8 +3,8 @@ package events
 import (
 	"net/http"
 
-	httpErrors "kudago/internal/http/errors"
-	"kudago/internal/http/utils"
+	httpErrors "kudago/internal/gateway/errors"
+	"kudago/internal/gateway/utils"
 )
 
 // @Summary Получить все категории
@@ -18,6 +18,7 @@ import (
 func (h EventHandler) GetCategories(w http.ResponseWriter, r *http.Request) {
 	categories, err := h.EventService.GetCategories(r.Context(), nil)
 	if err != nil {
+		h.logger.Error(r.Context(), "get categories", err)
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}

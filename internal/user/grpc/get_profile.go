@@ -1,4 +1,4 @@
-package http
+package grpc
 
 import (
 	"context"
@@ -14,10 +14,10 @@ import (
 func (s *ServerAPI) GetUserByID(ctx context.Context, in *pb.GetUserByIDRequest) (*pb.User, error) {
 	userData, err := s.service.GetUserByID(ctx, int(in.ID))
 	if err != nil {
+		s.logger.Error(ctx, "get user by id", err)
 		if errors.Is(err, models.ErrUserNotFound) {
 			return nil, status.Error(codes.NotFound, errUserNotFound)
 		}
-		s.logger.Error(ctx, "get user by id", err)
 		return nil, status.Error(codes.Internal, errInternal)
 	}
 

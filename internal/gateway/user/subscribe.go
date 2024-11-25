@@ -4,12 +4,13 @@ import (
 	"net/http"
 	"strconv"
 
-	httpErrors "kudago/internal/http/errors"
-	"kudago/internal/http/utils"
-	"kudago/internal/models"
+	httpErrors "kudago/internal/gateway/errors"
+	"kudago/internal/gateway/utils"
 	pb "kudago/internal/user/api"
 
 	"github.com/gorilla/mux"
+	grpcCodes "google.golang.org/grpc/codes"
+	grpcStatus "google.golang.org/grpc/status"
 )
 
 // @Summary Подписка на пользователя
@@ -48,17 +49,24 @@ func (h *UserHandlers) Subscribe(w http.ResponseWriter, r *http.Request) {
 
 	_, err = h.UserService.Subscribe(r.Context(), &subscription)
 	if err != nil {
-		switch err {
-		case models.ErrForeignKeyViolation:
-			utils.WriteResponse(w, http.StatusNotFound, httpErrors.ErrUserNotFound)
-			return
-		case models.ErrNothingToInsert:
-			utils.WriteResponse(w, http.StatusOK, httpErrors.ErrSubscriptionAlreadyExists)
-			return
-		default:
-			utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
-			return
+		st, ok := grpcStatus.FromError(err)
+		if ok {
+			switch st.Code() {
+			case grpcCodes.NotFound:
+				utils.WriteResponse(w, http.StatusConflict, httpErrors.ErrUserNotFound)
+				return
+			case grpcCodes.AlreadyExists:
+				utils.WriteResponse(w, http.StatusConflict, httpErrors.ErrSubscriptionAlreadyExists)
+				return
+			case grpcCodes.Internal:
+				h.logger.Error(r.Context(), "subscribe", st.Err())
+				utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
+				return
+			}
 		}
+		h.logger.Error(r.Context(), "subscribe", err)
+		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)

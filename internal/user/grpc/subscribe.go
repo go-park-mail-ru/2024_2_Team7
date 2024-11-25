@@ -1,8 +1,7 @@
-package http
+package grpc
 
 import (
 	"context"
-	"errors"
 
 	"kudago/internal/models"
 	pb "kudago/internal/user/api"
@@ -16,11 +15,15 @@ func (s *ServerAPI) Subscribe(ctx context.Context, in *pb.Subscription) (*pb.Emp
 
 	err := s.service.Subscribe(ctx, subscription)
 	if err != nil {
-		if errors.Is(err, models.ErrUserNotFound) {
+		s.logger.Error(ctx, "subscribe", err)
+		switch err {
+		case models.ErrForeignKeyViolation:
 			return nil, status.Error(codes.NotFound, errUserNotFound)
+		case models.ErrNothingToInsert:
+			return nil, status.Error(codes.AlreadyExists, errSubscriptionAlreadyExists)
+		default:
+			return nil, status.Error(codes.Internal, errInternal)
 		}
-		s.logger.Error(ctx, "get user by id", err)
-		return nil, status.Error(codes.Internal, errInternal)
 	}
 
 	return nil, nil

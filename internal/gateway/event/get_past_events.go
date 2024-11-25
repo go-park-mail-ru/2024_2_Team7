@@ -3,8 +3,8 @@ package events
 import (
 	"net/http"
 
+	httpErrors "kudago/internal/gateway/errors"
 	"kudago/internal/gateway/utils"
-	httpErrors "kudago/internal/http/errors"
 )
 
 // @Summary Получить все прошедшие события

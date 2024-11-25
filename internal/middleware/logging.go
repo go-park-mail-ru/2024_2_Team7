@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"kudago/internal/http/utils"
+	"kudago/internal/gateway/utils"
 
 	"github.com/google/uuid"
 	"go.uber.org/zap"

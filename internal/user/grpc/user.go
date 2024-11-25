@@ -1,4 +1,4 @@
-package http
+package grpc
 
 import (
 	"context"
@@ -19,6 +19,8 @@ type UserService interface {
 	Subscribe(ctx context.Context, subscription models.Subscription) error
 	Unsubscribe(ctx context.Context, subscription models.Subscription) error
 	GetSubscriptions(ctx context.Context, ID int) ([]models.User, error)
+	UpdateUser(ctx context.Context, user models.User) (models.User, error)
+	UserExists(ctx context.Context, user models.User) (bool, error)
 }
 
 func NewServerAPI(service UserService, logger *logger.Logger) *ServerAPI {

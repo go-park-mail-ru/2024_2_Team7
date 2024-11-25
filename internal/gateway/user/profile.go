@@ -6,10 +6,12 @@ import (
 
 	pb "kudago/internal/user/api"
 
-	httpErrors "kudago/internal/http/errors"
-	"kudago/internal/http/utils"
+	httpErrors "kudago/internal/gateway/errors"
+	"kudago/internal/gateway/utils"
 
 	"github.com/gorilla/mux"
+	grpcCodes "google.golang.org/grpc/codes"
+	grpcStatus "google.golang.org/grpc/status"
 )
 
 type ProfileResponse struct {
@@ -35,7 +37,17 @@ func (h *UserHandlers) Profile(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.UserService.GetUserByID(r.Context(), &pb.GetUserByIDRequest{ID: int32(id)})
 	if err != nil {
-		utils.WriteResponse(w, http.StatusNotFound, httpErrors.ErrUserNotFound)
+		st, ok := grpcStatus.FromError(err)
+		if ok {
+			switch st.Code() {
+			case grpcCodes.NotFound:
+				utils.WriteResponse(w, http.StatusConflict, httpErrors.ErrUserNotFound)
+				return
+			}
+		}
+
+		h.logger.Error(r.Context(), "profile", err)
+		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
 

@@ -19,7 +19,6 @@ func (s *ServerAPI) Login(ctx context.Context, in *pb.LoginRequest) (*pb.User, e
 
 	userData, err := s.service.CheckCredentials(ctx, creds)
 	if err != nil {
-
 		if errors.Is(err, models.ErrUserNotFound) {
 			return nil, status.Error(codes.NotFound, errInvalidCredentials)
 		}

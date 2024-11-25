@@ -7,8 +7,8 @@ import (
 	"time"
 
 	pb "kudago/internal/auth/api"
+	httpErrors "kudago/internal/gateway/errors"
 	"kudago/internal/gateway/utils"
-	httpErrors "kudago/internal/http/errors"
 	"kudago/internal/models"
 
 	"google.golang.org/grpc"

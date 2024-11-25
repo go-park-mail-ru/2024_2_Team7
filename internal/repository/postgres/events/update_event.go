@@ -79,7 +79,9 @@ func (db *EventDB) UpdateEvent(ctx context.Context, updatedEvent models.Event) (
 	if err != nil {
 		return models.Event{}, fmt.Errorf("%s: %w", models.LevelDB, err)
 	}
+
 	event.Tag = updatedEvent.Tag
 	event.ImageURL = updatedEvent.ImageURL
+
 	return event, nil
 }

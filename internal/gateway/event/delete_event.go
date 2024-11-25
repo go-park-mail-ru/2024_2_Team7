@@ -5,11 +5,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gorilla/mux"
 	pb "kudago/internal/event/api"
-	httpErrors "kudago/internal/http/errors"
-	"kudago/internal/http/utils"
+	httpErrors "kudago/internal/gateway/errors"
+	"kudago/internal/gateway/utils"
 	"kudago/internal/models"
+
+	"github.com/gorilla/mux"
 )
 
 // @Summary Удаление события

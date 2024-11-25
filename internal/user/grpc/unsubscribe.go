@@ -1,4 +1,4 @@
-package http
+package grpc
 
 import (
 	"context"
@@ -16,10 +16,10 @@ func (s *ServerAPI) Unsubscribe(ctx context.Context, in *pb.Subscription) (*pb.E
 
 	err := s.service.Unsubscribe(ctx, subscription)
 	if err != nil {
-		if errors.Is(err, models.ErrUserNotFound) {
+		if errors.Is(err, models.ErrNotFound) {
 			return nil, status.Error(codes.NotFound, errUserNotFound)
 		}
-		s.logger.Error(ctx, "get user by id", err)
+		s.logger.Error(ctx, "unsubscribe", err)
 		return nil, status.Error(codes.Internal, errInternal)
 	}
 
