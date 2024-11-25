@@ -80,6 +80,8 @@ type NewEventRequest struct {
 	Tag         []string `json:"tag"`
 	EventStart  string   `json:"event_start" valid:"rfc3339,required"`
 	EventEnd    string   `json:"event_end" valid:"rfc3339,required"`
+	Latitude    float64  `json:"Latitude"`
+	Longitude   float64  `json:"Longitude"`
 }
 
 type NewEventResponse struct {
@@ -159,6 +161,8 @@ func toPBEvent(req NewEventRequest, authorID int) *pbEvent.Event {
 		CategoryID:  int32(req.Category),
 		Capacity:    int32(req.Capacity),
 		Tag:         req.Tag,
+		Latitude:    float64(req.Latitude),
+		Longitude:   float64(req.Longitude),
 	}
 }
 
