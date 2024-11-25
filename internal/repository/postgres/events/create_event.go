@@ -8,8 +8,8 @@ import (
 )
 
 const createEventQuery = `
-	INSERT INTO event (title, description, event_start, event_finish, location, capacity, user_id, category_id)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	INSERT INTO event (title, description, event_start, event_finish, location, capacity, user_id, category_id, lat, lon)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	RETURNING id`
 
 func (db *EventDB) CreateEvent(ctx context.Context, event models.Event) (models.Event, error) {
@@ -20,7 +20,7 @@ func (db *EventDB) CreateEvent(ctx context.Context, event models.Event) (models.
 	defer tx.Rollback(ctx)
 
 	var id int
-	err = tx.QueryRow(ctx, createEventQuery, event.Title, event.Description, event.EventStart, event.EventEnd, event.Location, event.Capacity, event.AuthorID, event.CategoryID).Scan(&id)
+	err = tx.QueryRow(ctx, createEventQuery, event.Title, event.Description, event.EventStart, event.EventEnd, event.Location, event.Capacity, event.AuthorID, event.CategoryID, event.Latitude, event.Longitude).Scan(&id)
 	if err != nil {
 		return models.Event{}, fmt.Errorf("%s: %w", models.LevelDB, err)
 	}

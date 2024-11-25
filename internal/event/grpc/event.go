@@ -63,6 +63,8 @@ func eventPBToEvent(event *pb.Event) models.Event {
 		Tag:         event.Tag,
 		AuthorID:    int(event.AuthorID),
 		ImageURL:    event.Image,
+		Latitude:    event.Latitude,
+		Longitude:   event.Longitude,
 	}
 }
 
@@ -79,6 +81,8 @@ func eventToEventPB(event models.Event) *pb.Event {
 		Tag:         event.Tag,
 		AuthorID:    int32(event.AuthorID),
 		Image:       event.ImageURL,
+		Latitude:    event.Latitude,
+		Longitude:   event.Longitude,
 	}
 }
 

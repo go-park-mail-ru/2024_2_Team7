@@ -14,11 +14,15 @@ func (s *ServerAPI) SearchEvents(ctx context.Context, req *pb.SearchParams) (*pb
 	params := getPaginationParams(req.Params)
 
 	searchParams := models.SearchParams{
-		Query:      req.Query,
-		EventStart: req.EventStart,
-		EventEnd:   req.EventEnd,
-		Tags:       req.Tag,
-		Category:   int(req.CategoryID),
+		Query:        req.Query,
+		EventStart:   req.EventStart,
+		EventEnd:     req.EventEnd,
+		Tags:         req.Tag,
+		Category:     int(req.CategoryID),
+		LatitudeMin:  float64(req.LatitudeMin),
+		LatitudeMax:  float64(req.LatitudeMax),
+		LongitudeMin: float64(req.LongitudeMin),
+		LongitudeMax: float64(req.LongitudeMax),
 	}
 
 	eventsData, err := s.service.SearchEvents(ctx, searchParams, params)

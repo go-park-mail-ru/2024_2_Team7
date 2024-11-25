@@ -13,6 +13,8 @@ type Event struct {
 	CreatedAt   time.Time `json:"created_at"`
 	CategoryID  int       `json:"category_id"`
 	AuthorID    int       `json:"author"`
+	Latitude    float64   `json:"Latitude"`
+	Longitude   float64   `json:"Longitude"`
 	Tag         []string  `json:"tag"`
 	ImageURL    string    `json:"image"`
 }
