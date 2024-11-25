@@ -41,10 +41,10 @@ func (db *EventDB) GetEventsByCategory(ctx context.Context, categoryID int, pagi
 			&eventInfo.CreatedAt,
 			&eventInfo.UserID,
 			&eventInfo.CategoryID,
-			&eventInfo.Tags,
-			&eventInfo.ImageURL,
 			&eventInfo.Latitude,
 			&eventInfo.Longitude,
+			&eventInfo.Tags,
+			&eventInfo.ImageURL,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", models.LevelDB, err)

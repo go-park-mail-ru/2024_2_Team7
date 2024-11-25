@@ -34,10 +34,10 @@ func (db *EventDB) GetEventByID(ctx context.Context, ID int) (models.Event, erro
 		&eventInfo.CreatedAt,
 		&eventInfo.UserID,
 		&eventInfo.CategoryID,
-		&eventInfo.Tags,
-		&eventInfo.ImageURL,
 		&eventInfo.Latitude,
 		&eventInfo.Longitude,
+		&eventInfo.Tags,
+		&eventInfo.ImageURL,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
