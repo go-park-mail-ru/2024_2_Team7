@@ -33,6 +33,15 @@ func (h EventHandler) SearchEvents(w http.ResponseWriter, r *http.Request) {
 	eventEnd := r.URL.Query().Get("event_end")
 	categoryIDStr := r.URL.Query().Get("category_id")
 	tags := r.URL.Query()["tags"]
+	TopLeftLatitudeSTR := r.URL.Query().Get("topLeftLatitude")
+	TopLeftLongitudeSTR := r.URL.Query().Get("topLeftLongitude")
+	BotRightLatitudeSTR := r.URL.Query().Get("botRightLatitude")
+	BotRightLongitudeSTR := r.URL.Query().Get("botRightLongitude")
+
+	MaxLatitude := cordToFloat(BotRightLatitudeSTR)
+	MinLatitude := cordToFloat(TopLeftLatitudeSTR)
+	MaxLongitude := cordToFloat(BotRightLongitudeSTR)
+	MinLongitude := cordToFloat(TopLeftLongitudeSTR)
 
 	categoryID, err := strconv.Atoi(categoryIDStr)
 	if err != nil {
@@ -40,11 +49,15 @@ func (h EventHandler) SearchEvents(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := models.SearchParams{
-		Query:      query,
-		EventStart: eventStart,
-		EventEnd:   eventEnd,
-		Tags:       tags,
-		Category:   categoryID,
+		Query:        query,
+		EventStart:   eventStart,
+		EventEnd:     eventEnd,
+		Tags:         tags,
+		Category:     categoryID,
+		LongitudeMax: MaxLongitude,
+		LongitudeMin: MinLongitude,
+		LatitudeMax:  MaxLatitude,
+		LatitudeMin:  MinLatitude,
 	}
 
 	events, err := h.service.SearchEvents(r.Context(), params, paginationParams)
@@ -56,4 +69,12 @@ func (h EventHandler) SearchEvents(w http.ResponseWriter, r *http.Request) {
 
 	resp := writeEventsResponse(events, paginationParams.Limit)
 	utils.WriteResponse(w, http.StatusOK, resp)
+}
+
+func cordToFloat(cordStr string) float64 {
+	cord, err := strconv.ParseFloat(cordStr, 32)
+	if err != nil {
+		cord = 0
+	}
+	return cord
 }

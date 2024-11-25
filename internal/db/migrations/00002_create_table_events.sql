@@ -1,5 +1,6 @@
 -- +goose Up
 -- +goose StatementBegin
+CREATE EXTENSION IF NOT EXISTS postgis;
 
 CREATE TABLE CATEGORY (
                           id SERIAL PRIMARY KEY,
@@ -13,6 +14,8 @@ CREATE TABLE EVENT (
                        event_start TIMESTAMP WITH TIME ZONE NOT NULL,
                        event_finish TIMESTAMP WITH TIME ZONE NOT NULL,
                        location TEXT,
+                       lat DOUBLE PRECISION,
+                       lon DOUBLE PRECISION,
                        capacity INT,
                        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

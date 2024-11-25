@@ -83,9 +83,11 @@ service EventService {
         int32 capacity = 6;
         repeated string tag = 7;
         int32 author_iD = 8;
-        string event_start = 9;
-        string event_end = 10;
-        string image = 11;
+        double latitude = 9;
+        double longitude = 10;
+        string event_start = 11;
+        string event_end = 12;
+        string image = 13;
     }
 
     message File {
@@ -99,7 +101,11 @@ service EventService {
         repeated string tag = 3;
         string event_start = 4;
         string event_end = 5; 
-        PaginationParams params = 6;   
+        PaginationParams params = 6;
+        double latitude_min = 7;
+        double latitude_max = 8;
+        double longitude_min = 9;
+        double longitude_max = 10;
     }
 
     message Empty{}

@@ -37,6 +37,8 @@ type EventInfo struct {
 	CreatedAt   time.Time `db:"created_at"`
 	UserID      int       `db:"user_id"`
 	CategoryID  int       `db:"category_id"`
+	Latitude    float64   `db:"lat"`
+	Longitude   float64   `db:"log"`
 	Tags        []string  `db:"tags"`
 	ImageURL    *string   `db:"image"`
 }
@@ -159,10 +161,18 @@ func (db *EventDB) toDomainEvent(ctx context.Context, eventInfo EventInfo) (mode
 		Capacity:    eventInfo.Capacity,
 		CategoryID:  eventInfo.CategoryID,
 		ImageURL:    url,
+		Longitude:   eventInfo.Longitude,
+		Latitude:    eventInfo.Latitude,
 	}, nil
 }
 
 func nilIfZero(value int) interface{} {
+	if value == 0 {
+		return nil
+	}
+	return value
+}
+func nilIfZeroFloat(value float64) interface{} {
 	if value == 0 {
 		return nil
 	}

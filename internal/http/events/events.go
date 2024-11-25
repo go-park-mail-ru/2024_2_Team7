@@ -29,6 +29,8 @@ type EventResponse struct {
 	EventStart  string   `json:"event_start"`
 	EventEnd    string   `json:"event_end"`
 	ImageURL    string   `json:"image"`
+	Latitude    float64  `json:"Latitude"`
+	Longitude   float64  `json:"Longitude"`
 }
 
 type GetEventsResponse struct {
@@ -159,6 +161,8 @@ func eventToEventResponse(event models.Event) EventResponse {
 		Category:    event.CategoryID,
 		ImageURL:    event.ImageURL,
 		Capacity:    event.Capacity,
+		Latitude:    event.Latitude,
+		Longitude:   event.Longitude,
 	}
 }
 

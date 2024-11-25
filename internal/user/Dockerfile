@@ -12,10 +12,10 @@ RUN go mod download
 COPY . .
 
 # Build
-RUN go build -o /server_run ./cmd/server/main.go
+RUN go build -o /user_run ./cmd/user/main.go
 
 #
 EXPOSE 50052
 
 # Run
-CMD ["/server_run"]
+CMD ["/user_run"]
