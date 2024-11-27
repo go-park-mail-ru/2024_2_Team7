@@ -2,3 +2,13 @@
 pkg
 coverage.out
 .vscode
+c.out
+.env
+pgdata
+db-data
+register_test.go
+update_event_test.go
+dockerfile
+docker-compose.yml
+static
+bin
