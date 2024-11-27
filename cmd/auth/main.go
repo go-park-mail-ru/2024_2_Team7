@@ -8,13 +8,13 @@ import (
 	"kudago/cmd/auth/config"
 	proto "kudago/internal/auth/api"
 	grpcAuth "kudago/internal/auth/grpc"
+	authRepository "kudago/internal/auth/repository/auth"
+	sessionRepository "kudago/internal/auth/repository/session"
 	authService "kudago/internal/auth/service"
 	"kudago/internal/interceptors"
 	"kudago/internal/logger"
 	"kudago/internal/metrics"
 	"kudago/internal/repository/postgres"
-	userRepository "kudago/internal/repository/postgres/users"
-	sessionRepository "kudago/internal/repository/redis/session"
 
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -45,7 +45,7 @@ func main() {
 		log.Fatalf("Не удалось запустить gRPC-сервер auth: %v", err)
 	}
 
-	userDB := userRepository.NewDB(pool)
+	userDB := authRepository.NewDB(pool)
 	sessionDB := sessionRepository.NewDB(&conf.RedisConfig)
 
 	authService := authService.NewService(userDB)

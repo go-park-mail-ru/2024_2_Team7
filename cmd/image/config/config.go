@@ -4,7 +4,7 @@ import (
 	"errors"
 	"os"
 
-	imageRepository "kudago/internal/repository/images"
+	imageRepository "kudago/internal/image/repository"
 
 	"github.com/joho/godotenv"
 )

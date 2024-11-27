@@ -15,7 +15,7 @@ import (
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
-	imageRepository "kudago/internal/repository/images"
+	imageRepository "kudago/internal/image/repository"
 )
 
 func main() {

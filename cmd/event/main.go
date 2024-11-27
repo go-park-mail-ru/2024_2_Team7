@@ -8,12 +8,12 @@ import (
 	"kudago/cmd/event/config"
 	proto "kudago/internal/event/api"
 	grpcEvent "kudago/internal/event/grpc"
+	eventRepository "kudago/internal/event/repository"
 	eventService "kudago/internal/event/service"
 	"kudago/internal/interceptors"
 	"kudago/internal/logger"
 	"kudago/internal/metrics"
 	"kudago/internal/repository/postgres"
-	eventRepository "kudago/internal/repository/postgres/events"
 
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"

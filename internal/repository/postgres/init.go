@@ -58,26 +58,6 @@ func InitPostgres(config PostgresConfig, logger *logger.Logger) (*pgxpool.Pool, 
 	return pool, nil
 }
 
-func RollbackAllMigrations(dbURL string) error {
-	migrationsDir := os.Getenv("MIGRATION_FOLDER")
-	if migrationsDir == "" {
-		return fmt.Errorf("MIGRATION_FOLDER environment variable is not set")
-	}
-
-	sqlDB, err := sql.Open("pgx", dbURL)
-	if err != nil {
-		return fmt.Errorf("unable to open db: %v", err)
-	}
-	defer sqlDB.Close()
-
-	// Откат всех миграций до версии 0
-	if err := goose.DownTo(sqlDB, migrationsDir, 0); err != nil {
-		return fmt.Errorf("failed to rollback migrations: %v", err)
-	}
-
-	return nil
-}
-
 func RunMigrations(dbURL string) error {
 	migrationsDir := os.Getenv("MIGRATION_FOLDER")
 	if migrationsDir == "" {

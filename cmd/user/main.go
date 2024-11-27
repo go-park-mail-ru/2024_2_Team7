@@ -12,9 +12,9 @@ import (
 
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"kudago/internal/interceptors"
-	userRepository "kudago/internal/repository/postgres/users"
 	proto "kudago/internal/user/api"
 	grpcUser "kudago/internal/user/grpc"
+	userRepository "kudago/internal/user/repository"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
