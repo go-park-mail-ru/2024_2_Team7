@@ -1,104 +1,47 @@
 export MIGRATION_FOLDER=$(INTERNAL_REPO_PATH)migrations
-#
-#build:
-#	docker compose build
-#
-#up-all:
-#	docker compose up -d
-#
-#down:
-#	docker compose down
-#
+
+build:
+	docker compose build
+
+up-all:
+	docker compose up -d
+
+down:
+	docker compose down
+
 test:
 	go test -coverprofile=c.out ./... -coverpkg="./..." && go tool cover -func c.out | grep total
-#
-#up-db:
-#	docker compose up -d postgres
-#
-#stop-db:
-#	docker compose stop postgres
-#
-#start-db:
-#	docker compose start postgres
-#
-#down-db:
-#	docker compose down postgres
-#
+
 migration-up-oms:
 	goose -dir "$(MIGRATION_FOLDER)" postgres "$(POSTGRES_OMS_SETUP)" up
 
 migration-down-oms:
 	goose -dir "$(MIGRATION_FOLDER)" postgres "$(POSTGRES_OMS_SETUP)" down
 
-# Имя Docker Compose файла
-COMPOSE_FILE = docker-compose.yml
+BIN_DIR := ./bin
 
-# Функция для запуска команды с передачей имени сервиса
-define service_action
-	@echo "Performing action '$(2)' for service: $(1)"
-	docker compose -f $(COMPOSE_FILE) $(2) $(1)
-endef
+$(BIN_DIR):
+	mkdir -p $(BIN_DIR)
 
-# Цель по умолчанию
-.DEFAULT_GOAL := help
+auth_service: $(BIN_DIR)
+	go build -o $(BIN_DIR)/auth_service ./cmd/auth/main.go
 
-# Пересборка и запуск указанного сервиса с выводом логов
-rebuild-service:
-	@echo "Rebuilding and starting service: $(SERVICE)"
-	docker compose -f $(COMPOSE_FILE) up --build $(SERVICE)
+user_service: $(BIN_DIR)
+	go build -o $(BIN_DIR)/user_service ./cmd/user/main.go
 
-# Полная сборка и запуск всех сервисов с выводом логов
-up:
-	@docker compose -f $(COMPOSE_FILE) up --build
+event_service: $(BIN_DIR)
+	go build -o $(BIN_DIR)/event_service ./cmd/event/main.go
 
-# Перезапуск указанного сервиса с выводом логов
-restart-service:
-	@echo "Restarting service: $(SERVICE)"
-	docker compose -f $(COMPOSE_FILE) up $(SERVICE)
+image_service: $(BIN_DIR)
+	go build -o $(BIN_DIR)/image_service ./cmd/image/main.go
 
-# Остановка указанного сервиса (принимает имя сервиса как аргумент)
-stop-service:
-	@$(call service_action,$(filter-out $@,$(MAKECMDGOALS)),stop)
+csat_service: $(BIN_DIR)
+	go build -o $(BIN_DIR)/csat_service ./cmd/csat/main.go
 
-# Полное удаление сервиса (принимает имя сервиса как аргумент)
-rm-service:
-	@$(call service_action,$(filter-out $@,$(MAKECMDGOALS)),rm -f)
+server_service: $(BIN_DIR)
+	go build -o $(BIN_DIR)/server_service ./cmd/server/main.go
 
-# Просмотр логов для указанного сервиса (принимает имя сервиса как аргумент)
-logs:
-	@$(call service_action,$(filter-out $@,$(MAKECMDGOALS)),logs -f)
+all: auth_service user_service event_service image_service csat_service server_service
 
-# Полная остановка всех сервисов
-down:
-	@docker compose -f $(COMPOSE_FILE) down
-
-# Просмотр статуса всех сервисов
-ps:
-	@docker compose -f $(COMPOSE_FILE) ps
-
-# Просмотр логов всех сервисов
-logs-all:
-	@docker compose -f $(COMPOSE_FILE) logs -f
-
-# Удаление неиспользуемых данных
-prune:
-	@docker system prune -f --volumes
-
-# Подсказка по использованию Makefile
-help:
-	@echo "Использование:"
-	@echo "  make up                       - Запуск всех сервисов с пересборкой"
-	@echo "  make down                     - Остановка всех сервисов"
-	@echo "  make rebuild-service <service> - Пересборка и запуск одного сервиса с логами"
-	@echo "  make restart-service <service> - Перезапуск одного сервиса с логами"
-	@echo "  make stop-service <service>    - Остановка одного сервиса"
-	@echo "  make rm-service <service>      - Удаление одного сервиса"
-	@echo "  make logs <service>            - Просмотр логов одного сервиса"
-	@echo "  make logs-all                 - Просмотр логов всех сервисов"
-	@echo "  make ps                       - Статус всех сервисов"
-	@echo "  make prune                    - Удаление неиспользуемых данных"
-
-# Игнорирование аргументов как ошибок
-%:
-	@:
-
+clean:
+	rm -rf $(BIN_DIR)

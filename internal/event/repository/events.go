@@ -38,7 +38,7 @@ type EventInfo struct {
 	UserID      int       `db:"user_id"`
 	CategoryID  int       `db:"category_id"`
 	Latitude    float64   `db:"lat"`
-	Longitude   float64   `db:"log"`
+	Longitude   float64   `db:"lon"`
 	Tags        []string  `db:"tags"`
 	ImageURL    *string   `db:"image"`
 }

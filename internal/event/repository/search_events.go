@@ -79,10 +79,10 @@ func (db *EventDB) SearchEvents(ctx context.Context, params models.SearchParams,
 		tagsToArray(params.Tags),
 		paginationParams.Limit,
 		paginationParams.Offset,
-		nilIfZeroFloat(params.LatitudeMin),
-		nilIfZeroFloat(params.LatitudeMax),
-		nilIfZeroFloat(params.LongitudeMin),
-		nilIfZeroFloat(params.LongitudeMax),
+		params.LatitudeMin,
+		params.LatitudeMax,
+		params.LongitudeMin,
+		params.LongitudeMax,
 	}
 
 	rows, err := db.pool.Query(ctx, baseSearchQuery, args...)
