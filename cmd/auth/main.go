@@ -58,7 +58,6 @@ func main() {
 			interceptors.MetricsUnaryInterceptor("auth_service"),
 			interceptors.PanicRecoveryInterceptor,
 		),
-
 	)
 
 	proto.RegisterAuthServiceServer(grpcServer, authServer)

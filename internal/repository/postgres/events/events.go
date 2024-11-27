@@ -172,6 +172,7 @@ func nilIfZero(value int) interface{} {
 	}
 	return value
 }
+
 func nilIfZeroFloat(value float64) interface{} {
 	if value == 0 {
 		return nil

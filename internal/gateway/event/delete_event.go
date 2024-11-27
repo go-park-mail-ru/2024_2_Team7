@@ -58,5 +58,4 @@ func (h EventHandler) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
-
 }

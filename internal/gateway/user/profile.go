@@ -61,6 +61,6 @@ func userToProfileResponse(user *pb.User) ProfileResponse {
 		ID:       int(user.ID),
 		Username: user.Username,
 		Email:    user.Email,
-		ImageURL: user.AvatarUrl,	
+		ImageURL: user.AvatarUrl,
 	}
 }

@@ -36,4 +36,3 @@ func InitMetrics() {
 	prometheus.MustRegister(RequestCount)
 	prometheus.MustRegister(ErrorCount)
 }
-

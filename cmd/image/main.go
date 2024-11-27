@@ -8,14 +8,14 @@ import (
 	"kudago/cmd/image/config"
 	proto "kudago/internal/image/api"
 	grpcImage "kudago/internal/image/grpc"
+	"kudago/internal/interceptors"
 	"kudago/internal/logger"
 	"kudago/internal/metrics"
-	"kudago/internal/interceptors"
 
-	imageRepository "kudago/internal/repository/images"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
+	imageRepository "kudago/internal/repository/images"
 )
 
 func main() {

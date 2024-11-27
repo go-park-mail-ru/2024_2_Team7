@@ -1,10 +1,11 @@
 package middleware
 
 import (
-	"kudago/internal/metrics"
 	"net/http"
 	"regexp"
 	"time"
+
+	"kudago/internal/metrics"
 )
 
 func MetricsMiddleware(next http.Handler, serviceName string) http.Handler {
@@ -26,7 +27,7 @@ func MetricsMiddleware(next http.Handler, serviceName string) http.Handler {
 		if matched, _ := regexp.MatchString(`^/static/images/`, path); matched {
 			path = "/static/images"
 		}
-		
+
 		metrics.RequestDuration.WithLabelValues(path, r.Method, serviceName, http.StatusText(ww.statusCode)).Observe(duration)
 		metrics.RequestCount.WithLabelValues(path, r.Method, serviceName, http.StatusText(ww.statusCode)).Inc()
 

@@ -10,11 +10,11 @@ import (
 	"kudago/internal/metrics"
 	"kudago/internal/repository/postgres"
 
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"kudago/internal/interceptors"
 	userRepository "kudago/internal/repository/postgres/users"
 	proto "kudago/internal/user/api"
 	grpcUser "kudago/internal/user/grpc"
-	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
-	"kudago/internal/interceptors"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
@@ -51,7 +51,7 @@ func main() {
 
 	grpc_prometheus.EnableHandlingTimeHistogram()
 	grpcServer := grpc.NewServer(
-	    grpc.ChainUnaryInterceptor(
+		grpc.ChainUnaryInterceptor(
 			interceptors.MetricsUnaryInterceptor("user_service"),
 			interceptors.PanicRecoveryInterceptor,
 		),

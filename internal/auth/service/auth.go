@@ -9,7 +9,7 @@ import (
 )
 
 type authService struct {
-	UserDB  UserDB
+	UserDB UserDB
 }
 
 type UserDB interface {
