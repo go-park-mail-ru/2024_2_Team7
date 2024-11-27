@@ -1,34 +1,34 @@
 services:
-  auth_service:
+  # auth_service:
 
-    build:
-      context: .
-      dockerfile: ./internal/auth/Dockerfile
-    ports:
-      - "50051:50051"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
-    env_file:
-      - .env
-    volumes:
-      - .:/app
+  #   build:
+  #     context: .
+  #     dockerfile: ./internal/auth/Dockerfile
+  #   ports:
+  #     - "50051:50051"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_started
+  #   env_file:
+  #     - .env
+  #   volumes:
+  #     - .:/app
 
-  user_service:
-    build:
-      context: .
-      dockerfile: ./internal/user/Dockerfile
-    ports:
-      - "50052:50052"
-    depends_on:
-      postgres:
-        condition: service_started
-    env_file:
-      - .env
-    volumes:
-      - .:/app
+  # user_service:
+  #   build:
+  #     context: .
+  #     dockerfile: ./internal/user/Dockerfile
+  #   ports:
+  #     - "50052:50052"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_started
+  #   env_file:
+  #     - .env
+  #   volumes:
+  #     - .:/app
 
   event_service:
     build:
@@ -38,37 +38,37 @@ services:
       - "50053:50053"
     depends_on:
       postgres:
-        condition: service_started
-    env_file:
-      - .env
-    volumes:
-      - .:/app
-
-  image_service:
-
-    build:
-      context: .
-      dockerfile: ./internal/image/Dockerfile
-    ports:
-      - "50054:50054"
-    env_file:
-      - .env
-    volumes:
-      - .:/app
-
-  csat_service:
-    build:
-      context: .
-      dockerfile: ./internal/csat/Dockerfile
-    ports:
-      - "50055:50055"
-    depends_on:
-      postgres:
         condition: service_healthy
     env_file:
       - .env
     volumes:
       - .:/app
+
+  # image_service:
+
+  #   build:
+  #     context: .
+  #     dockerfile: ./internal/image/Dockerfile
+  #   ports:
+  #     - "50054:50054"
+  #   env_file:
+  #     - .env
+  #   volumes:
+  #     - .:/app
+
+  # csat_service:
+  #   build:
+  #     context: .
+  #     dockerfile: ./internal/csat/Dockerfile
+  #   ports:
+  #     - "50055:50055"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   env_file:
+  #     - .env
+  #   volumes:
+  #     - .:/app
 
   server_service:
     build:
@@ -76,19 +76,28 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
-    depends_on:
-      auth_service:
-        condition: service_started
-      user_service:
-        condition: service_started
-      event_service:
-        condition: service_started
-      image_service:
-        condition: service_started
+    # depends_on:
+    #   auth_service:
+    #     condition: service_started
+    #   user_service:
+    #     condition: service_started
+    #   event_service:
+    #     condition: service_started
+    #   image_service:
+    #     condition: service_started
     env_file:
       - .env
     volumes:
       - .:/app
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
 
   postgres:
     image: postgis/postgis:latest
@@ -99,7 +108,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data  # Указываем новый именованный volume
+      - postgres_data:/var/lib/postgresql/data  
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 10s

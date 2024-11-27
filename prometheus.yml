@@ -1,15 +1,16 @@
 global:
-  scrape_interval: 15s 
+  scrape_interval: 1s  
 
-  external_labels:
-    monitor: 'kudago'
-
-=
 scrape_configs:
-  - job_name: 'prometheus'
-    metrics_path: "/metrics"
-
-    scrape_interval: 5s
-
+  - job_name: 'vihodnoy_server'
     static_configs:
-      - targets: [ '127.0.0.1:8099' ]
+      - targets: ['server_service:8080']
+  - job_name: 'event_server'
+    static_configs:
+      - targets: ['event_service:9091']
+  # - job_name: 'redis'
+  #   static_configs:
+  #     - targets: ['redis:6379']
+  # - job_name: 'postgresql'
+  #   static_configs:
+  #     - targets: ['postgres:5432']

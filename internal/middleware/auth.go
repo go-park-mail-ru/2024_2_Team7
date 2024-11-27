@@ -30,6 +30,7 @@ var whitelist = []string{
 	"/categories",
 	"/swagger",
 	"/profile",
+	"/metrics",
 }
 
 type sessionChecker interface {
