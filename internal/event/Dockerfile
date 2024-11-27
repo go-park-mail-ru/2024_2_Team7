@@ -1,21 +1,5 @@
-FROM golang:1.23.1
-
-# Set destination for COPY
+FROM debian:bookworm-slim
 WORKDIR /app
-
-# Download Go modules
-COPY go.mod go.sum ./
-RUN go mod download
-
-# Copy the source code. Note the slash at the end, as explained in
-# https://docs.docker.com/engine/reference/builder/#copy
-COPY . .
-
-# Build
-RUN go build -o /event_run ./cmd/event/main.go
-
-#
+COPY ./bin/event_service /event_service_run
 EXPOSE 50053
-
-# Run
-CMD ["/event_run"]
+CMD ["/event_service_run"]

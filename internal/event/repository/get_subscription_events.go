@@ -12,7 +12,7 @@ const getSubscriptionEventsQuery = `
 		event.location, event.capacity, event.created_at, event.user_id, event.category_id, event.lat, event.lon, 
 		COALESCE(array_agg(COALESCE(tag.name, '')), '{}') AS tags, media_url.url AS media_link
 	FROM event
-	INNER JOIN SUBSCRIPTION ON event.user_id = SUBSCRIPTION.subscribed_id
+	INNER JOIN SUBSCRIPTION ON event.user_id = SUBSCRIPTION.follows_id
 	LEFT JOIN event_tag ON event.id = event_tag.event_id
 	LEFT JOIN tag ON tag.id = event_tag.tag_id
 	LEFT JOIN media_url ON event.id = media_url.event_id
