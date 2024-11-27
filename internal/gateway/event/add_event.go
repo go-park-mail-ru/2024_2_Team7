@@ -5,9 +5,10 @@ import (
 
 	httpErrors "kudago/internal/gateway/errors"
 	"kudago/internal/gateway/utils"
-	"kudago/internal/models"
 
 	"github.com/asaskevich/govalidator"
+	grpcCodes "google.golang.org/grpc/codes"
+	grpcStatus "google.golang.org/grpc/status"
 )
 
 // AddEvent создает новое событие в системе.
@@ -58,15 +59,16 @@ func (h EventHandler) AddEvent(w http.ResponseWriter, r *http.Request) {
 	event, err = h.EventService.AddEvent(r.Context(), event)
 	if err != nil {
 		h.deleteImage(r.Context(), url)
-
-		switch err {
-		case models.ErrInvalidCategory:
-			utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidCategory)
-
-		default:
-			h.logger.Error(r.Context(), "create event", err)
-			utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
+		st, ok := grpcStatus.FromError(err)
+		if ok {
+			switch st.Code() {
+			case grpcCodes.InvalidArgument:
+				utils.WriteResponse(w, http.StatusConflict, httpErrors.ErrInvalidData)
+				return
+			}
 		}
+		h.logger.Error(r.Context(), "add event", err)
+		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
 

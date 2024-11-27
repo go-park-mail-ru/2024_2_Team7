@@ -11,6 +11,7 @@ import (
 const (
 	errInternal           = "internal error"
 	errEventNotFound      = "event not found"
+	errPermissionDenied   = "permission denied"
 	errAlreadyInFavorites = "event is already in favorites"
 	errBadData            = "bad data request"
 )

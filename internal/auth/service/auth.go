@@ -10,7 +10,6 @@ import (
 
 type authService struct {
 	UserDB  UserDB
-	ImageDB ImageDB
 }
 
 type UserDB interface {
@@ -18,13 +17,6 @@ type UserDB interface {
 	GetUserByID(ctx context.Context, ID int) (models.User, error)
 	CheckCredentials(ctx context.Context, username string, password string) (models.User, error)
 	UserExists(ctx context.Context, user models.User) (bool, error)
-	CheckUsername(ctx context.Context, username string, ID int) (bool, error)
-	CheckEmail(ctx context.Context, email string, ID int) (bool, error)
-}
-
-type ImageDB interface {
-	SaveImage(ctx context.Context, media models.MediaFile) (string, error)
-	DeleteImage(ctx context.Context, imagePath string) error
 }
 
 func NewService(userDB UserDB) authService {

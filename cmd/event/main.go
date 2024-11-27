@@ -1,17 +1,17 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"net/http"
-	"context"
 
 	"kudago/cmd/event/config"
 	proto "kudago/internal/event/api"
 	grpcEvent "kudago/internal/event/grpc"
 	eventService "kudago/internal/event/service"
+	"kudago/internal/interceptors"
 	"kudago/internal/logger"
+	"kudago/internal/metrics"
 	"kudago/internal/repository/postgres"
 	eventRepository "kudago/internal/repository/postgres/events"
 
@@ -46,18 +46,14 @@ func main() {
 
 	eventDB := eventRepository.NewDB(pool)
 	eventService := eventService.NewService(eventDB)
+	metrics.InitMetrics()
 
 	grpc_prometheus.EnableHandlingTimeHistogram()
 	grpcServer := grpc.NewServer(
-		grpc.UnaryInterceptor(func (ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-			// Invoke 'handler' to use your gRPC server implementation and get
-			// the response.
-			fmt.Println("BIG PENIS OH NOOOO")
-
-			resp, err := handler(ctx, req)
-			fmt.Println("BIG PENIS OH YEAHH")
-			return resp, err
-		}),
+		grpc.ChainUnaryInterceptor(
+			interceptors.MetricsUnaryInterceptor("event_service"),
+			interceptors.PanicRecoveryInterceptor,
+		),
 	)
 
 	eventServer := grpcEvent.NewServerAPI(&eventService, eventDB, appLogger)
@@ -67,7 +63,7 @@ func main() {
 
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
-		metricsAddr := ":9091" 
+		metricsAddr := ":9093"
 		log.Printf("Метрики доступны на %s/metrics", metricsAddr)
 		if err := http.ListenAndServe(metricsAddr, nil); err != nil {
 			log.Fatalf("Не удалось запустить HTTP-сервер для метрик: %v", err)

@@ -23,12 +23,15 @@ func (d *UserDB) CreateUser(ctx context.Context, user models.User) (models.User,
 		&userInfo.ID,
 		&userInfo.CreatedAt,
 	)
+
 	if err != nil {
 		return models.User{}, fmt.Errorf("%s: %w", models.LevelDB, err)
 	}
+	
 	userInfo.Username = user.Username
 	userInfo.Email = user.Email
 	userInfo.ImageURL = &user.ImageURL
+
 	newUser := toDomainUser(userInfo)
 	return newUser, nil
 }

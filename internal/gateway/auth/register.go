@@ -55,6 +55,8 @@ func (h *AuthHandlers) Register(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.AuthService.Register(r.Context(), registerRequest)
 	if err != nil {
+		h.logger.Error(r.Context(), "register", err)
+
 		h.deleteImage(r.Context(), url)
 		st, ok := grpcStatus.FromError(err)
 		if ok {
@@ -66,15 +68,10 @@ func (h *AuthHandlers) Register(w http.ResponseWriter, r *http.Request) {
 				h.logger.Error(r.Context(), "register", st.Err())
 				utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 				return
-			default:
-				h.logger.Error(r.Context(), "register", st.Err())
-				utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
-				return
 			}
 		}
 
 		h.logger.Error(r.Context(), "register", err)
-
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}

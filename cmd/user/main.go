@@ -3,14 +3,20 @@ package main
 import (
 	"log"
 	"net"
+	"net/http"
 
 	"kudago/cmd/user/config"
 	"kudago/internal/logger"
+	"kudago/internal/metrics"
 	"kudago/internal/repository/postgres"
+
 	userRepository "kudago/internal/repository/postgres/users"
 	proto "kudago/internal/user/api"
 	grpcUser "kudago/internal/user/grpc"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"kudago/internal/interceptors"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 )
 
@@ -39,9 +45,28 @@ func main() {
 
 	userDB := userRepository.NewDB(pool)
 
-	grpcServer := grpc.NewServer()
 	userServer := grpcUser.NewServerAPI(userDB, appLogger)
+
+	metrics.InitMetrics()
+
+	grpc_prometheus.EnableHandlingTimeHistogram()
+	grpcServer := grpc.NewServer(
+	    grpc.ChainUnaryInterceptor(
+			interceptors.MetricsUnaryInterceptor("user_service"),
+			interceptors.PanicRecoveryInterceptor,
+		),
+	)
+
 	proto.RegisterUserServiceServer(grpcServer, userServer)
+
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		metricsAddr := ":9092"
+		log.Printf("Метрики доступны на %s/metrics", metricsAddr)
+		if err := http.ListenAndServe(metricsAddr, nil); err != nil {
+			log.Fatalf("Не удалось запустить HTTP-сервер для метрик: %v", err)
+		}
+	}()
 
 	log.Printf("gRPC сервер запущен на %s", conf.ServiceAddr)
 	if err := grpcServer.Serve(listener); err != nil {

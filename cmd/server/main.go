@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+
 	// "runtime/metrics"
 
 	"kudago/cmd/server/config"
@@ -12,8 +13,9 @@ import (
 	eventHandlers "kudago/internal/gateway/event"
 	userHandlers "kudago/internal/gateway/user"
 	"kudago/internal/logger"
-	"kudago/internal/middleware"
 	"kudago/internal/metrics"
+	"kudago/internal/middleware"
+
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -82,8 +84,6 @@ func main() {
 	r.HandleFunc("/events/past", eventHandler.GetPastEvents).Methods(http.MethodGet)
 	r.HandleFunc("/events/subscription", eventHandler.GetSubscriptionEvents).Methods(http.MethodGet)
 
-	r.Handle("/metrics", promhttp.Handler())
-
 	r.HandleFunc("/test", csatHandler.GetTest).Methods(http.MethodGet)
 	r.HandleFunc("/test", csatHandler.AddAnswers).Methods(http.MethodPost)
 	r.HandleFunc("/stats", csatHandler.GetStatistics).Methods(http.MethodGet)
@@ -104,9 +104,8 @@ func main() {
 	handlerWithMetrics := middleware.MetricsMiddleware(handlerWithLogging, "server")
 	handler := middleware.PanicMiddleware(handlerWithMetrics)
 
-	go func() {
-		_ = metrics.Listen(":9099")
-	}()
+	r.Handle("/metrics", promhttp.Handler())
+	metrics.InitMetrics()
 
 	err = http.ListenAndServe(":"+conf.Port, handler)
 	if err != nil {

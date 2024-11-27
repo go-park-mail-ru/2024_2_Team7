@@ -34,22 +34,7 @@ func NewService(eventDB EventDB) EventService {
 }
 
 func (s *EventService) AddEvent(ctx context.Context, event models.Event) (models.Event, error) {
-	// if media.File != nil {
-	// 	path, err := s.ImageDB.SaveImage(ctx, media)
-	// 	if err != nil {
-	// 		return models.Event{}, err
-	// 	}
-	// 	event.ImageURL = path
-	// }
-
-	event, err := s.EventDB.CreateEvent(ctx, event)
-	if err != nil {
-		// if event.ImageURL != "" {
-		// 	s.ImageDB.DeleteImage(ctx, event.ImageURL)
-		// }
-		return models.Event{}, err
-	}
-	return event, nil
+	return s.EventDB.CreateEvent(ctx, event)
 }
 
 func (s *EventService) DeleteEvent(ctx context.Context, ID, AuthorID int) error {
@@ -61,10 +46,6 @@ func (s *EventService) DeleteEvent(ctx context.Context, ID, AuthorID int) error 
 	if dbEvent.AuthorID != AuthorID {
 		return fmt.Errorf("%s: %w", models.LevelService, models.ErrAccessDenied)
 	}
-
-	// if dbEvent.ImageURL != "" {
-	// 	s.ImageDB.DeleteImage(ctx, dbEvent.ImageURL)
-	// }
 
 	return s.EventDB.DeleteEvent(ctx, ID)
 }
@@ -90,25 +71,11 @@ func (s *EventService) UpdateEvent(ctx context.Context, event models.Event) (mod
 		return models.Event{}, fmt.Errorf("%s: %w", models.LevelService, models.ErrAccessDenied)
 	}
 
-	// if media.File != nil {
-	// 	path, err := s.ImageDB.SaveImage(ctx, media)
-	// 	if err != nil {
-	// 		return models.Event{}, err
-	// 	}
-	// 	event.ImageURL = path
-	// }
-
 	updatedEvent, err := s.EventDB.UpdateEvent(ctx, event)
 	if err != nil {
-		// if media.File != nil {
-		// 	s.ImageDB.DeleteImage(ctx, event.ImageURL)
-		// }
 		return models.Event{}, err
 	}
 
-	// if dbEvent.ImageURL != "" && media.File != nil {
-	// 	s.ImageDB.DeleteImage(ctx, dbEvent.ImageURL)
-	// }
 	return updatedEvent, nil
 }
 

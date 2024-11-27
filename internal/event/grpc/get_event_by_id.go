@@ -20,7 +20,7 @@ func (s *ServerAPI) GetEventByID(ctx context.Context, req *pb.ID) (*pb.Event, er
 		s.logger.Error(ctx, "get event by id", err)
 		return nil, status.Error(codes.Internal, errInternal)
 	}
-	
+
 	event := eventToEventPB(eventData)
 
 	return event, nil

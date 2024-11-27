@@ -1,16 +1,16 @@
 package events
 
 import (
-	"errors"
 	"net/http"
 	"strconv"
 
 	httpErrors "kudago/internal/gateway/errors"
 	"kudago/internal/gateway/utils"
-	"kudago/internal/models"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/gorilla/mux"
+	grpcCodes "google.golang.org/grpc/codes"
+	grpcStatus "google.golang.org/grpc/status"
 )
 
 type UpdateEventRequest struct {
@@ -84,14 +84,23 @@ func (h EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 	event, err = h.EventService.UpdateEvent(r.Context(), event)
 	if err != nil {
 		h.deleteImage(r.Context(), url)
-		switch {
-		case errors.Is(err, models.ErrEventNotFound):
-			utils.WriteResponse(w, http.StatusNotFound, httpErrors.ErrEventNotFound)
-		case errors.Is(err, models.ErrAccessDenied):
-			utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrAccessDenied)
-		default:
-			utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
+		st, ok := grpcStatus.FromError(err)
+		if ok {
+			switch st.Code() {
+			case grpcCodes.NotFound:
+				utils.WriteResponse(w, http.StatusConflict, httpErrors.ErrEventNotFound)
+				return
+			case grpcCodes.PermissionDenied:
+				utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrAccessDenied)
+				return
+			case grpcCodes.Internal:
+				utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
+				return
+			}
 		}
+
+		h.logger.Error(r.Context(), "update event", err)
+		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
 

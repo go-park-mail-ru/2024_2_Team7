@@ -17,7 +17,7 @@ func (s *ServerAPI) DeleteEvent(ctx context.Context, req *pb.DeleteEventRequest)
 		if errors.Is(err, models.ErrNotFound) {
 			return nil, status.Error(codes.NotFound, errEventNotFound)
 		}
-		s.logger.Error(ctx, "unsubscribe", err)
+		s.logger.Error(ctx, "delete event", err)
 		return nil, status.Error(codes.Internal, errInternal)
 	}
 	return nil, nil

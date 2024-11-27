@@ -1,16 +1,16 @@
 package events
 
 import (
-	"errors"
 	"net/http"
 	"strconv"
 
 	pb "kudago/internal/event/api"
 	httpErrors "kudago/internal/gateway/errors"
 	"kudago/internal/gateway/utils"
-	"kudago/internal/models"
 
 	"github.com/gorilla/mux"
+	grpcCodes "google.golang.org/grpc/codes"
+	grpcStatus "google.golang.org/grpc/status"
 )
 
 // @Summary Удаление события
@@ -45,14 +45,18 @@ func (h EventHandler) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 	}
 	_, err = h.EventService.DeleteEvent(r.Context(), req)
 	if err != nil {
-		switch {
-		case errors.Is(err, models.ErrEventNotFound):
-			utils.WriteResponse(w, http.StatusNotFound, httpErrors.ErrEventNotFound)
-		case errors.Is(err, models.ErrAccessDenied):
-			utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrAccessDenied)
-		default:
-			utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
+		st, ok := grpcStatus.FromError(err)
+		if ok {
+			switch st.Code() {
+			case grpcCodes.NotFound:
+				utils.WriteResponse(w, http.StatusConflict, httpErrors.ErrEventNotFound)
+				return
+			}
 		}
+
+		h.logger.Error(r.Context(), "delete event", err)
+		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
+
 }

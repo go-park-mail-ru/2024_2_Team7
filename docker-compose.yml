@@ -1,34 +1,37 @@
 services:
-  # auth_service:
+  auth_service:
+    build:
+      context: .
+      dockerfile: ./internal/auth/Dockerfile
+    ports:
+      - "50051:50051"
+      - "9091:9091"
 
-  #   build:
-  #     context: .
-  #     dockerfile: ./internal/auth/Dockerfile
-  #   ports:
-  #     - "50051:50051"
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_started
-  #   env_file:
-  #     - .env
-  #   volumes:
-  #     - .:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    env_file:
+      - .env
+    volumes:
+      - .:/app
 
-  # user_service:
-  #   build:
-  #     context: .
-  #     dockerfile: ./internal/user/Dockerfile
-  #   ports:
-  #     - "50052:50052"
-  #   depends_on:
-  #     postgres:
-  #       condition: service_started
-  #   env_file:
-  #     - .env
-  #   volumes:
-  #     - .:/app
+  user_service:
+    build:
+      context: .
+      dockerfile: ./internal/user/Dockerfile
+    ports:
+      - "50052:50052"
+      - "9092:9092"
+
+    depends_on:
+      postgres:
+        condition: service_started
+    env_file:
+      - .env
+    volumes:
+      - .:/app
 
   event_service:
     build:
@@ -36,6 +39,8 @@ services:
       dockerfile: ./internal/event/Dockerfile
     ports:
       - "50053:50053"
+      - "9093:9093"
+
     depends_on:
       postgres:
         condition: service_healthy
@@ -44,17 +49,19 @@ services:
     volumes:
       - .:/app
 
-  # image_service:
+  image_service:
 
-  #   build:
-  #     context: .
-  #     dockerfile: ./internal/image/Dockerfile
-  #   ports:
-  #     - "50054:50054"
-  #   env_file:
-  #     - .env
-  #   volumes:
-  #     - .:/app
+    build:
+      context: .
+      dockerfile: ./internal/image/Dockerfile
+    ports:
+      - "50054:50054"
+      - "9094:9094"
+
+    env_file:
+      - .env
+    volumes:
+      - .:/app
 
   # csat_service:
   #   build:
@@ -99,6 +106,13 @@ services:
     ports:
       - "9090:9090"
 
+  grafana:
+    image: grafana/grafana-oss:9.4.3
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+
   postgres:
     image: postgis/postgis:latest
     container_name: my_pg_container
@@ -122,6 +136,8 @@ services:
 volumes:
   postgres_data:
     driver: local
+  grafana-data:
+
 networks:
   default:
     name: team7_network

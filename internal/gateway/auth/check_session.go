@@ -31,14 +31,6 @@ func (h *AuthHandlers) CheckSession(w http.ResponseWriter, r *http.Request) {
 			case grpcCodes.NotFound:
 				utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrUserNotFound)
 				return
-			case grpcCodes.Internal:
-				h.logger.Error(r.Context(), "check session", st.Err())
-				utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
-				return
-			default:
-				h.logger.Error(r.Context(), "check session", st.Err())
-				utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
-				return
 			}
 		}
 		h.logger.Error(r.Context(), "check session", err)

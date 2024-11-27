@@ -50,14 +50,6 @@ func (h *AuthHandlers) Login(w http.ResponseWriter, r *http.Request) {
 			case grpcCodes.NotFound:
 				utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrWrongCredentials)
 				return
-			case grpcCodes.Internal:
-				h.logger.Error(r.Context(), "login", st.Err())
-				utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
-				return
-			default:
-				h.logger.Error(r.Context(), "login", st.Err())
-				utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
-				return
 			}
 		}
 		h.logger.Error(r.Context(), "login", err)

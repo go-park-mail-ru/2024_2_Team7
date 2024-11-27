@@ -23,7 +23,6 @@ func (h *AuthHandlers) Logout(w http.ResponseWriter, r *http.Request) {
 	_, err := h.AuthService.Logout(r.Context(), req)
 	if err != nil {
 		h.logger.Error(r.Context(), "logout", err)
-
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}

@@ -13,7 +13,7 @@ func (s *ServerAPI) GetEventsByUser(ctx context.Context, req *pb.GetEventsByUser
 	params := getPaginationParams(req.Params)
 	eventsData, err := s.getter.GetEventsByUser(ctx, int(req.UserID), params)
 	if err != nil {
-		s.logger.Error(ctx, "add event", err)
+		s.logger.Error(ctx, "get events by user", err)
 		return nil, status.Error(codes.Internal, errInternal)
 	}
 
