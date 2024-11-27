@@ -9,7 +9,7 @@ var (
 		prometheus.HistogramOpts{
 			Name:    "http_request_duration_seconds",
 			Help:    "Histogram of response times for handler in seconds",
-			Buckets: prometheus.DefBuckets, // Например, 0.005, 0.01, 0.025, 0.05, ..., 10
+			Buckets: prometheus.DefBuckets,
 		},
 		[]string{"path", "method", "service", "status_code"},
 	)

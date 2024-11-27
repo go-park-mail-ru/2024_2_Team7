@@ -132,6 +132,14 @@ services:
     image: redis:latest
     ports:
       - "6379:6379" 
+      
+  node_exporter:
+    image: prom/node-exporter:latest
+    container_name: node_exporter
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+ 
 
 volumes:
   postgres_data:
