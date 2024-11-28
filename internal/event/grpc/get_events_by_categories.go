@@ -14,7 +14,7 @@ func (s *ServerAPI) GetEventsByCategory(ctx context.Context, req *pb.GetEventsBy
 	eventsData, err := s.getter.GetEventsByCategory(ctx, int(req.CategoryID), params)
 	if err != nil {
 		s.logger.Error(ctx, "get events by category", err)
-		return nil, status.Error(codes.Internal, errInternal)
+		return nil, status.Error(codes.Internal, ErrInternal)
 	}
 
 	event := writeEventsResponse(eventsData, params.Limit)

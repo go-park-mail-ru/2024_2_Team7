@@ -4,8 +4,6 @@ import (
 	"log"
 	"net/http"
 
-	// "runtime/metrics"
-
 	"kudago/cmd/server/config"
 	_ "kudago/docs"
 	authHandlers "kudago/internal/gateway/auth"

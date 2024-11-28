@@ -44,7 +44,7 @@ type EventServiceClient interface {
 	DeleteEventFromFavorites(ctx context.Context, in *FavoriteEvent, opts ...grpc.CallOption) (*Empty, error)
 	DeleteEvent(ctx context.Context, in *DeleteEventRequest, opts ...grpc.CallOption) (*Empty, error)
 	GetCategories(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*GetCategoriesResponse, error)
-	GetEventByID(ctx context.Context, in *ID, opts ...grpc.CallOption) (*Event, error)
+	GetEventByID(ctx context.Context, in *GetEventByIDRequest, opts ...grpc.CallOption) (*Event, error)
 	GetEventsByCategory(ctx context.Context, in *GetEventsByCategoryRequest, opts ...grpc.CallOption) (*Events, error)
 	GetEventsByUser(ctx context.Context, in *GetEventsByUserRequest, opts ...grpc.CallOption) (*Events, error)
 	GetFavorites(ctx context.Context, in *GetFavoritesRequest, opts ...grpc.CallOption) (*Events, error)
@@ -113,7 +113,7 @@ func (c *eventServiceClient) GetCategories(ctx context.Context, in *Empty, opts 
 	return out, nil
 }
 
-func (c *eventServiceClient) GetEventByID(ctx context.Context, in *ID, opts ...grpc.CallOption) (*Event, error) {
+func (c *eventServiceClient) GetEventByID(ctx context.Context, in *GetEventByIDRequest, opts ...grpc.CallOption) (*Event, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Event)
 	err := c.cc.Invoke(ctx, EventService_GetEventByID_FullMethodName, in, out, cOpts...)
@@ -212,7 +212,7 @@ type EventServiceServer interface {
 	DeleteEventFromFavorites(context.Context, *FavoriteEvent) (*Empty, error)
 	DeleteEvent(context.Context, *DeleteEventRequest) (*Empty, error)
 	GetCategories(context.Context, *Empty) (*GetCategoriesResponse, error)
-	GetEventByID(context.Context, *ID) (*Event, error)
+	GetEventByID(context.Context, *GetEventByIDRequest) (*Event, error)
 	GetEventsByCategory(context.Context, *GetEventsByCategoryRequest) (*Events, error)
 	GetEventsByUser(context.Context, *GetEventsByUserRequest) (*Events, error)
 	GetFavorites(context.Context, *GetFavoritesRequest) (*Events, error)
@@ -246,7 +246,7 @@ func (UnimplementedEventServiceServer) DeleteEvent(context.Context, *DeleteEvent
 func (UnimplementedEventServiceServer) GetCategories(context.Context, *Empty) (*GetCategoriesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCategories not implemented")
 }
-func (UnimplementedEventServiceServer) GetEventByID(context.Context, *ID) (*Event, error) {
+func (UnimplementedEventServiceServer) GetEventByID(context.Context, *GetEventByIDRequest) (*Event, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetEventByID not implemented")
 }
 func (UnimplementedEventServiceServer) GetEventsByCategory(context.Context, *GetEventsByCategoryRequest) (*Events, error) {
@@ -385,7 +385,7 @@ func _EventService_GetCategories_Handler(srv interface{}, ctx context.Context, d
 }
 
 func _EventService_GetEventByID_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ID)
+	in := new(GetEventByIDRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -397,7 +397,7 @@ func _EventService_GetEventByID_Handler(srv interface{}, ctx context.Context, de
 		FullMethod: EventService_GetEventByID_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(EventServiceServer).GetEventByID(ctx, req.(*ID))
+		return srv.(EventServiceServer).GetEventByID(ctx, req.(*GetEventByIDRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

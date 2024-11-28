@@ -1,3 +1,5 @@
+//go:generate mockgen -source=user.go -destination=tests/mocks/user.go -package=mocks
+
 package grpc
 
 import (

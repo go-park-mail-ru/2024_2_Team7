@@ -10,7 +10,7 @@ service EventService {
     rpc DeleteEventFromFavorites (FavoriteEvent) returns (Empty);  
     rpc DeleteEvent (DeleteEventRequest) returns (Empty);  
     rpc GetCategories (Empty) returns (GetCategoriesResponse);  
-    rpc GetEventByID (ID) returns (Event);  
+    rpc GetEventByID (GetEventByIDRequest) returns (Event);  
     rpc GetEventsByCategory (GetEventsByCategoryRequest) returns (Events);  
     rpc GetEventsByUser (GetEventsByUserRequest) returns (Events);  
     rpc GetFavorites(GetFavoritesRequest) returns(Events);
@@ -21,9 +21,10 @@ service EventService {
     rpc SearchEvents(SearchParams) returns(Events);
     }
 
-    message ID {
+    message GetEventByIDRequest {
         int32 ID = 1;
     }
+
 
     message GetSubscriptionsRequest {
         int32 ID = 1;

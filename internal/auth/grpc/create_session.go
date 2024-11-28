@@ -14,7 +14,7 @@ func (s *ServerAPI) CreateSession(ctx context.Context, in *pb.CreateSessionReque
 	session, err := s.sessionManager.CreateSession(ctx, int(in.ID))
 	if err != nil {
 		s.logger.Error(ctx, "create session", err)
-		return nil, status.Error(codes.Internal, errInternal)
+		return nil, status.Error(codes.Internal, ErrInternal)
 	}
 
 	user := &pb.Session{

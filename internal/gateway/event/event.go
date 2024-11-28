@@ -180,12 +180,6 @@ func toEvent(event *pbEvent.Event) models.Event {
 	}
 }
 
-func toIDPB(id int) *pbEvent.ID {
-	return &pbEvent.ID{
-		ID: int32(id),
-	}
-}
-
 func eventToEventResponse(event *pbEvent.Event) EventResponse {
 	return EventResponse{
 		ID:          int(event.ID),

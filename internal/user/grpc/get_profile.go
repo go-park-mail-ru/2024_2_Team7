@@ -16,9 +16,9 @@ func (s *ServerAPI) GetUserByID(ctx context.Context, in *pb.GetUserByIDRequest) 
 	if err != nil {
 		s.logger.Error(ctx, "get user by id", err)
 		if errors.Is(err, models.ErrUserNotFound) {
-			return nil, status.Error(codes.NotFound, errUserNotFound)
+			return nil, status.Error(codes.NotFound, ErrUserNotFound)
 		}
-		return nil, status.Error(codes.Internal, errInternal)
+		return nil, status.Error(codes.Internal, ErrInternal)
 	}
 
 	user := userToUserPb(userData)

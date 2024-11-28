@@ -1,3 +1,5 @@
+//go:generate mockgen -source=../../auth/api/auth_grpc.pb.go -destination=mocks/auth.go -package=mocks
+
 package handlers
 
 import (

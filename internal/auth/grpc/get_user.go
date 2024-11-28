@@ -15,10 +15,10 @@ func (s *ServerAPI) GetUser(ctx context.Context, in *pb.GetUserRequest) (*pb.Use
 	userData, err := s.service.GetUserByID(ctx, int(in.ID))
 	if err != nil {
 		if errors.Is(err, models.ErrUserNotFound) {
-			return nil, status.Error(codes.NotFound, errUserNotFound)
+			return nil, status.Error(codes.NotFound, ErrUserNotFound)
 		}
 		s.logger.Error(ctx, "get user", err)
-		return nil, status.Error(codes.Internal, errInternal)
+		return nil, status.Error(codes.Internal, ErrInternal)
 	}
 
 	user := userToUserPb(userData)

@@ -17,10 +17,10 @@ func (s *ServerAPI) Unsubscribe(ctx context.Context, in *pb.Subscription) (*pb.E
 	err := s.service.Unsubscribe(ctx, subscription)
 	if err != nil {
 		if errors.Is(err, models.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, errUserNotFound)
+			return nil, status.Error(codes.NotFound, ErrUserNotFound)
 		}
 		s.logger.Error(ctx, "unsubscribe", err)
-		return nil, status.Error(codes.Internal, errInternal)
+		return nil, status.Error(codes.Internal, ErrInternal)
 	}
 
 	return nil, nil

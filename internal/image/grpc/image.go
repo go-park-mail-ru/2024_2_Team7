@@ -1,3 +1,5 @@
+//go:generate mockgen -source=image.go -destination=tests/mocks/image.go -package=mocks
+
 package grpc
 
 import (
@@ -9,7 +11,7 @@ import (
 )
 
 const (
-	errInternal = "internal error"
+	ErrInternal = "internal error"
 )
 
 type ServerAPI struct {

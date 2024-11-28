@@ -1,3 +1,5 @@
+//go:generate mockgen -source=csat.go -destination=mocks/csat.go -package=mocks
+
 package grpc
 
 import (

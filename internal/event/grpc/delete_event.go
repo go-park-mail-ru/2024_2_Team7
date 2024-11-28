@@ -15,10 +15,10 @@ func (s *ServerAPI) DeleteEvent(ctx context.Context, req *pb.DeleteEventRequest)
 	err := s.service.DeleteEvent(ctx, int(req.EventID), int(req.AuthorID))
 	if err != nil {
 		if errors.Is(err, models.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, errEventNotFound)
+			return nil, status.Error(codes.NotFound, ErrEventNotFound)
 		}
 		s.logger.Error(ctx, "delete event", err)
-		return nil, status.Error(codes.Internal, errInternal)
+		return nil, status.Error(codes.Internal, ErrInternal)
 	}
 	return nil, nil
 }

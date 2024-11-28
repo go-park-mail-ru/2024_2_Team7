@@ -19,11 +19,11 @@ func (s *ServerAPI) UpdateEvent(ctx context.Context, req *pb.Event) (*pb.Event, 
 		s.logger.Error(ctx, "update event", err)
 		switch {
 		case errors.Is(err, models.ErrEventNotFound):
-			return nil, status.Error(codes.NotFound, errEventNotFound)
+			return nil, status.Error(codes.NotFound, ErrEventNotFound)
 		case errors.Is(err, models.ErrAccessDenied):
-			return nil, status.Error(codes.PermissionDenied, errPermissionDenied)
+			return nil, status.Error(codes.PermissionDenied, ErrPermissionDenied)
 		default:
-			return nil, status.Error(codes.Internal, errInternal)
+			return nil, status.Error(codes.Internal, ErrInternal)
 		}
 	}
 

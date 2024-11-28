@@ -18,11 +18,11 @@ func (s *ServerAPI) Subscribe(ctx context.Context, in *pb.Subscription) (*pb.Emp
 		s.logger.Error(ctx, "subscribe", err)
 		switch err {
 		case models.ErrForeignKeyViolation:
-			return nil, status.Error(codes.NotFound, errUserNotFound)
+			return nil, status.Error(codes.NotFound, ErrUserNotFound)
 		case models.ErrNothingToInsert:
-			return nil, status.Error(codes.AlreadyExists, errSubscriptionAlreadyExists)
+			return nil, status.Error(codes.AlreadyExists, ErrSubscriptionAlreadyExists)
 		default:
-			return nil, status.Error(codes.Internal, errInternal)
+			return nil, status.Error(codes.Internal, ErrInternal)
 		}
 	}
 

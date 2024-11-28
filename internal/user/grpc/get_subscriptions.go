@@ -15,10 +15,10 @@ func (s *ServerAPI) GetSubscriptions(ctx context.Context, in *pb.GetSubscription
 	usersData, err := s.service.GetSubscriptions(ctx, int(in.ID))
 	if err != nil {
 		if errors.Is(err, models.ErrUserNotFound) {
-			return nil, status.Error(codes.NotFound, errUserNotFound)
+			return nil, status.Error(codes.NotFound, ErrUserNotFound)
 		}
 		s.logger.Error(ctx, "get subscriptions", err)
-		return nil, status.Error(codes.Internal, errInternal)
+		return nil, status.Error(codes.Internal, ErrInternal)
 	}
 
 	users := usersToUsersPb(usersData)

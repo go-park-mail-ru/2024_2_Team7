@@ -22,7 +22,7 @@ func (s *ServerAPI) UploadImage(ctx context.Context, req *pb.UploadRequest) (*pb
 	url, err := s.service.UploadImage(ctx, mediaFile)
 	if err != nil {
 		s.logger.Error(ctx, "upload image", err)
-		return nil, status.Error(codes.Internal, errInternal)
+		return nil, status.Error(codes.Internal, ErrInternal)
 	}
 
 	resp := &pb.UploadResponse{

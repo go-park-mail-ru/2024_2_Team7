@@ -20,17 +20,17 @@ func (s *ServerAPI) UpdateUser(ctx context.Context, in *pb.User) (*pb.User, erro
 
 	userExists, err := s.service.UserExists(ctx, user)
 	if err != nil {
-		return nil, status.Error(codes.Internal, errInternal)
+		return nil, status.Error(codes.Internal, ErrInternal)
 	}
 
 	if userExists {
-		return nil, status.Error(codes.AlreadyExists, errUsernameOrEmailIsTaken)
+		return nil, status.Error(codes.AlreadyExists, ErrUsernameOrEmailIsTaken)
 	}
 
 	userData, err := s.service.UpdateUser(ctx, user)
 	if err != nil {
 		s.logger.Error(ctx, "update user", err)
-		return nil, status.Error(codes.Internal, errInternal)
+		return nil, status.Error(codes.Internal, ErrInternal)
 	}
 
 	resp := userToUserPb(userData)

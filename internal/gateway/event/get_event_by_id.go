@@ -4,7 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
+	pb "kudago/internal/event/api"
 	httpErrors "kudago/internal/gateway/errors"
+
 	"kudago/internal/gateway/utils"
 
 	"github.com/gorilla/mux"
@@ -28,7 +30,7 @@ func (h EventHandler) GetEventByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	event, err := h.EventService.GetEventByID(r.Context(), toIDPB(id))
+	event, err := h.EventService.GetEventByID(r.Context(), &pb.GetEventByIDRequest{ID: int32(id)})
 	if err != nil {
 		if err != nil {
 			st, ok := grpcStatus.FromError(err)

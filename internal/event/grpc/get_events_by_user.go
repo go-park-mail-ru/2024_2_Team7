@@ -14,7 +14,7 @@ func (s *ServerAPI) GetEventsByUser(ctx context.Context, req *pb.GetEventsByUser
 	eventsData, err := s.getter.GetEventsByUser(ctx, int(req.UserID), params)
 	if err != nil {
 		s.logger.Error(ctx, "get events by user", err)
-		return nil, status.Error(codes.Internal, errInternal)
+		return nil, status.Error(codes.Internal, ErrInternal)
 	}
 
 	event := writeEventsResponse(eventsData, params.Limit)
