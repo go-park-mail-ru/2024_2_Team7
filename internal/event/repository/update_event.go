@@ -18,9 +18,11 @@ const updateEventQuery = `
 		location = COALESCE($6, location), 
 		capacity = COALESCE($7, capacity), 
 		category_id = COALESCE($8, category_id), 
-		updated_at = $9
+		updated_at = $9,
+		lat = COALESCE($10, lat),
+		lon = COALESCE($11, lon)
 	WHERE id = $1
-	RETURNING id, title, description, event_start, event_finish, location, capacity, category_id, user_id
+	RETURNING id, title, description, event_start, event_finish, location, capacity, category_id, user_id, lat, lon
 `
 
 func (db *EventDB) UpdateEvent(ctx context.Context, updatedEvent models.Event) (models.Event, error) {
@@ -41,6 +43,8 @@ func (db *EventDB) UpdateEvent(ctx context.Context, updatedEvent models.Event) (
 		nilIfZero(updatedEvent.Capacity),
 		nilIfZero(updatedEvent.CategoryID),
 		time.Now(),
+		nilIfZeroFloat(updatedEvent.Latitude),
+		nilIfZeroFloat(updatedEvent.Longitude),
 	).Scan(
 		&eventInfo.ID,
 		&eventInfo.Title,
@@ -51,6 +55,8 @@ func (db *EventDB) UpdateEvent(ctx context.Context, updatedEvent models.Event) (
 		&eventInfo.Capacity,
 		&eventInfo.CategoryID,
 		&eventInfo.UserID,
+		&eventInfo.Latitude,
+		&eventInfo.Longitude,
 	)
 	if err != nil {
 		return models.Event{}, fmt.Errorf("%s: %w", models.LevelDB, err)
