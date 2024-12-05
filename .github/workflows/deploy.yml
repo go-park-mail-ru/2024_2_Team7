@@ -1,0 +1,36 @@
+name: Deploy with Commit Hash
+
+on:
+  push:
+    branches:
+      - deploy
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Get Commit Hash
+        id: vars
+        run: echo "COMMIT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Deploy to server via SSH
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "Using Commit Hash: ${{ env.COMMIT_HASH }}"
+            cd back
+            echo "Pulling latest code from deploy branch..."
+            git pull origin prometheus
+            echo "Running 'make all'..."
+            make all
+            echo "Building Docker containers with commit hash..."
+            COMMIT_HASH=${{ env.COMMIT_HASH }} docker compose build --build-arg COMMIT_HASH=${{ env.COMMIT_HASH }}
+            echo "Starting Docker containers..."
+            COMMIT_HASH=${{ env.COMMIT_HASH }} docker compose up -d
