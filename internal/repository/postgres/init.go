@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/pressly/goose/v3"
 
@@ -41,6 +42,12 @@ func InitPostgres(config PostgresConfig, logger *logger.Logger) (*pgxpool.Pool, 
 	}
 
 	dbConf.ConnConfig.Tracer = logger
+	dbConf.MaxConns = 20
+	dbConf.MinConns = 5
+	dbConf.HealthCheckPeriod = 5 * time.Minute
+	dbConf.ConnConfig.RuntimeParams["statement_timeout"] = "30000"
+	dbConf.ConnConfig.RuntimeParams["lock_timeout"] = "5000"
+
 	pool, err := pgxpool.NewWithConfig(context.Background(), dbConf)
 	if err != nil {
 		return nil, fmt.Errorf("unable to connect to db pgxpool: %v", err)
