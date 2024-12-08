@@ -6,13 +6,13 @@ import (
 	"net/http"
 
 	"kudago/cmd/user/config"
-	proto "kudago/internal/user/api"
-	grpcEvent "kudago/internal/user/grpc"
-	userRepository "kudago/internal/user/repository"
 	"kudago/internal/interceptors"
 	"kudago/internal/logger"
 	"kudago/internal/metrics"
 	"kudago/internal/repository/postgres"
+	proto "kudago/internal/user/api"
+	grpcEvent "kudago/internal/user/grpc"
+	userRepository "kudago/internal/user/repository"
 
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"

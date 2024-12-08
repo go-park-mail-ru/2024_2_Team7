@@ -52,7 +52,6 @@ func (db *EventDB) UpdateEvent(ctx context.Context, updatedEvent models.Event) (
 		&eventInfo.CategoryID,
 		&eventInfo.UserID,
 	)
-	
 	if err != nil {
 		return models.Event{}, fmt.Errorf("%s: %w", models.LevelDB, err)
 	}

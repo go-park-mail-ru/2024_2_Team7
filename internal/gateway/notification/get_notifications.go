@@ -19,7 +19,7 @@ type GetNotificationsResponse struct {
 // @Description Возвращает уведомления по идентификатору пользователя
 // @Tags notifications
 // @Produce  json
-// @Success 200 {object} GetNotificationsResponse 
+// @Success 200 {object} GetNotificationsResponse
 // @Failure 404 {object} httpErrors.HttpError "Notification Not Found"
 // @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
 // @Router /notifications [get]
@@ -43,8 +43,8 @@ func (h NotificationHandler) GetNotifications(w http.ResponseWriter, r *http.Req
 }
 
 func writeNotificationsResponse(notifications []*pb.Notification) GetNotificationsResponse {
-	layout := "2006-01-02 15:04:05 -0700 MST" 
-		response := GetNotificationsResponse{
+	layout := "2006-01-02 15:04:05 -0700 MST"
+	response := GetNotificationsResponse{
 		Notifications: make([]models.Notification, len(notifications)),
 	}
 

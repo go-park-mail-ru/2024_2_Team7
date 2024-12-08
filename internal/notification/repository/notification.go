@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+
 	"kudago/internal/models"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -62,7 +63,7 @@ func (s *NotificationDB) UpdateSentNotifications(ctx context.Context, ids []int)
 		return fmt.Errorf("%s: %w", models.LevelDB, err)
 	}
 	defer tx.Rollback(ctx)
-	
+
 	for _, id := range ids {
 		_, err = s.pool.Exec(ctx, updateSentNotificationsQuery, id)
 		if err != nil {
@@ -100,7 +101,6 @@ func (d *NotificationDB) CreateNotification(ctx context.Context, notification mo
 		notification.Message,
 		notification.NotifyAt,
 	)
-
 	if err != nil {
 		return fmt.Errorf("%s: %w", models.LevelDB, err)
 	}

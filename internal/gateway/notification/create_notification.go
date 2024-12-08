@@ -51,7 +51,8 @@ func (h NotificationHandler) CreateNotification(w http.ResponseWriter, r *http.R
 			EventID:  int32(req.EventID),
 			Message:  req.Message,
 			NotifyAt: req.NotifyAt,
-		}}
+		},
+	}
 
 	_, err = h.NotificationService.CreateNotification(r.Context(), reqPB)
 	if err != nil {
