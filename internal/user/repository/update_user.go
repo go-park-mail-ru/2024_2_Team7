@@ -8,6 +8,7 @@ import (
 )
 
 const updateUserQuery = `
+
 	UPDATE "USER"
 	SET 
 		username = COALESCE($2, username), 

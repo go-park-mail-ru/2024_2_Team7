@@ -8,6 +8,7 @@ import (
 )
 
 const createUserQuery = `
+
 	INSERT INTO "USER" (username, email, password_hash, url_to_avatar)
 	VALUES ($1, $2, $3, $4)
 	RETURNING id,  created_at`

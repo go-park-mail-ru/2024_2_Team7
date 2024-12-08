@@ -9,7 +9,8 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-const getUserByIDQuery = `SELECT id, username, email, url_to_avatar FROM "USER" WHERE id=$1`
+const getUserByIDQuery = `
+SELECT id, username, email, url_to_avatar FROM "USER" WHERE id=$1`
 
 func (d UserDB) GetUserByID(ctx context.Context, ID int) (models.User, error) {
 	var userInfo UserInfo

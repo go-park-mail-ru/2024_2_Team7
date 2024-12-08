@@ -11,6 +11,7 @@ import (
 )
 
 const getUserByEmailOrUsernameQuery = `
+
 		SELECT id 
 		FROM "USER" 
 		WHERE (username = $1 OR email = $2)`

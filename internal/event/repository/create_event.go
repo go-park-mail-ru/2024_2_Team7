@@ -8,6 +8,7 @@ import (
 )
 
 const createEventQuery = `
+
 	INSERT INTO event (title, description, event_start, event_finish, location, capacity, user_id, category_id, lat, lon)
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 	RETURNING id`

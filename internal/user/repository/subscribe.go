@@ -11,12 +11,14 @@ import (
 )
 
 const insertSubscription = `
+
 	INSERT INTO SUBSCRIPTION (subscriber_id, follows_id)
 	VALUES ($1, $2)
 	ON CONFLICT DO NOTHING`
 
 func (db *UserDB) Subscribe(ctx context.Context, subscription models.Subscription) error {
-	result, err := db.pool.Exec(ctx, insertSubscription, subscription.SubscriberID, subscription.FollowsID)
+	result, err := db.pool.Exec(ctx,
+		insertSubscription, subscription.SubscriberID, subscription.FollowsID)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {

@@ -8,6 +8,7 @@ import (
 )
 
 const getSubscriptionsQuery = `
+
 	SELECT u.id, u.username, u.email, u.url_to_avatar
 	FROM "USER" u
 	JOIN SUBSCRIPTION s ON s.follows_id = u.id

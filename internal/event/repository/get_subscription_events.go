@@ -19,7 +19,8 @@ const getSubscriptionEventsQuery = `
 	WHERE SUBSCRIPTION.subscriber_id=$1 
 	GROUP BY event.id, media_url.url
 	ORDER BY event.event_finish ASC
-	LIMIT $2 OFFSET $3`
+	LIMIT $2 OFFSET $3
+	`
 
 func (db *EventDB) GetSubscriptionEvents(ctx context.Context, userID int, paginationParams models.PaginationParams) ([]models.Event, error) {
 	rows, err := db.pool.Query(ctx, getSubscriptionEventsQuery, userID, paginationParams.Limit, paginationParams.Offset)
