@@ -11,6 +11,7 @@ import (
 )
 
 const checkCredentialsQuery = `
+
 	SELECT id, username, email, created_at, url_to_avatar
 	FROM "USER"
 	WHERE username = $1 AND password_hash = $2`

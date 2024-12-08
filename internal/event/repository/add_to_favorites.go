@@ -11,6 +11,7 @@ import (
 )
 
 const insertNewFavorite = `
+
 	INSERT INTO FAVORITE_EVENT (user_id, event_id)
 	VALUES ($1, $2)
 	ON CONFLICT DO NOTHING`

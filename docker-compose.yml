@@ -123,15 +123,32 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./internal/db/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./internal/db/create_user.sql:/docker-entrypoint-initdb.d/create_user.sql
+      - ./logs:/var/log/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER}" ]
       interval: 10s
       timeout: 5s
       retries: 5
-  redis:
-    image: redis:latest
-    ports:
-      - "6379:6379" 
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+
+  pgbadger:
+    image: pgbadger/pgbadger:latest
+    container_name: pgbadger
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    volumes:
+      - ./logs:/logs
+      - ./pgbadger-reports:/reports
+    entrypoint: >
+      sh -c "
+      while true; do
+        sleep 60;
+        pgbadger /logs/postgresql-*.log -o /reports/pgbadger-report.html;
+      done
+      "
       
   node_exporter:
     image: prom/node-exporter:latest

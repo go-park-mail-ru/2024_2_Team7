@@ -11,6 +11,7 @@ import (
 )
 
 const getEventByIDQuery = `
+
 	SELECT event.id, event.title, event.description, event.event_start, event.event_finish, 
 	event.location, event.capacity, event.created_at, event.user_id, event.category_id, event.lat, event.lon, 
 	COALESCE(array_agg(COALESCE(tag.name, '')), '{}') AS tags, media_url.url AS media_link

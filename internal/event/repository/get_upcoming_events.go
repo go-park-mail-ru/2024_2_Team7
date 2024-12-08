@@ -18,7 +18,8 @@ const selectUpcomingEventsQuery = `
 	WHERE event.event_finish >= NOW()
 	GROUP BY event.id, media_url.url
 	ORDER BY event.event_start ASC
-	LIMIT $1 OFFSET $2`
+	LIMIT $1 OFFSET $2
+	`
 
 func (db *EventDB) GetUpcomingEvents(ctx context.Context, paginationParams models.PaginationParams) ([]models.Event, error) {
 	rows, err := db.pool.Query(ctx, selectUpcomingEventsQuery, paginationParams.Limit, paginationParams.Offset)
