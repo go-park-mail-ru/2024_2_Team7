@@ -35,7 +35,7 @@ func init() {
 	})
 }
 
-func NewAuthHandlers(authServiceAddr string, imageServiceAddr string, logger *logger.Logger) (*AuthHandlers, error) {
+func NewHandlers(authServiceAddr string, imageServiceAddr string, logger *logger.Logger) (*AuthHandlers, error) {
 	authConn, err := grpc.NewClient(authServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err

@@ -63,19 +63,19 @@ services:
     volumes:
       - .:/app
 
-  # csat_service:
-  #   build:
-  #     context: .
-  #     dockerfile: ./internal/csat/Dockerfile
-  #   ports:
-  #     - "50055:50055"
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #   env_file:
-  #     - .env
-  #   volumes:
-  #     - .:/app
+  notification_service:
+    build:
+      context: .
+      dockerfile: ./internal/notification/Dockerfile
+    ports:
+      - "50056:50056"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    volumes:
+      - .:/app
 
   server_service:
     build:
@@ -91,6 +91,8 @@ services:
       event_service:
         condition: service_started
       image_service:
+        condition: service_started
+      notification_service:
         condition: service_started
     env_file:
       - .env

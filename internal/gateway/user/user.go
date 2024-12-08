@@ -27,7 +27,7 @@ type UserHandlers struct {
 	logger       *logger.Logger
 }
 
-func NewUserHandlers(userServiceAddr string, logger *logger.Logger) (*UserHandlers, error) {
+func NewHandlers(userServiceAddr string, logger *logger.Logger) (*UserHandlers, error) {
 	authConn, err := grpc.NewClient(userServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err

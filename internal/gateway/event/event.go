@@ -31,7 +31,7 @@ type EventHandler struct {
 	logger       *logger.Logger
 }
 
-func NewEventHandlers(eventServiceAddr string, imageServiceAddr string, logger *logger.Logger) (*EventHandler, error) {
+func NewHandlers(eventServiceAddr string, imageServiceAddr string, logger *logger.Logger) (*EventHandler, error) {
 	eventConn, err := grpc.NewClient(eventServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -9,7 +10,9 @@ import (
 	authHandlers "kudago/internal/gateway/auth"
 	csatHandlers "kudago/internal/gateway/csat"
 	eventHandlers "kudago/internal/gateway/event"
+	notificationHandlers "kudago/internal/gateway/notification"
 	userHandlers "kudago/internal/gateway/user"
+
 	"kudago/internal/logger"
 	"kudago/internal/metrics"
 	"kudago/internal/middleware"
@@ -27,6 +30,8 @@ import (
 // @termsOfService  http://swagger.io/terms/
 
 func main() {
+	fmt.Println("hui")
+
 	conf, err := config.LoadConfig()
 	if err != nil {
 		log.Fatalf("Failed to get config: %v", err)
@@ -38,24 +43,29 @@ func main() {
 	}
 	defer appLogger.Logger.Sync()
 
-	authHandler, err := authHandlers.NewAuthHandlers(conf.AuthServiceAddr, conf.ImageServiceAddr, appLogger)
+	authHandler, err := authHandlers.NewHandlers(conf.AuthServiceAddr, conf.ImageServiceAddr, appLogger)
 	if err != nil {
 		log.Fatalf("Failed to connect to auth service: %v", err)
 	}
 
-	userHandler, err := userHandlers.NewUserHandlers(conf.UserServiceAddr, appLogger)
+	userHandler, err := userHandlers.NewHandlers(conf.UserServiceAddr, appLogger)
 	if err != nil {
 		log.Fatalf("Failed to connect to user service: %v", err)
 	}
 
-	eventHandler, err := eventHandlers.NewEventHandlers(conf.EventServiceAddr, conf.ImageServiceAddr, appLogger)
+	eventHandler, err := eventHandlers.NewHandlers(conf.EventServiceAddr, conf.ImageServiceAddr, appLogger)
 	if err != nil {
 		log.Fatalf("Failed to connect to event service: %v", err)
 	}
 
-	csatHandler, err := csatHandlers.NewCSATHandlers(conf.CSATServiceAddr, appLogger)
+	csatHandler, err := csatHandlers.NewHandlers(conf.CSATServiceAddr, appLogger)
 	if err != nil {
 		log.Fatalf("Failed to connect to csat service: %v", err)
+	}
+
+	notificationHandler, err := notificationHandlers.NewHandlers(conf.NotificationServiceAddr, appLogger)
+	if err != nil {
+		log.Fatalf("Failed to connect to notification service: %v", err)
 	}
 
 	r := mux.NewRouter()
@@ -96,6 +106,9 @@ func main() {
 	r.HandleFunc("/events/favorites/{id:[0-9]+}", eventHandler.AddEventToFavorites).Methods(http.MethodPost)
 	r.HandleFunc("/events/favorites/{id:[0-9]+}", eventHandler.DeleteEventFromFavorites).Methods(http.MethodDelete)
 
+	r.HandleFunc("/notification", notificationHandler.GetNotifications).Methods(http.MethodGet)
+	r.HandleFunc("/notification", notificationHandler.CreateNotification).Methods(http.MethodPost)
+	fmt.Println("hui")
 	handlerWithAuth := middleware.AuthMiddleware(authHandler.AuthService, r)
 	handlerWithCORS := middleware.CORSMiddleware(handlerWithAuth)
 	handlerWithLogging := middleware.LoggingMiddleware(handlerWithCORS, appLogger.Logger)

@@ -114,7 +114,6 @@ const getStatsQuery = `
 	LEFT JOIN  ANSWERS a ON q.id = a.question_id
 	GROUP BY   q.id, q.question
 	ORDER BY  q.id;
-
 `
 
 func (db *CSATDB) GetStatistics(ctx context.Context) ([]models.Stats, error) {

@@ -2,6 +2,8 @@ package config
 
 import (
 	"errors"
+	"fmt"
+	"log"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -12,12 +14,13 @@ const (
 )
 
 type Config struct {
-	Port             string
-	AuthServiceAddr  string
-	UserServiceAddr  string
-	EventServiceAddr string
-	ImageServiceAddr string
-	CSATServiceAddr  string
+	Port                    string
+	AuthServiceAddr         string
+	UserServiceAddr         string
+	EventServiceAddr        string
+	ImageServiceAddr        string
+	CSATServiceAddr         string
+	NotificationServiceAddr string
 }
 
 func LoadConfig() (Config, error) {
@@ -57,5 +60,12 @@ func LoadConfig() (Config, error) {
 	if conf.CSATServiceAddr == "" {
 		return Config{}, errors.New("Failed to get csat service address")
 	}
+	log.Println("hui")
+	conf.NotificationServiceAddr = os.Getenv("NOTIFICATION_SERVICE_ADDR")
+	fmt.Println(conf)
+	if conf.NotificationServiceAddr == "" {
+		return Config{}, errors.New("Failed to get notification service address")
+	}
+
 	return conf, nil
 }

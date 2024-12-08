@@ -309,32 +309,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/events/my": {
-            "get": {
-                "description": "Возвращает события пользователя",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "events"
-                ],
-                "summary": "Получение событий пользователя",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/events.GetEventsResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/httpErrors.HttpError"
-                        }
-                    }
-                }
-            }
-        },
         "/events/subscription": {
             "get": {
                 "description": "Возвращает события пользователя",
@@ -356,6 +330,32 @@ const docTemplate = `{
                         "description": "Status forbidden",
                         "schema": {
                             "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpErrors.HttpError"
+                        }
+                    }
+                }
+            }
+        },
+        "/events/user/{id}": {
+            "get": {
+                "description": "Возвращает события пользователя",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "events"
+                ],
+                "summary": "Получение событий пользователя",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/events.GetEventsResponse"
                         }
                     },
                     "500": {
@@ -513,40 +513,25 @@ const docTemplate = `{
                 }
             }
         },
-        "/login": {
-            "post": {
-                "description": "Авторизует пользователя",
-                "consumes": [
-                    "application/json"
-                ],
+        "/notifications": {
+            "get": {
+                "description": "Возвращает уведомления по идентификатору пользователя",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "auth"
+                    "notifications"
                 ],
-                "summary": "Авторизация пользователя",
+                "summary": "Получение уведомлений по ID пользователя",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/auth.UserResponse"
+                            "$ref": "#/definitions/handlers.GetNotificationsResponse"
                         }
                     },
-                    "400": {
-                        "description": "Wrong Credentials",
-                        "schema": {
-                            "$ref": "#/definitions/httpErrors.HttpError"
-                        }
-                    },
-                    "401": {
-                        "description": "Validation error",
-                        "schema": {
-                            "$ref": "#/definitions/utils.ValidationErrResponse"
-                        }
-                    },
-                    "403": {
-                        "description": "User is alredy logged in",
+                    "404": {
+                        "description": "Notification Not Found",
                         "schema": {
                             "$ref": "#/definitions/httpErrors.HttpError"
                         }
@@ -558,21 +543,36 @@ const docTemplate = `{
                         }
                     }
                 }
-            }
-        },
-        "/logout": {
+            },
             "post": {
-                "description": "Выход из аккаунта",
-                "tags": [
-                    "auth"
+                "description": "Создание уведомления",
+                "consumes": [
+                    "application/json"
                 ],
-                "summary": "Выход из системы",
+                "tags": [
+                    "notifications"
+                ],
+                "summary": "Создание уведомления",
+                "parameters": [
+                    {
+                        "description": "Данные для создания уведомления",
+                        "name": "json",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handlers.CreateNotificationRequest"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "Notification created successfully",
+                        "schema": {
+                            "type": "string"
+                        }
                     },
-                    "403": {
-                        "description": "Forbidden",
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/httpErrors.HttpError"
                         }
@@ -580,7 +580,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/profile": {
+        "/profile/{id}": {
             "get": {
                 "description": "Возвращает информацию о профиле текущего пользователя",
                 "tags": [
@@ -591,7 +591,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/auth.ProfileResponse"
+                            "$ref": "#/definitions/handlers.ProfileResponse"
                         }
                     },
                     "401": {
@@ -601,155 +601,18 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
-            "put": {
-                "description": "Позволяет пользователю обновить свой профиль, включая аватарку. Для этого необходимо передать JSON-объект с полями ` + "`" + `username` + "`" + ` и ` + "`" + `email` + "`" + `, а также загрузить новый файл изображения.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "profile"
-                ],
-                "summary": "Обновление информации о профиле пользователя",
-                "parameters": [
-                    {
-                        "description": "Данные для обновления профиля",
-                        "name": "json",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/auth.UpdateRequest"
-                        }
-                    },
-                    {
-                        "type": "file",
-                        "description": "Аватарка пользователя",
-                        "name": "image",
-                        "in": "formData"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Успешное обновление профиля",
-                        "schema": {
-                            "$ref": "#/definitions/auth.ProfileResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Неверные данные",
-                        "schema": {
-                            "$ref": "#/definitions/httpErrors.HttpError"
-                        }
-                    },
-                    "401": {
-                        "description": "Не авторизован",
-                        "schema": {
-                            "$ref": "#/definitions/httpErrors.HttpError"
-                        }
-                    },
-                    "404": {
-                        "description": "Пользователь не найден",
-                        "schema": {
-                            "$ref": "#/definitions/httpErrors.HttpError"
-                        }
-                    },
-                    "409": {
-                        "description": "Конфликт данных, пользователь с таким email или именем уже существует",
-                        "schema": {
-                            "$ref": "#/definitions/httpErrors.HttpError"
-                        }
-                    }
-                }
-            }
-        },
-        "/register": {
-            "post": {
-                "description": "Создает нового пользователя. Необходимо передать JSON-объект с полями ` + "`" + `username` + "`" + `, ` + "`" + `email` + "`" + ` и ` + "`" + `password` + "`" + `. Если пользователь уже авторизован, запрос будет отклонен.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "auth"
-                ],
-                "summary": "Регистрация пользователя",
-                "parameters": [
-                    {
-                        "description": "Данные для регистрации пользователя",
-                        "name": "json",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/auth.RegisterRequest"
-                        }
-                    },
-                    {
-                        "type": "file",
-                        "description": "Аватарка пользователя",
-                        "name": "image",
-                        "in": "formData"
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Успешная регистрация пользователя",
-                        "schema": {
-                            "$ref": "#/definitions/auth.AuthResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Неверные данные / Имя пользователя или электронная почта уже заняты",
-                        "schema": {
-                            "$ref": "#/definitions/httpErrors.HttpError"
-                        }
-                    },
-                    "401": {
-                        "description": "Ошибка валидации",
-                        "schema": {
-                            "$ref": "#/definitions/utils.ValidationErrResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Внутренняя ошибка сервера",
-                        "schema": {
-                            "$ref": "#/definitions/httpErrors.HttpError"
-                        }
-                    }
-                }
-            }
-        },
-        "/session": {
-            "get": {
-                "description": "Возвращает информацию о пользователе, если сессия активна",
-                "tags": [
-                    "auth"
-                ],
-                "summary": "Проверка сессии",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/auth.AuthResponse"
-                        }
-                    }
-                }
             }
         },
         "/users/subscribe/{id}": {
             "post": {
-                "description": "Отписаться от пользователя пользователя",
+                "description": "Подписка на пользователя",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Отписаться от  пользователя",
+                "summary": "Подписка на пользователя",
                 "responses": {
                     "200": {
                         "description": "OK"
@@ -761,7 +624,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "Not found",
+                        "description": "Invalid ID",
                         "schema": {
                             "$ref": "#/definitions/httpErrors.HttpError"
                         }
@@ -783,76 +646,15 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "auth.AuthResponse": {
-            "type": "object",
-            "properties": {
-                "user": {
-                    "$ref": "#/definitions/auth.UserResponse"
-                }
-            }
-        },
-        "auth.ProfileResponse": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "image": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
-                }
-            }
-        },
-        "auth.RegisterRequest": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
-                }
-            }
-        },
-        "auth.UpdateRequest": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
-                }
-            }
-        },
-        "auth.UserResponse": {
-            "type": "object",
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "image": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
-                }
-            }
-        },
         "events.EventResponse": {
             "type": "object",
             "properties": {
+                "Latitude": {
+                    "type": "number"
+                },
+                "Longitude": {
+                    "type": "number"
+                },
                 "author": {
                     "type": "integer"
                 },
@@ -905,6 +707,12 @@ const docTemplate = `{
         "events.NewEventRequest": {
             "type": "object",
             "properties": {
+                "Latitude": {
+                    "type": "number"
+                },
+                "Longitude": {
+                    "type": "number"
+                },
                 "capacity": {
                     "type": "integer"
                 },
@@ -942,6 +750,51 @@ const docTemplate = `{
                 }
             }
         },
+        "handlers.CreateNotificationRequest": {
+            "type": "object",
+            "properties": {
+                "event_id": {
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "notify_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "handlers.GetNotificationsResponse": {
+            "type": "object",
+            "properties": {
+                "notifications": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/models.Notification"
+                    }
+                }
+            }
+        },
+        "handlers.ProfileResponse": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "image": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
         "httpErrors.HttpError": {
             "type": "object",
             "properties": {
@@ -949,17 +802,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "models.AuthError": {
-            "type": "object",
-            "properties": {
-                "error": {
-                    "type": "string"
-                },
-                "field": {
                     "type": "string"
                 }
             }
@@ -975,14 +817,23 @@ const docTemplate = `{
                 }
             }
         },
-        "utils.ValidationErrResponse": {
+        "models.Notification": {
             "type": "object",
             "properties": {
-                "errors": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/models.AuthError"
-                    }
+                "event_id": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "notify_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
                 }
             }
         }

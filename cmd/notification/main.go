@@ -5,18 +5,18 @@ import (
 	"net"
 	"net/http"
 
-	"kudago/cmd/user/config"
-	proto "kudago/internal/user/api"
-	grpcEvent "kudago/internal/user/grpc"
-	userRepository "kudago/internal/user/repository"
-	"kudago/internal/interceptors"
+	"kudago/cmd/notification/config"
 	"kudago/internal/logger"
 	"kudago/internal/metrics"
 	"kudago/internal/repository/postgres"
 
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"kudago/internal/interceptors"
+	proto "kudago/internal/notification/api"
+	grpcUser "kudago/internal/notification/grpc"
+	notificationRepository "kudago/internal/notification/repository"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 )
 
@@ -40,28 +40,28 @@ func main() {
 
 	listener, err := net.Listen("tcp", conf.ServiceAddr)
 	if err != nil {
-		log.Fatalf("Не удалось запустить gRPC-сервер user: %v", err)
+		log.Fatalf("Не удалось запустить gRPC-сервер notification: %v", err)
 	}
 
-	userDB := userRepository.NewDB(pool)
+	notificationDB := notificationRepository.NewDB(pool)
+
+	notificationServer := grpcUser.NewServerAPI(notificationDB, appLogger)
+
 	metrics.InitMetrics()
 
 	grpc_prometheus.EnableHandlingTimeHistogram()
 	grpcServer := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
-			interceptors.MetricsUnaryInterceptor("user_service"),
+			interceptors.MetricsUnaryInterceptor("notification_service"),
 			interceptors.PanicRecoveryInterceptor,
 		),
 	)
 
-	userServer := grpcEvent.NewServerAPI(userDB, appLogger)
-	proto.RegisterUserServiceServer(grpcServer, userServer)
-
-	grpc_prometheus.Register(grpcServer)
+	proto.RegisterNotificationServiceServer(grpcServer, notificationServer)
 
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
-		metricsAddr := ":9092"
+		metricsAddr := ":9096"
 		log.Printf("Метрики доступны на %s/metrics", metricsAddr)
 		if err := http.ListenAndServe(metricsAddr, nil); err != nil {
 			log.Fatalf("Не удалось запустить HTTP-сервер для метрик: %v", err)

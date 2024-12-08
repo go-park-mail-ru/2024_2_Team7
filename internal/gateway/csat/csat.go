@@ -21,7 +21,7 @@ type CSATHandlers struct {
 	logger      *logger.Logger
 }
 
-func NewCSATHandlers(csatServiceAddr string, logger *logger.Logger) (*CSATHandlers, error) {
+func NewHandlers(csatServiceAddr string, logger *logger.Logger) (*CSATHandlers, error) {
 	csatConn, err := grpc.NewClient(csatServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
