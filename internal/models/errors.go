@@ -37,6 +37,10 @@ var (
 		Field:   "username",
 		Message: "user already exists",
 	}
+	ErrInvalidPassword = &AuthError{
+		Field:   "password",
+		Message: "wrong password or login",
+	}
 )
 
 func (e AuthError) Error() string {
