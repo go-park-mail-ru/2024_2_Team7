@@ -2,7 +2,6 @@ package config
 
 import (
 	"errors"
-	"fmt"
 	"os"
 
 	"kudago/internal/repository/postgres"
@@ -33,6 +32,5 @@ func LoadConfig() (Config, error) {
 		return Config{}, errors.New("Failed to get service address")
 	}
 
-	fmt.Println(conf)
 	return conf, nil
 }

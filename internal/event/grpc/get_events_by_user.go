@@ -17,7 +17,7 @@ func (s *ServerAPI) GetEventsByUser(ctx context.Context, req *pb.GetEventsByUser
 		return nil, status.Error(codes.Internal, ErrInternal)
 	}
 
-	event := writeEventsResponse(eventsData, params.Limit)
+	resp := writeEventsResponse(eventsData, params.Limit)
 
-	return event, nil
+	return resp, nil
 }

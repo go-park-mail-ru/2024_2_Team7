@@ -22,7 +22,7 @@ import (
 // @Failure 404 {object} httpErrors.HttpError "Invalid ID"
 // @Failure 409 {object} httpErrors.HttpError "Self subscription"
 // @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
-// @Router /users/subscribe/{id} [post]
+// @Router /profile/subscribe/{id} [post]
 func (h *UserHandlers) Subscribe(w http.ResponseWriter, r *http.Request) {
 	session, ok := utils.GetSessionFromContext(r.Context())
 	if !ok {

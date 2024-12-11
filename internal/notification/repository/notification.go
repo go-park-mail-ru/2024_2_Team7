@@ -57,15 +57,15 @@ const updateSentNotificationsQuery = `
     WHERE id = $1
 `
 
-func (s *NotificationDB) UpdateSentNotifications(ctx context.Context, ids []int) error {
-	tx, err := s.pool.Begin(ctx)
+func (db *NotificationDB) UpdateSentNotifications(ctx context.Context, ids []int) error {
+	tx, err := db.pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("%s: %w", models.LevelDB, err)
 	}
 	defer tx.Rollback(ctx)
 
 	for _, id := range ids {
-		_, err = s.pool.Exec(ctx, updateSentNotificationsQuery, id)
+		_, err = db.pool.Exec(ctx, updateSentNotificationsQuery, id)
 		if err != nil {
 			return fmt.Errorf("%s: %w", models.LevelDB, err)
 		}
@@ -94,13 +94,40 @@ const createNotificationQuery = `
 	VALUES ($1, $2, $3, $4)
 	`
 
-func (d *NotificationDB) CreateNotification(ctx context.Context, notification models.Notification) error {
-	_, err := d.pool.Exec(ctx, createNotificationQuery,
+func (db *NotificationDB) CreateNotification(ctx context.Context, notification models.Notification) error {
+	_, err := db.pool.Exec(ctx, createNotificationQuery,
 		notification.UserID,
 		notification.EventID,
 		notification.Message,
 		notification.NotifyAt,
 	)
+	if err != nil {
+		return fmt.Errorf("%s: %w", models.LevelDB, err)
+	}
+
+	return nil
+}
+
+const createNotificationsByUserIDsQuery = `
+	INSERT INTO NOTIFICATION (user_id, event_id, message, notify_at)
+	VALUES ($1, $2, $3, $4)
+	`
+
+func (db *NotificationDB) CreateNotificationsByUserIDs(ctx context.Context, ids []int, ntf models.Notification) error {
+	tx, err := db.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("%s: %w", models.LevelDB, err)
+	}
+	defer tx.Rollback(ctx)
+
+	for _, id := range ids {
+		_, err = db.pool.Exec(ctx, createNotificationsByUserIDsQuery, id, ntf.EventID, ntf.Message, ntf.NotifyAt)
+		if err != nil {
+			return fmt.Errorf("%s: %w", models.LevelDB, err)
+		}
+	}
+
+	err = tx.Commit(ctx)
 	if err != nil {
 		return fmt.Errorf("%s: %w", models.LevelDB, err)
 	}

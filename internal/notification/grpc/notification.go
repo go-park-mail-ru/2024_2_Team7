@@ -1,9 +1,11 @@
-//go:generate mockgen -source=csat.go -destination=mocks/csat.go -package=mocks
+//go:generate mockgen -source=notification.go -destination=mocks/notification.go -package=mocks
 
 package grpc
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"kudago/internal/logger"
@@ -15,6 +17,7 @@ import (
 )
 
 const (
+	layout      = "2006-01-02 15:04:05.999999999 -0700 MST"
 	errInternal = "internal error"
 )
 
@@ -27,6 +30,7 @@ type ServerAPI struct {
 type NotificationService interface {
 	GetNotifications(ctx context.Context, userID int) ([]models.Notification, error)
 	CreateNotification(ctx context.Context, notification models.Notification) error
+	CreateNotificationsByUserIDs(ctx context.Context, ids []int, ntf models.Notification) error
 	DeleteNotification(ctx context.Context, ID int) error
 }
 
@@ -37,13 +41,43 @@ func NewServerAPI(service NotificationService, logger *logger.Logger) *ServerAPI
 	}
 }
 
-func (s *ServerAPI) CreateNotification(ctx context.Context, req *pb.CreateNotificationRequest) (*pb.Empty, error) {
-	notification := toNotificationModel(req.Notification)
-	err := s.service.CreateNotification(ctx, notification)
+func (s *ServerAPI) CreateInvitationNotification(ctx context.Context, req *pb.Notification) (*pb.Empty, error) {
+	notifyAt, _ := time.Parse(layout, req.NotifyAt)
+
+	ntf := models.Notification{
+		UserID:   int(req.UserID),
+		EventID:  int(req.EventID),
+		NotifyAt: notifyAt,
+		Message:  req.Message,
+	}
+
+	err := s.service.CreateNotification(ctx, ntf)
 	if err != nil {
 		s.logger.Error(ctx, "create notification", err)
 		return nil, status.Error(codes.Internal, errInternal)
 	}
+	return nil, nil
+}
+
+func (s *ServerAPI) CreateNotifications(ctx context.Context, req *pb.CreateNotificationsRequest) (*pb.Empty, error) {
+	ids := make([]int, 0, len(req.UserIDs))
+	for _, id := range req.UserIDs {
+		ids = append(ids, int(id))
+	}
+
+	cleanTime := strings.Split(req.Notification.NotifyAt, " m=")[0]
+	notifyAt, _ := time.Parse(layout, cleanTime)
+	ntf := models.Notification{
+		EventID:  int(req.Notification.EventID),
+		NotifyAt: notifyAt,
+		Message:  req.Notification.Message,
+	}
+
+	if err := s.service.CreateNotificationsByUserIDs(ctx, ids, ntf); err != nil {
+		s.logger.Error(ctx, "create notification by user ids", err)
+		return nil, status.Error(codes.Internal, errInternal)
+	}
+	fmt.Println(req, ntf)
 	return nil, nil
 }
 

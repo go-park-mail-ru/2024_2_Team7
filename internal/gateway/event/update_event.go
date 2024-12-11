@@ -1,28 +1,21 @@
 package events
 
 import (
+	"context"
 	"net/http"
 	"strconv"
+	"time"
 
+	pbEvent "kudago/internal/event/api"
 	httpErrors "kudago/internal/gateway/errors"
 	"kudago/internal/gateway/utils"
+	pbNtf "kudago/internal/notification/api"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/gorilla/mux"
 	grpcCodes "google.golang.org/grpc/codes"
 	grpcStatus "google.golang.org/grpc/status"
 )
-
-type UpdateEventRequest struct {
-	Title       string   `json:"title" valid:"length(3|100)"`
-	Description string   `json:"description" valid:"length(3|1000)"`
-	Location    string   `json:"location" valid:"length(3|100)"`
-	Category    int      `json:"category_id" valid:"range(1|8)"`
-	Capacity    int      `json:"capacity" valid:"range(0|20000)"`
-	Tag         []string `json:"tag"`
-	EventStart  string   `json:"event_start" valid:"rfc3339"`
-	EventEnd    string   `json:"event_end" valid:"rfc3339"`
-}
 
 // UpdateEvent обновляет данные существующего события.
 // @Summary Обновление события
@@ -104,9 +97,40 @@ func (h EventHandler) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err = h.sendUpdateNotifications(r.Context(), int(event.ID))
+	if err != nil {
+		h.logger.Error(r.Context(), "send update notifications", err)
+	}
+
 	eventResp := eventToEventResponse(event)
 	resp := NewEventResponse{
 		Event: eventResp,
 	}
 	utils.WriteResponse(w, http.StatusOK, resp)
+}
+
+func (h EventHandler) sendUpdateNotifications(ctx context.Context, eventID int) error {
+	idsResp, err := h.EventService.GetUserIDsByFavoriteEvent(ctx, &pbEvent.GetUserIDsByFavoriteEventRequest{ID: int32(eventID)})
+	if err != nil {
+		return err
+	}
+
+	req := &pbNtf.CreateNotificationsRequest{
+		UserIDs: make([]int32, len(idsResp.IDs)),
+		Notification: &pbNtf.Notification{
+			Message:  UpdatedEventMsg,
+			NotifyAt: time.Now().String(),
+			EventID:  int32(eventID),
+		},
+	}
+
+	for _, id := range idsResp.IDs {
+		req.UserIDs = append(req.UserIDs, int32(id))
+	}
+
+	_, err = h.NotificationService.CreateNotifications(ctx, req)
+	if err != nil {
+		return err
+	}
+	return nil
 }

@@ -43,6 +43,9 @@ type EventsGetter interface {
 	GetEventByID(ctx context.Context, ID int) (models.Event, error)
 	GetFavorites(ctx context.Context, userID int, paginationParams models.PaginationParams) ([]models.Event, error)
 	GetSubscriptionEvents(ctx context.Context, userID int, paginationParams models.PaginationParams) ([]models.Event, error)
+	GetUserIDsByFavoriteEvent(ctx context.Context, eventID int) ([]int, error)
+	GetEventsByIDs(ctx context.Context, ids []int) ([]models.Event, error)
+	GetSubscribersIDs(ctx context.Context, id int) ([]int, error)
 }
 
 func NewServerAPI(service EventService, getter EventsGetter, logger *logger.Logger) *ServerAPI {

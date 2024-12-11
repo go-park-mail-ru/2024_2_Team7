@@ -13,6 +13,16 @@ import (
 	grpcStatus "google.golang.org/grpc/status"
 )
 
+// @Summary Отписаться от пользователя
+// @Description Отписаться от пользователя
+// @Tags auth
+// @Produce  json
+// @Success 200
+// @Failure 401 {object} httpErrors.HttpError "Unauthorized"
+// @Failure 404 {object} httpErrors.HttpError "Invalid ID"
+// @Failure 409 {object} httpErrors.HttpError "No subscription"
+// @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
+// @Router /profile/subscribe/{id} [delete]
 func (h *UserHandlers) Unsubscribe(w http.ResponseWriter, r *http.Request) {
 	session, ok := utils.GetSessionFromContext(r.Context())
 	if !ok {

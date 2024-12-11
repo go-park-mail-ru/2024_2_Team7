@@ -1,8 +1,10 @@
-package handlers
+//go:generate easyjson create_invitation_notification.go
+package events
 
 import (
-	"encoding/json"
+	"io"
 	"net/http"
+	"time"
 
 	httpErrors "kudago/internal/gateway/errors"
 	"kudago/internal/gateway/utils"
@@ -11,11 +13,10 @@ import (
 	"github.com/asaskevich/govalidator"
 )
 
-type CreateNotificationRequest struct {
-	UserID   int    `json:"user_id" valid:"range(1|20000)"`
-	EventID  int    `json:"event_id" valid:"range(1|20000)"`
-	Message  string `json:"message" valid:"required,length(3|1000)"`
-	NotifyAt string `json:"notify_at" valid:"rfc3339,required"`
+//easyjson:json
+type InviteNotificationRequest struct {
+	UserID  int `json:"user_id" valid:"range(1|20000)"`
+	EventID int `json:"event_id" valid:"range(1|20000)"`
 }
 
 // @Summary Создание уведомления
@@ -26,35 +27,42 @@ type CreateNotificationRequest struct {
 // @Success 200 {object} string "Notification created successfully"
 // @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
 // @Router /notifications [post]
-func (h NotificationHandler) CreateNotification(w http.ResponseWriter, r *http.Request) {
+func (h EventHandler) CreateInvitationNotification(w http.ResponseWriter, r *http.Request) {
 	_, ok := utils.GetSessionFromContext(r.Context())
 	if !ok {
 		utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrUnauthorized)
 		return
 	}
 
-	var req CreateNotificationRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
+		return
+	}
+	defer r.Body.Close()
+
+	req := InviteNotificationRequest{}
+	if err := req.UnmarshalJSON(body); err != nil {
 		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
 		return
 	}
 
-	_, err := govalidator.ValidateStruct(&req)
+	_, err = govalidator.ValidateStruct(&req)
 	if err != nil {
 		utils.ProcessValidationErrors(w, err)
 		return
 	}
 
-	reqPB := &pb.CreateNotificationRequest{
+	reqPB := &pb.CreateNotificationsRequest{
+		UserIDs: []int32{int32(req.UserID)},
 		Notification: &pb.Notification{
-			UserID:   int32(req.UserID),
+			Message:  InvitationMsg,
+			NotifyAt: time.Now().String(),
 			EventID:  int32(req.EventID),
-			Message:  req.Message,
-			NotifyAt: req.NotifyAt,
 		},
 	}
 
-	_, err = h.NotificationService.CreateNotification(r.Context(), reqPB)
+	_, err = h.NotificationService.CreateNotifications(r.Context(), reqPB)
 	if err != nil {
 		h.logger.Error(r.Context(), "create notification", err)
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)

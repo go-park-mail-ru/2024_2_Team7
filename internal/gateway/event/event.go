@@ -1,3 +1,4 @@
+//go:generate easyjson event.go
 package events
 
 import (
@@ -12,6 +13,7 @@ import (
 	"kudago/internal/gateway/utils"
 	pbImage "kudago/internal/image/api"
 	"kudago/internal/logger"
+	pbNotification "kudago/internal/notification/api"
 
 	"kudago/internal/models"
 
@@ -20,18 +22,22 @@ import (
 )
 
 const (
-	defaultPage   = 0
-	defaultLimit  = 30
-	maxUploadSize = 10 * 1024 * 1024 // 10Mb
+	defaultPage     = 0
+	defaultLimit    = 30
+	maxUploadSize   = 10 * 1024 * 1024 // 10Mb
+	UpdatedEventMsg = "Информация о событии обновилась. Посмотреть тут:"
+	CreatedEventMsg = "У вас новое мероприятие в подписках! . Посмотреть тут:"
+	InvitationMsg   = "Вас пригласили на новое мероприятие: "
 )
 
 type EventHandler struct {
-	EventService pbEvent.EventServiceClient
-	ImageService pbImage.ImageServiceClient
-	logger       *logger.Logger
+	EventService        pbEvent.EventServiceClient
+	ImageService        pbImage.ImageServiceClient
+	NotificationService pbNotification.NotificationServiceClient
+	logger              *logger.Logger
 }
 
-func NewHandlers(eventServiceAddr string, imageServiceAddr string, logger *logger.Logger) (*EventHandler, error) {
+func NewHandlers(eventServiceAddr string, imageServiceAddr string, notificationServiceAddr string, logger *logger.Logger) (*EventHandler, error) {
 	eventConn, err := grpc.NewClient(eventServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
@@ -42,15 +48,22 @@ func NewHandlers(eventServiceAddr string, imageServiceAddr string, logger *logge
 		return nil, err
 	}
 
+	notificationConn, err := grpc.NewClient(notificationServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, err
+	}
+
 	return &EventHandler{
-		EventService: pbEvent.NewEventServiceClient(eventConn),
-		ImageService: pbImage.NewImageServiceClient(imageConn),
-		logger:       logger,
+		EventService:        pbEvent.NewEventServiceClient(eventConn),
+		ImageService:        pbImage.NewImageServiceClient(imageConn),
+		NotificationService: pbNotification.NewNotificationServiceClient(notificationConn),
+		logger:              logger,
 	}, nil
 }
 
 var maxDate = time.Date(2030, 12, 31, 0, 0, 0, 0, time.UTC)
 
+//easyjson:json
 type EventResponse struct {
 	ID          int      `json:"id"`
 	Title       string   `json:"title"`
@@ -67,10 +80,12 @@ type EventResponse struct {
 	Longitude   float64  `json:"Longitude"`
 }
 
+//easyjson:json
 type GetEventsResponse struct {
 	Events []EventResponse `json:"events"`
 }
 
+//easyjson:json
 type NewEventRequest struct {
 	Title       string   `json:"title" valid:"required,length(3|100)"`
 	Description string   `json:"description" valid:"required,length(3|1000)" `
@@ -84,6 +99,7 @@ type NewEventRequest struct {
 	Longitude   float64  `json:"Longitude"`
 }
 
+//easyjson:json
 type NewEventResponse struct {
 	Event EventResponse `json:"event"`
 }

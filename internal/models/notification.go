@@ -1,7 +1,9 @@
+//go:generate easyjson notification.go
 package models
 
 import "time"
 
+//easyjson:json
 type Notification struct {
 	ID       int       `json:"id"`
 	UserID   int       `json:"user_id"`

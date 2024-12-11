@@ -6,9 +6,8 @@ package notification;
 
 service NotificationService {
     rpc GetNotifications (GetNotificationsRequest) returns (GetNotificationsResponse);  
-    rpc CreateNotification (CreateNotificationRequest) returns (Empty);  
+    rpc CreateNotifications (CreateNotificationsRequest) returns (Empty);  
     rpc DeleteNotification (DeleteNotificationRequest) returns (Empty);  
-
     }
 
     message GetNotificationsRequest {
@@ -27,12 +26,14 @@ service NotificationService {
         string notifyAt = 5;
     }
 
-    message CreateNotificationRequest {
-        Notification notification = 1;
-    }
-
+ 
     message DeleteNotificationRequest {
         int32 id = 1;
+    }
+
+    message CreateNotificationsRequest {
+        repeated int32 UserIDs = 1;
+        Notification notification = 2;
     }
 
     message Empty{}

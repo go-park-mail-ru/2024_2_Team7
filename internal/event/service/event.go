@@ -1,6 +1,6 @@
 package service
 
-//go:generate mockgen -source ./events.go -destination=./mocks/events.go -package=mocks
+//go:generate mockgen -source ./event.go -destination=./mocks/events.go -package=mocks
 
 import (
 	"context"

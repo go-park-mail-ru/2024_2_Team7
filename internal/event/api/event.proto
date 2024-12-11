@@ -19,12 +19,31 @@ service EventService {
     rpc GetSubscriptionsEvents(GetSubscriptionsRequest) returns(Events);
     rpc UpdateEvent(Event) returns(Event);
     rpc SearchEvents(SearchParams) returns(Events);
+    rpc GetUserIDsByFavoriteEvent(GetUserIDsByFavoriteEventRequest) returns(GetUserIDsResponse);
+    rpc GetEventsByIDs(GetEventsByIDsRequest) returns(Events);
+    rpc GetSubscribersIDs(GetSubscribersIDsRequest) returns(GetUserIDsResponse);
+
     }
 
     message GetEventByIDRequest {
         int32 ID = 1;
     }
 
+    message GetSubscribersIDsRequest {
+        int32 UserID = 1;
+    }
+
+    message GetEventsByIDsRequest {
+        repeated int32 IDs = 1;
+    }
+
+    message GetUserIDsByFavoriteEventRequest {
+        int32 ID = 1;
+    }
+
+    message GetUserIDsResponse {
+       repeated int32 IDs = 1;
+    }
 
     message GetSubscriptionsRequest {
         int32 ID = 1;
