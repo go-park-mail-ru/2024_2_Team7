@@ -3,7 +3,6 @@ package events
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"strconv"
 	"time"
@@ -22,9 +21,9 @@ import (
 )
 
 const (
-	defaultPage     = 0
-	defaultLimit    = 30
-	maxUploadSize   = 10 * 1024 * 1024 // 10Mb
+	defaultPage  = 0
+	defaultLimit = 30
+
 	UpdatedEventMsg = "Информация о событии обновилась. Посмотреть тут:"
 	CreatedEventMsg = "У вас новое мероприятие в подписках! . Посмотреть тут:"
 	InvitationMsg   = "Вас пригласили на новое мероприятие: "
@@ -81,6 +80,12 @@ type EventResponse struct {
 }
 
 //easyjson:json
+type InviteNotificationRequest struct {
+	UserID  int `json:"user_id" valid:"range(1|20000)"`
+	EventID int `json:"event_id" valid:"range(1|20000)"`
+}
+
+//easyjson:json
 type GetEventsResponse struct {
 	Events []EventResponse `json:"events"`
 }
@@ -102,6 +107,22 @@ type NewEventRequest struct {
 //easyjson:json
 type NewEventResponse struct {
 	Event EventResponse `json:"event"`
+}
+
+//easyjson:json
+type GetNotificationsResponse struct {
+	Notifications []NotificationWithEvent `json:"notifications"`
+}
+
+//easyjson:json
+type NotificationWithEvent struct {
+	Notification models.Notification `json:"notification"`
+	Event        models.Event        `json:"event"`
+}
+
+//easyjson:json
+type GetCategoriesResponse struct {
+	Categories []models.Category `json:"categories"`
 }
 
 func checkNewEventRequest(req NewEventRequest) *httpErrors.HttpError {
@@ -139,7 +160,7 @@ func checkNewEventRequest(req NewEventRequest) *httpErrors.HttpError {
 func parseEventData(r *http.Request) (NewEventRequest, *pbImage.UploadRequest, *httpErrors.HttpError) {
 	var req NewEventRequest
 	jsonData := r.FormValue("json")
-	err := json.Unmarshal([]byte(jsonData), &req)
+	err := req.UnmarshalJSON([]byte(jsonData))
 	if err != nil {
 		return req, nil, httpErrors.ErrInvalidData
 	}

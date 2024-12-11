@@ -32,6 +32,7 @@ type NotificationService interface {
 	CreateNotification(ctx context.Context, notification models.Notification) error
 	CreateNotificationsByUserIDs(ctx context.Context, ids []int, ntf models.Notification) error
 	DeleteNotification(ctx context.Context, ID int) error
+	UpdateSentNotifications(ctx context.Context, IDs []int) error
 }
 
 func NewServerAPI(service NotificationService, logger *logger.Logger) *ServerAPI {
@@ -86,6 +87,15 @@ func (s *ServerAPI) GetNotifications(ctx context.Context, req *pb.GetNotificatio
 	if err != nil {
 		s.logger.Error(ctx, "get notifications", err)
 		return nil, status.Error(codes.Internal, errInternal)
+	}
+
+	var ids []int
+	for _, n := range notifications {
+		ids = append(ids, n.EventID)
+	}
+	err = s.service.UpdateSentNotifications(ctx, ids)
+	if err != nil {
+		return nil, err
 	}
 
 	resp := toGetNotificationsResponse(notifications)

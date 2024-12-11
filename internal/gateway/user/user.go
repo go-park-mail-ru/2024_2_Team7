@@ -1,3 +1,4 @@
+//go:generate easyjson user.go
 package handlers
 
 import (
@@ -39,10 +40,20 @@ func NewHandlers(userServiceAddr string, logger *logger.Logger) (*UserHandlers, 
 	}, nil
 }
 
+//easyjson:json
 type AuthResponse struct {
 	User UserResponse `json:"user"`
 }
 
+//easyjson:json
+type ProfileResponse struct {
+	ID       int    `json:"id"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	ImageURL string `json:"image"`
+}
+
+//easyjson:json
 type UserResponse struct {
 	ID       int    `json:"id"`
 	Username string `json:"username"`
@@ -50,6 +61,7 @@ type UserResponse struct {
 	ImageURL string `json:"image"`
 }
 
+//easyjson:json
 type GetUsersResponse struct {
 	Users []UserResponse `json:"users"`
 }

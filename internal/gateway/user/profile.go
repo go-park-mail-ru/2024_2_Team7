@@ -14,13 +14,6 @@ import (
 	grpcStatus "google.golang.org/grpc/status"
 )
 
-type ProfileResponse struct {
-	ID       int    `json:"id"`
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	ImageURL string `json:"image"`
-}
-
 // @Summary Профиль пользователя
 // @Description Возвращает информацию о профиле текущего пользователя
 // @Tags profile

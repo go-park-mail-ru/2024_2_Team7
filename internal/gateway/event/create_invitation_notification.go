@@ -1,4 +1,3 @@
-//go:generate easyjson create_invitation_notification.go
 package events
 
 import (
@@ -12,12 +11,6 @@ import (
 
 	"github.com/asaskevich/govalidator"
 )
-
-//easyjson:json
-type InviteNotificationRequest struct {
-	UserID  int `json:"user_id" valid:"range(1|20000)"`
-	EventID int `json:"event_id" valid:"range(1|20000)"`
-}
 
 // @Summary Создание уведомления
 // @Description Создание уведомления

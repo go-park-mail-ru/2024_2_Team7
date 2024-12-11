@@ -1,4 +1,5 @@
 //go:generate mockgen -source=../../auth/api/auth_grpc.pb.go -destination=mocks/auth.go -package=mocks
+//go:generate easyjson auth.go
 
 package handlers
 
@@ -53,15 +54,30 @@ func NewHandlers(authServiceAddr string, imageServiceAddr string, logger *logger
 	}, nil
 }
 
+//easyjson:json
 type AuthResponse struct {
 	User UserResponse `json:"user"`
 }
 
+//easyjson:json
 type UserResponse struct {
 	ID       int    `json:"id"`
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	ImageURL string `json:"image"`
+}
+
+//easyjson:json
+type LoginRequest struct {
+	Username string `json:"username" valid:"required,alphanum,length(3|50)"`
+	Password string `json:"password" valid:"password,required,length(3|50)"`
+}
+
+//easyjson:json
+type RegisterRequest struct {
+	Username string `json:"username" valid:"required,alphanum,length(3|50)"`
+	Email    string `json:"email" valid:"email,required"`
+	Password string `json:"password" valid:"password,required,length(3|50)"`
 }
 
 func userToUserResponse(user *pb.User) AuthResponse {

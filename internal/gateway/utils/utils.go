@@ -1,10 +1,11 @@
+//go:generate easyjson utils.go
+
 package utils
 
 import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -19,6 +20,7 @@ import (
 	"kudago/internal/models"
 
 	"github.com/asaskevich/govalidator"
+	easyjson "github.com/mailru/easyjson"
 	"go.uber.org/zap"
 )
 
@@ -28,9 +30,9 @@ const (
 	maxUploadSize = 10 * 1024 * 1024 // 10Mb
 )
 
-func WriteResponse(w http.ResponseWriter, status int, body interface{}) {
+func WriteResponse(w http.ResponseWriter, status int, body easyjson.Marshaler) {
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(body)
+	_, _ = easyjson.MarshalToWriter(body, w)
 }
 
 func HandleImageUpload(r *http.Request) (*pbImage.UploadRequest, error) {
@@ -91,6 +93,7 @@ func getFileExtension(fileName string) string {
 	return extension
 }
 
+//easyjson:json
 type ValidationErrResponse struct {
 	Errors []models.AuthError `json:"errors"`
 }
@@ -137,6 +140,7 @@ func GetPaginationParams(r *http.Request) models.PaginationParams {
 	page := GetQueryParamInt(r, "page", defaultPage)
 	limit := GetQueryParamInt(r, "limit", defaultLimit)
 	offset := page * limit
+
 	return models.PaginationParams{
 		Offset: offset,
 		Limit:  limit,

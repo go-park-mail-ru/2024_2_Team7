@@ -33,19 +33,12 @@ func (s *NotificationDB) GetNotifications(ctx context.Context, userID int) ([]mo
 	defer rows.Close()
 
 	var notifications []models.Notification
-	ids := make([]int, 0, 10)
 	for rows.Next() {
 		var n models.Notification
 		if err := rows.Scan(&n.ID, &n.UserID, &n.EventID, &n.NotifyAt, &n.Message); err != nil {
 			return nil, err
 		}
 		notifications = append(notifications, n)
-		ids = append(ids, n.ID)
-	}
-
-	err = s.UpdateSentNotifications(ctx, ids)
-	if err != nil {
-		return nil, err
 	}
 
 	return notifications, nil

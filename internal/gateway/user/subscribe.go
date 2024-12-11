@@ -64,6 +64,7 @@ func (h *UserHandlers) Subscribe(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
+
 		h.logger.Error(r.Context(), "subscribe", err)
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return

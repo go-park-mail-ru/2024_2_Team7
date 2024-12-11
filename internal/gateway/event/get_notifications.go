@@ -1,4 +1,3 @@
-//go:generate easyjson get_notifications.go
 package events
 
 import (
@@ -9,20 +8,7 @@ import (
 	"kudago/internal/gateway/utils"
 	"kudago/internal/models"
 	pb "kudago/internal/notification/api"
-
-	easyjson "github.com/mailru/easyjson"
 )
-
-//easyjson:json
-type GetNotificationsResponse struct {
-	Notifications []NotificationWithEvent `json:"notifications"`
-}
-
-//easyjson:json
-type NotificationWithEvent struct {
-	Notification models.Notification `json:"notification"`
-	Event        models.Event        `json:"event"`
-}
 
 // @Summary Получение уведомлений по ID пользователя
 // @Description Возвращает уведомления по идентификатору пользователя
@@ -52,7 +38,7 @@ func (h EventHandler) GetNotifications(w http.ResponseWriter, r *http.Request) {
 		ids = append(ids, int(n.EventID))
 	}
 
-	events, err := h.GetEventsByIDs(r.Context(), ids)
+	events, err := h.getEventsByIDs(r.Context(), ids)
 	if err != nil {
 		h.logger.Error(r.Context(), "get events by ids", err)
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
@@ -60,10 +46,7 @@ func (h EventHandler) GetNotifications(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := writeNotificationsResponse(notifications.Notifications, events)
-	w.WriteHeader(http.StatusOK)
-	if _, err := easyjson.MarshalToWriter(&resp, w); err != nil {
-		h.logger.Error(r.Context(), "get notifications", err)
-	}
+	utils.WriteResponse(w, http.StatusOK, resp)
 }
 
 func writeNotificationsResponse(notifications []*pb.Notification, events map[int]models.Event) GetNotificationsResponse {

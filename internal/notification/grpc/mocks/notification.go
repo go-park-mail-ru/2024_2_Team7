@@ -49,6 +49,20 @@ func (mr *MockNotificationServiceMockRecorder) CreateNotification(ctx, notificat
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateNotification", reflect.TypeOf((*MockNotificationService)(nil).CreateNotification), ctx, notification)
 }
 
+// CreateNotificationsByUserIDs mocks base method.
+func (m *MockNotificationService) CreateNotificationsByUserIDs(ctx context.Context, ids []int, ntf models.Notification) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateNotificationsByUserIDs", ctx, ids, ntf)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateNotificationsByUserIDs indicates an expected call of CreateNotificationsByUserIDs.
+func (mr *MockNotificationServiceMockRecorder) CreateNotificationsByUserIDs(ctx, ids, ntf interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateNotificationsByUserIDs", reflect.TypeOf((*MockNotificationService)(nil).CreateNotificationsByUserIDs), ctx, ids, ntf)
+}
+
 // DeleteNotification mocks base method.
 func (m *MockNotificationService) DeleteNotification(ctx context.Context, ID int) error {
 	m.ctrl.T.Helper()
@@ -76,4 +90,18 @@ func (m *MockNotificationService) GetNotifications(ctx context.Context, userID i
 func (mr *MockNotificationServiceMockRecorder) GetNotifications(ctx, userID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNotifications", reflect.TypeOf((*MockNotificationService)(nil).GetNotifications), ctx, userID)
+}
+
+// UpdateSentNotifications mocks base method.
+func (m *MockNotificationService) UpdateSentNotifications(ctx context.Context, IDs []int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateSentNotifications", ctx, IDs)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateSentNotifications indicates an expected call of UpdateSentNotifications.
+func (mr *MockNotificationServiceMockRecorder) UpdateSentNotifications(ctx, IDs interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSentNotifications", reflect.TypeOf((*MockNotificationService)(nil).UpdateSentNotifications), ctx, IDs)
 }

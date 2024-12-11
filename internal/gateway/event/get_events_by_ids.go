@@ -7,7 +7,7 @@ import (
 	"kudago/internal/models"
 )
 
-func (h EventHandler) GetEventsByIDs(ctx context.Context, ids []int) (map[int]models.Event, error) {
+func (h EventHandler) getEventsByIDs(ctx context.Context, ids []int) (map[int]models.Event, error) {
 	req := &pb.GetEventsByIDsRequest{
 		IDs: make([]int32, 0, len(ids)),
 	}

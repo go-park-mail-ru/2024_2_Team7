@@ -7,7 +7,6 @@ import (
 	"kudago/cmd/server/config"
 	_ "kudago/docs"
 	authHandlers "kudago/internal/gateway/auth"
-	csatHandlers "kudago/internal/gateway/csat"
 	eventHandlers "kudago/internal/gateway/event"
 	userHandlers "kudago/internal/gateway/user"
 
@@ -54,11 +53,6 @@ func main() {
 		log.Fatalf("Failed to connect to event service: %v", err)
 	}
 
-	csatHandler, err := csatHandlers.NewHandlers(conf.CSATServiceAddr, appLogger)
-	if err != nil {
-		log.Fatalf("Failed to connect to csat service: %v", err)
-	}
-
 	r := mux.NewRouter()
 
 	fs := http.FileServer(http.Dir("./static/"))
@@ -82,10 +76,6 @@ func main() {
 	r.HandleFunc("/events", eventHandler.GetUpcomingEvents).Methods(http.MethodGet)
 	r.HandleFunc("/events/past", eventHandler.GetPastEvents).Methods(http.MethodGet)
 	r.HandleFunc("/events/subscription", eventHandler.GetSubscriptionEvents).Methods(http.MethodGet)
-
-	r.HandleFunc("/test", csatHandler.GetTest).Methods(http.MethodGet)
-	r.HandleFunc("/test", csatHandler.AddAnswers).Methods(http.MethodPost)
-	r.HandleFunc("/stats", csatHandler.GetStatistics).Methods(http.MethodGet)
 
 	r.HandleFunc("/categories", eventHandler.GetCategories).Methods(http.MethodGet)
 	r.HandleFunc("/events/user/{id:[0-9]+}", eventHandler.GetEventsByUser).Methods(http.MethodGet)

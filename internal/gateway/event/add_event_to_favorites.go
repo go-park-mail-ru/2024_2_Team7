@@ -53,6 +53,7 @@ func (h EventHandler) AddEventToFavorites(w http.ResponseWriter, r *http.Request
 				return
 			}
 		}
+
 		h.logger.Error(r.Context(), "add event to favorites", err)
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
