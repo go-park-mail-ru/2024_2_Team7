@@ -6,7 +6,7 @@ c.out
 .env
 pgdata
 db-data
-dockerfile
 docker-compose.yml
 static
 bin
+certbot

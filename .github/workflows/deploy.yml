@@ -32,5 +32,5 @@ jobs:
             make all
             echo "Building Docker containers with commit hash..."
             COMMIT_HASH=${{ env.COMMIT_HASH }} docker compose build --build-arg COMMIT_HASH=${{ env.COMMIT_HASH }}
-            echo "Starting Docker containers..."
-            COMMIT_HASH=${{ env.COMMIT_HASH }} docker compose up -d
+#            echo "Starting Docker containers..."
+#            COMMIT_HASH=${{ env.COMMIT_HASH }} docker compose up -d
