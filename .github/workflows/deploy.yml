@@ -27,7 +27,7 @@ jobs:
             echo "Using Commit Hash: ${{ env.COMMIT_HASH }}"
             cd back
             echo "Pulling latest code from deploy branch..."
-            git pull origin prometheus
+            git pull origin deploy
             echo "Running 'make all'..."
             make all
             echo "Building Docker containers with commit hash..."
