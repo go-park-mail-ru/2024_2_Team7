@@ -23,6 +23,7 @@ const (
 	UserService_Subscribe_FullMethodName        = "/user.UserService/Subscribe"
 	UserService_Unsubscribe_FullMethodName      = "/user.UserService/Unsubscribe"
 	UserService_GetSubscriptions_FullMethodName = "/user.UserService/GetSubscriptions"
+	UserService_GetSubscribers_FullMethodName   = "/user.UserService/GetSubscribers"
 	UserService_UpdateUser_FullMethodName       = "/user.UserService/UpdateUser"
 )
 
@@ -34,6 +35,7 @@ type UserServiceClient interface {
 	Subscribe(ctx context.Context, in *Subscription, opts ...grpc.CallOption) (*Empty, error)
 	Unsubscribe(ctx context.Context, in *Subscription, opts ...grpc.CallOption) (*Empty, error)
 	GetSubscriptions(ctx context.Context, in *GetSubscriptionsRequest, opts ...grpc.CallOption) (*GetSubscriptionsResponse, error)
+	GetSubscribers(ctx context.Context, in *GetSubscribersRequest, opts ...grpc.CallOption) (*GetSubscribersResponse, error)
 	UpdateUser(ctx context.Context, in *User, opts ...grpc.CallOption) (*User, error)
 }
 
@@ -85,6 +87,16 @@ func (c *userServiceClient) GetSubscriptions(ctx context.Context, in *GetSubscri
 	return out, nil
 }
 
+func (c *userServiceClient) GetSubscribers(ctx context.Context, in *GetSubscribersRequest, opts ...grpc.CallOption) (*GetSubscribersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetSubscribersResponse)
+	err := c.cc.Invoke(ctx, UserService_GetSubscribers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *userServiceClient) UpdateUser(ctx context.Context, in *User, opts ...grpc.CallOption) (*User, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(User)
@@ -103,6 +115,7 @@ type UserServiceServer interface {
 	Subscribe(context.Context, *Subscription) (*Empty, error)
 	Unsubscribe(context.Context, *Subscription) (*Empty, error)
 	GetSubscriptions(context.Context, *GetSubscriptionsRequest) (*GetSubscriptionsResponse, error)
+	GetSubscribers(context.Context, *GetSubscribersRequest) (*GetSubscribersResponse, error)
 	UpdateUser(context.Context, *User) (*User, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
@@ -125,6 +138,9 @@ func (UnimplementedUserServiceServer) Unsubscribe(context.Context, *Subscription
 }
 func (UnimplementedUserServiceServer) GetSubscriptions(context.Context, *GetSubscriptionsRequest) (*GetSubscriptionsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetSubscriptions not implemented")
+}
+func (UnimplementedUserServiceServer) GetSubscribers(context.Context, *GetSubscribersRequest) (*GetSubscribersResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSubscribers not implemented")
 }
 func (UnimplementedUserServiceServer) UpdateUser(context.Context, *User) (*User, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateUser not implemented")
@@ -222,6 +238,24 @@ func _UserService_GetSubscriptions_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_GetSubscribers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSubscribersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetSubscribers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetSubscribers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetSubscribers(ctx, req.(*GetSubscribersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _UserService_UpdateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(User)
 	if err := dec(in); err != nil {
@@ -262,6 +296,10 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetSubscriptions",
 			Handler:    _UserService_GetSubscriptions_Handler,
+		},
+		{
+			MethodName: "GetSubscribers",
+			Handler:    _UserService_GetSubscribers_Handler,
 		},
 		{
 			MethodName: "UpdateUser",

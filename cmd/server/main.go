@@ -68,6 +68,7 @@ func main() {
 	r.HandleFunc("/profile", userHandler.UpdateUser).Methods(http.MethodPut)
 
 	r.HandleFunc("/profile/subscribe/{id:[0-9]+}", userHandler.Subscribe).Methods(http.MethodPost)
+	r.HandleFunc("/profile/subscribe", userHandler.GetSubscribers).Methods(http.MethodGet)
 	r.HandleFunc("/profile/subscribe/{id:[0-9]+}", userHandler.GetSubscriptions).Methods(http.MethodGet)
 	r.HandleFunc("/profile/subscribe/{id:[0-9]+}", userHandler.Unsubscribe).Methods(http.MethodDelete)
 

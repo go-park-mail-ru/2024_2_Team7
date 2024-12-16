@@ -45,7 +45,6 @@ func (h *UserHandlers) Profile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userResponse := userToProfileResponse(user)
-
 	utils.WriteResponse(w, http.StatusOK, userResponse)
 }
 

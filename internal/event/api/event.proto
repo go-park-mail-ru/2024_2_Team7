@@ -22,7 +22,6 @@ service EventService {
     rpc GetUserIDsByFavoriteEvent(GetUserIDsByFavoriteEventRequest) returns(GetUserIDsResponse);
     rpc GetEventsByIDs(GetEventsByIDsRequest) returns(Events);
     rpc GetSubscribersIDs(GetSubscribersIDsRequest) returns(GetUserIDsResponse);
-
     }
 
     message GetEventByIDRequest {
