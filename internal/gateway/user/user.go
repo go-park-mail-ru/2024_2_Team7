@@ -1,3 +1,4 @@
+//go:generate easyjson user.go
 package handlers
 
 import (
@@ -27,7 +28,7 @@ type UserHandlers struct {
 	logger       *logger.Logger
 }
 
-func NewUserHandlers(userServiceAddr string, logger *logger.Logger) (*UserHandlers, error) {
+func NewHandlers(userServiceAddr string, logger *logger.Logger) (*UserHandlers, error) {
 	authConn, err := grpc.NewClient(userServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
@@ -39,10 +40,20 @@ func NewUserHandlers(userServiceAddr string, logger *logger.Logger) (*UserHandle
 	}, nil
 }
 
+//easyjson:json
 type AuthResponse struct {
 	User UserResponse `json:"user"`
 }
 
+//easyjson:json
+type ProfileResponse struct {
+	ID       int    `json:"id"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	ImageURL string `json:"image"`
+}
+
+//easyjson:json
 type UserResponse struct {
 	ID       int    `json:"id"`
 	Username string `json:"username"`
@@ -50,6 +61,7 @@ type UserResponse struct {
 	ImageURL string `json:"image"`
 }
 
+//easyjson:json
 type GetUsersResponse struct {
 	Users []UserResponse `json:"users"`
 }

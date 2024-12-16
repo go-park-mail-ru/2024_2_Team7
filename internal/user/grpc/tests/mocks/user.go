@@ -35,6 +35,21 @@ func (m *MockUserService) EXPECT() *MockUserServiceMockRecorder {
 	return m.recorder
 }
 
+// GetSubscribers mocks base method.
+func (m *MockUserService) GetSubscribers(ctx context.Context, ID int) ([]models.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSubscribers", ctx, ID)
+	ret0, _ := ret[0].([]models.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSubscribers indicates an expected call of GetSubscribers.
+func (mr *MockUserServiceMockRecorder) GetSubscribers(ctx, ID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSubscribers", reflect.TypeOf((*MockUserService)(nil).GetSubscribers), ctx, ID)
+}
+
 // GetSubscriptions mocks base method.
 func (m *MockUserService) GetSubscriptions(ctx context.Context, ID int) ([]models.User, error) {
 	m.ctrl.T.Helper()

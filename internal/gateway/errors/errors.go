@@ -1,5 +1,7 @@
+//go:generate easyjson errors.go
 package httpErrors
 
+//easyjson:json
 type HttpError struct {
 	Message string `json:"message"`
 	Code    string `json:"code"`

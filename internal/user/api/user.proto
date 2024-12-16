@@ -9,6 +9,7 @@ service UserService {
     rpc Subscribe (Subscription) returns (Empty);
     rpc Unsubscribe (Subscription) returns (Empty);
     rpc GetSubscriptions (GetSubscriptionsRequest) returns (GetSubscriptionsResponse);
+    rpc GetSubscribers (GetSubscribersRequest) returns (GetSubscribersResponse);
     rpc UpdateUser (User) returns (User);  
     }
 
@@ -34,6 +35,14 @@ service UserService {
         string username = 2;
         string email = 3;
         string avatar_url = 4;
+    }
+
+    message GetSubscribersRequest {
+        int32 ID = 1;
+    }
+
+    message GetSubscribersResponse {
+        repeated User users = 1;
     }
 
     message Empty{}

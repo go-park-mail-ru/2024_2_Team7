@@ -35,13 +35,13 @@ event_service: $(BIN_DIR)
 image_service: $(BIN_DIR)
 	go build -o $(BIN_DIR)/image_service ./cmd/image/main.go
 
-csat_service: $(BIN_DIR)
-	go build -o $(BIN_DIR)/csat_service ./cmd/csat/main.go
+notification_service: $(BIN_DIR)
+	go build -o $(BIN_DIR)/notification_service ./cmd/notification/main.go
 
 server_service: $(BIN_DIR)
 	go build -o $(BIN_DIR)/server_service ./cmd/server/main.go
 
-all: auth_service user_service event_service image_service csat_service server_service
+all: auth_service user_service event_service image_service notification_service server_service
 
 clean:
 	rm -rf $(BIN_DIR)

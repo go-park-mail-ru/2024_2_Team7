@@ -23,6 +23,8 @@ type UserService interface {
 	GetSubscriptions(ctx context.Context, ID int) ([]models.User, error)
 	UpdateUser(ctx context.Context, user models.User) (models.User, error)
 	UserExists(ctx context.Context, user models.User) (bool, error)
+	GetSubscribers(ctx context.Context, ID int) ([]models.User, error)
+
 }
 
 func NewServerAPI(service UserService, logger *logger.Logger) *ServerAPI {

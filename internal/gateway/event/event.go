@@ -1,8 +1,8 @@
+//go:generate easyjson event.go
 package events
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"strconv"
 	"time"
@@ -12,6 +12,7 @@ import (
 	"kudago/internal/gateway/utils"
 	pbImage "kudago/internal/image/api"
 	"kudago/internal/logger"
+	pbNotification "kudago/internal/notification/api"
 
 	"kudago/internal/models"
 
@@ -20,18 +21,22 @@ import (
 )
 
 const (
-	defaultPage   = 0
-	defaultLimit  = 30
-	maxUploadSize = 10 * 1024 * 1024 // 10Mb
+	defaultPage  = 0
+	defaultLimit = 30
+
+	UpdatedEventMsg = "Информация о событии обновилась. Посмотреть тут:"
+	CreatedEventMsg = "У вас новое мероприятие в подписках! . Посмотреть тут:"
+	InvitationMsg   = "Вас пригласили на новое мероприятие: "
 )
 
 type EventHandler struct {
-	EventService pbEvent.EventServiceClient
-	ImageService pbImage.ImageServiceClient
-	logger       *logger.Logger
+	EventService        pbEvent.EventServiceClient
+	ImageService        pbImage.ImageServiceClient
+	NotificationService pbNotification.NotificationServiceClient
+	logger              *logger.Logger
 }
 
-func NewEventHandlers(eventServiceAddr string, imageServiceAddr string, logger *logger.Logger) (*EventHandler, error) {
+func NewHandlers(eventServiceAddr string, imageServiceAddr string, notificationServiceAddr string, logger *logger.Logger) (*EventHandler, error) {
 	eventConn, err := grpc.NewClient(eventServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
@@ -42,15 +47,22 @@ func NewEventHandlers(eventServiceAddr string, imageServiceAddr string, logger *
 		return nil, err
 	}
 
+	notificationConn, err := grpc.NewClient(notificationServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, err
+	}
+
 	return &EventHandler{
-		EventService: pbEvent.NewEventServiceClient(eventConn),
-		ImageService: pbImage.NewImageServiceClient(imageConn),
-		logger:       logger,
+		EventService:        pbEvent.NewEventServiceClient(eventConn),
+		ImageService:        pbImage.NewImageServiceClient(imageConn),
+		NotificationService: pbNotification.NewNotificationServiceClient(notificationConn),
+		logger:              logger,
 	}, nil
 }
 
 var maxDate = time.Date(2030, 12, 31, 0, 0, 0, 0, time.UTC)
 
+//easyjson:json
 type EventResponse struct {
 	ID          int      `json:"id"`
 	Title       string   `json:"title"`
@@ -67,10 +79,18 @@ type EventResponse struct {
 	Longitude   float64  `json:"Longitude"`
 }
 
+//easyjson:json
+type InviteNotificationRequest struct {
+	UserID  int `json:"user_id" valid:"range(1|20000)"`
+	EventID int `json:"event_id" valid:"range(1|20000)"`
+}
+
+//easyjson:json
 type GetEventsResponse struct {
 	Events []EventResponse `json:"events"`
 }
 
+//easyjson:json
 type NewEventRequest struct {
 	Title       string   `json:"title" valid:"required,length(3|100)"`
 	Description string   `json:"description" valid:"required,length(3|1000)" `
@@ -84,8 +104,25 @@ type NewEventRequest struct {
 	Longitude   float64  `json:"Longitude"`
 }
 
+//easyjson:json
 type NewEventResponse struct {
 	Event EventResponse `json:"event"`
+}
+
+//easyjson:json
+type GetNotificationsResponse struct {
+	Notifications []NotificationWithEvent `json:"notifications"`
+}
+
+//easyjson:json
+type NotificationWithEvent struct {
+	Notification models.Notification `json:"notification"`
+	Event        models.Event        `json:"event"`
+}
+
+//easyjson:json
+type GetCategoriesResponse struct {
+	Categories []models.Category `json:"categories"`
 }
 
 func checkNewEventRequest(req NewEventRequest) *httpErrors.HttpError {
@@ -123,7 +160,7 @@ func checkNewEventRequest(req NewEventRequest) *httpErrors.HttpError {
 func parseEventData(r *http.Request) (NewEventRequest, *pbImage.UploadRequest, *httpErrors.HttpError) {
 	var req NewEventRequest
 	jsonData := r.FormValue("json")
-	err := json.Unmarshal([]byte(jsonData), &req)
+	err := req.UnmarshalJSON([]byte(jsonData))
 	if err != nil {
 		return req, nil, httpErrors.ErrInvalidData
 	}
