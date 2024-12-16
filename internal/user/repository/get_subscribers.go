@@ -8,10 +8,10 @@ import (
 )
 
 const getSubscribersQuery = `
-	SELECT u.id, u.username, u.email, u.url_to_avatar
-	FROM "USER" u
-	JOIN SUBSCRIPTION s ON s.follows_id = u.id
-	WHERE s.follows_id = $1;
+    SELECT u.id, u.username, u.email, u.url_to_avatar
+    FROM "USER" u
+    JOIN SUBSCRIPTION s ON s.subscriber_id = u.id
+    WHERE s.follows_id = $1;
 `
 
 func (d UserDB) GetSubscribers(ctx context.Context, ID int) ([]models.User, error) {
