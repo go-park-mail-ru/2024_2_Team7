@@ -7,9 +7,9 @@ import (
 	"kudago/cmd/server/config"
 	_ "kudago/docs"
 	authHandlers "kudago/internal/gateway/auth"
-	csatHandlers "kudago/internal/gateway/csat"
 	eventHandlers "kudago/internal/gateway/event"
 	userHandlers "kudago/internal/gateway/user"
+
 	"kudago/internal/logger"
 	"kudago/internal/metrics"
 	"kudago/internal/middleware"
@@ -38,24 +38,19 @@ func main() {
 	}
 	defer appLogger.Logger.Sync()
 
-	authHandler, err := authHandlers.NewAuthHandlers(conf.AuthServiceAddr, conf.ImageServiceAddr, appLogger)
+	authHandler, err := authHandlers.NewHandlers(conf.AuthServiceAddr, conf.ImageServiceAddr, appLogger)
 	if err != nil {
 		log.Fatalf("Failed to connect to auth service: %v", err)
 	}
 
-	userHandler, err := userHandlers.NewUserHandlers(conf.UserServiceAddr, appLogger)
+	userHandler, err := userHandlers.NewHandlers(conf.UserServiceAddr, appLogger)
 	if err != nil {
 		log.Fatalf("Failed to connect to user service: %v", err)
 	}
 
-	eventHandler, err := eventHandlers.NewEventHandlers(conf.EventServiceAddr, conf.ImageServiceAddr, appLogger)
+	eventHandler, err := eventHandlers.NewHandlers(conf.EventServiceAddr, conf.ImageServiceAddr, conf.NotificationServiceAddr, appLogger)
 	if err != nil {
 		log.Fatalf("Failed to connect to event service: %v", err)
-	}
-
-	csatHandler, err := csatHandlers.NewCSATHandlers(conf.CSATServiceAddr, appLogger)
-	if err != nil {
-		log.Fatalf("Failed to connect to csat service: %v", err)
 	}
 
 	r := mux.NewRouter()
@@ -73,6 +68,7 @@ func main() {
 	r.HandleFunc("/profile", userHandler.UpdateUser).Methods(http.MethodPut)
 
 	r.HandleFunc("/profile/subscribe/{id:[0-9]+}", userHandler.Subscribe).Methods(http.MethodPost)
+	r.HandleFunc("/profile/subscribe", userHandler.GetSubscribers).Methods(http.MethodGet)
 	r.HandleFunc("/profile/subscribe/{id:[0-9]+}", userHandler.GetSubscriptions).Methods(http.MethodGet)
 	r.HandleFunc("/profile/subscribe/{id:[0-9]+}", userHandler.Unsubscribe).Methods(http.MethodDelete)
 
@@ -81,10 +77,6 @@ func main() {
 	r.HandleFunc("/events", eventHandler.GetUpcomingEvents).Methods(http.MethodGet)
 	r.HandleFunc("/events/past", eventHandler.GetPastEvents).Methods(http.MethodGet)
 	r.HandleFunc("/events/subscription", eventHandler.GetSubscriptionEvents).Methods(http.MethodGet)
-
-	r.HandleFunc("/test", csatHandler.GetTest).Methods(http.MethodGet)
-	r.HandleFunc("/test", csatHandler.AddAnswers).Methods(http.MethodPost)
-	r.HandleFunc("/stats", csatHandler.GetStatistics).Methods(http.MethodGet)
 
 	r.HandleFunc("/categories", eventHandler.GetCategories).Methods(http.MethodGet)
 	r.HandleFunc("/events/user/{id:[0-9]+}", eventHandler.GetEventsByUser).Methods(http.MethodGet)
@@ -95,6 +87,9 @@ func main() {
 	r.HandleFunc("/events/favorites", eventHandler.GetFavorites).Methods(http.MethodGet)
 	r.HandleFunc("/events/favorites/{id:[0-9]+}", eventHandler.AddEventToFavorites).Methods(http.MethodPost)
 	r.HandleFunc("/events/favorites/{id:[0-9]+}", eventHandler.DeleteEventFromFavorites).Methods(http.MethodDelete)
+
+	r.HandleFunc("/notification", eventHandler.GetNotifications).Methods(http.MethodGet)
+	r.HandleFunc("/notification", eventHandler.CreateInvitationNotification).Methods(http.MethodPost)
 
 	handlerWithAuth := middleware.AuthMiddleware(authHandler.AuthService, r)
 	handlerWithCORS := middleware.CORSMiddleware(handlerWithAuth)

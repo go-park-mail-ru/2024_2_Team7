@@ -5,6 +5,7 @@ import (
 
 	httpErrors "kudago/internal/gateway/errors"
 	"kudago/internal/gateway/utils"
+	"kudago/internal/models"
 )
 
 // @Summary Получить все категории
@@ -23,5 +24,16 @@ func (h EventHandler) GetCategories(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.WriteResponse(w, http.StatusOK, categories)
+	convertedCategories := make([]models.Category, 0, len(categories.Categories))
+	for _, cat := range categories.Categories {
+		convertedCategories = append(convertedCategories, models.Category{
+			ID:   int(cat.ID),
+			Name: cat.Name,
+		})
+	}
+
+	resp := GetCategoriesResponse{
+		Categories: convertedCategories,
+	}
+	utils.WriteResponse(w, http.StatusOK, resp)
 }

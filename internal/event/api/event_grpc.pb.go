@@ -19,20 +19,23 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	EventService_AddEvent_FullMethodName                 = "/event.EventService/AddEvent"
-	EventService_AddEventToFavorites_FullMethodName      = "/event.EventService/AddEventToFavorites"
-	EventService_DeleteEventFromFavorites_FullMethodName = "/event.EventService/DeleteEventFromFavorites"
-	EventService_DeleteEvent_FullMethodName              = "/event.EventService/DeleteEvent"
-	EventService_GetCategories_FullMethodName            = "/event.EventService/GetCategories"
-	EventService_GetEventByID_FullMethodName             = "/event.EventService/GetEventByID"
-	EventService_GetEventsByCategory_FullMethodName      = "/event.EventService/GetEventsByCategory"
-	EventService_GetEventsByUser_FullMethodName          = "/event.EventService/GetEventsByUser"
-	EventService_GetFavorites_FullMethodName             = "/event.EventService/GetFavorites"
-	EventService_GetPastEvents_FullMethodName            = "/event.EventService/GetPastEvents"
-	EventService_GetUpcomingEvents_FullMethodName        = "/event.EventService/GetUpcomingEvents"
-	EventService_GetSubscriptionsEvents_FullMethodName   = "/event.EventService/GetSubscriptionsEvents"
-	EventService_UpdateEvent_FullMethodName              = "/event.EventService/UpdateEvent"
-	EventService_SearchEvents_FullMethodName             = "/event.EventService/SearchEvents"
+	EventService_AddEvent_FullMethodName                  = "/event.EventService/AddEvent"
+	EventService_AddEventToFavorites_FullMethodName       = "/event.EventService/AddEventToFavorites"
+	EventService_DeleteEventFromFavorites_FullMethodName  = "/event.EventService/DeleteEventFromFavorites"
+	EventService_DeleteEvent_FullMethodName               = "/event.EventService/DeleteEvent"
+	EventService_GetCategories_FullMethodName             = "/event.EventService/GetCategories"
+	EventService_GetEventByID_FullMethodName              = "/event.EventService/GetEventByID"
+	EventService_GetEventsByCategory_FullMethodName       = "/event.EventService/GetEventsByCategory"
+	EventService_GetEventsByUser_FullMethodName           = "/event.EventService/GetEventsByUser"
+	EventService_GetFavorites_FullMethodName              = "/event.EventService/GetFavorites"
+	EventService_GetPastEvents_FullMethodName             = "/event.EventService/GetPastEvents"
+	EventService_GetUpcomingEvents_FullMethodName         = "/event.EventService/GetUpcomingEvents"
+	EventService_GetSubscriptionsEvents_FullMethodName    = "/event.EventService/GetSubscriptionsEvents"
+	EventService_UpdateEvent_FullMethodName               = "/event.EventService/UpdateEvent"
+	EventService_SearchEvents_FullMethodName              = "/event.EventService/SearchEvents"
+	EventService_GetUserIDsByFavoriteEvent_FullMethodName = "/event.EventService/GetUserIDsByFavoriteEvent"
+	EventService_GetEventsByIDs_FullMethodName            = "/event.EventService/GetEventsByIDs"
+	EventService_GetSubscribersIDs_FullMethodName         = "/event.EventService/GetSubscribersIDs"
 )
 
 // EventServiceClient is the client API for EventService service.
@@ -53,6 +56,9 @@ type EventServiceClient interface {
 	GetSubscriptionsEvents(ctx context.Context, in *GetSubscriptionsRequest, opts ...grpc.CallOption) (*Events, error)
 	UpdateEvent(ctx context.Context, in *Event, opts ...grpc.CallOption) (*Event, error)
 	SearchEvents(ctx context.Context, in *SearchParams, opts ...grpc.CallOption) (*Events, error)
+	GetUserIDsByFavoriteEvent(ctx context.Context, in *GetUserIDsByFavoriteEventRequest, opts ...grpc.CallOption) (*GetUserIDsResponse, error)
+	GetEventsByIDs(ctx context.Context, in *GetEventsByIDsRequest, opts ...grpc.CallOption) (*Events, error)
+	GetSubscribersIDs(ctx context.Context, in *GetSubscribersIDsRequest, opts ...grpc.CallOption) (*GetUserIDsResponse, error)
 }
 
 type eventServiceClient struct {
@@ -203,6 +209,36 @@ func (c *eventServiceClient) SearchEvents(ctx context.Context, in *SearchParams,
 	return out, nil
 }
 
+func (c *eventServiceClient) GetUserIDsByFavoriteEvent(ctx context.Context, in *GetUserIDsByFavoriteEventRequest, opts ...grpc.CallOption) (*GetUserIDsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserIDsResponse)
+	err := c.cc.Invoke(ctx, EventService_GetUserIDsByFavoriteEvent_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *eventServiceClient) GetEventsByIDs(ctx context.Context, in *GetEventsByIDsRequest, opts ...grpc.CallOption) (*Events, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Events)
+	err := c.cc.Invoke(ctx, EventService_GetEventsByIDs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *eventServiceClient) GetSubscribersIDs(ctx context.Context, in *GetSubscribersIDsRequest, opts ...grpc.CallOption) (*GetUserIDsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserIDsResponse)
+	err := c.cc.Invoke(ctx, EventService_GetSubscribersIDs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // EventServiceServer is the server API for EventService service.
 // All implementations must embed UnimplementedEventServiceServer
 // for forward compatibility.
@@ -221,6 +257,9 @@ type EventServiceServer interface {
 	GetSubscriptionsEvents(context.Context, *GetSubscriptionsRequest) (*Events, error)
 	UpdateEvent(context.Context, *Event) (*Event, error)
 	SearchEvents(context.Context, *SearchParams) (*Events, error)
+	GetUserIDsByFavoriteEvent(context.Context, *GetUserIDsByFavoriteEventRequest) (*GetUserIDsResponse, error)
+	GetEventsByIDs(context.Context, *GetEventsByIDsRequest) (*Events, error)
+	GetSubscribersIDs(context.Context, *GetSubscribersIDsRequest) (*GetUserIDsResponse, error)
 	mustEmbedUnimplementedEventServiceServer()
 }
 
@@ -272,6 +311,15 @@ func (UnimplementedEventServiceServer) UpdateEvent(context.Context, *Event) (*Ev
 }
 func (UnimplementedEventServiceServer) SearchEvents(context.Context, *SearchParams) (*Events, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SearchEvents not implemented")
+}
+func (UnimplementedEventServiceServer) GetUserIDsByFavoriteEvent(context.Context, *GetUserIDsByFavoriteEventRequest) (*GetUserIDsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUserIDsByFavoriteEvent not implemented")
+}
+func (UnimplementedEventServiceServer) GetEventsByIDs(context.Context, *GetEventsByIDsRequest) (*Events, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetEventsByIDs not implemented")
+}
+func (UnimplementedEventServiceServer) GetSubscribersIDs(context.Context, *GetSubscribersIDsRequest) (*GetUserIDsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSubscribersIDs not implemented")
 }
 func (UnimplementedEventServiceServer) mustEmbedUnimplementedEventServiceServer() {}
 func (UnimplementedEventServiceServer) testEmbeddedByValue()                      {}
@@ -546,6 +594,60 @@ func _EventService_SearchEvents_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _EventService_GetUserIDsByFavoriteEvent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserIDsByFavoriteEventRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EventServiceServer).GetUserIDsByFavoriteEvent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: EventService_GetUserIDsByFavoriteEvent_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EventServiceServer).GetUserIDsByFavoriteEvent(ctx, req.(*GetUserIDsByFavoriteEventRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _EventService_GetEventsByIDs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetEventsByIDsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EventServiceServer).GetEventsByIDs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: EventService_GetEventsByIDs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EventServiceServer).GetEventsByIDs(ctx, req.(*GetEventsByIDsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _EventService_GetSubscribersIDs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSubscribersIDsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EventServiceServer).GetSubscribersIDs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: EventService_GetSubscribersIDs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EventServiceServer).GetSubscribersIDs(ctx, req.(*GetSubscribersIDsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // EventService_ServiceDesc is the grpc.ServiceDesc for EventService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -608,6 +710,18 @@ var EventService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SearchEvents",
 			Handler:    _EventService_SearchEvents_Handler,
+		},
+		{
+			MethodName: "GetUserIDsByFavoriteEvent",
+			Handler:    _EventService_GetUserIDsByFavoriteEvent_Handler,
+		},
+		{
+			MethodName: "GetEventsByIDs",
+			Handler:    _EventService_GetEventsByIDs_Handler,
+		},
+		{
+			MethodName: "GetSubscribersIDs",
+			Handler:    _EventService_GetSubscribersIDs_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

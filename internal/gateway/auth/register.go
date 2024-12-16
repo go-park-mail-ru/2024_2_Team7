@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"net/http"
 
 	pb "kudago/internal/auth/api"
@@ -15,12 +14,6 @@ import (
 
 	"github.com/asaskevich/govalidator"
 )
-
-type RegisterRequest struct {
-	Username string `json:"username" valid:"required,alphanum,length(3|50)"`
-	Email    string `json:"email" valid:"email,required"`
-	Password string `json:"password" valid:"password,required,length(3|50)"`
-}
 
 func (h *AuthHandlers) Register(w http.ResponseWriter, r *http.Request) {
 	_, ok := utils.GetSessionFromContext(r.Context())
@@ -93,7 +86,7 @@ func (h *AuthHandlers) Register(w http.ResponseWriter, r *http.Request) {
 func parseRegisterData(r *http.Request) (models.User, *pbImage.UploadRequest, *httpErrors.HttpError) {
 	var req models.User
 	jsonData := r.FormValue("json")
-	err := json.Unmarshal([]byte(jsonData), &req)
+	err := req.UnmarshalJSON([]byte(jsonData))
 	if err != nil {
 		return req, nil, httpErrors.ErrInvalidData
 	}

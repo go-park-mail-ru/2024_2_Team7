@@ -1,10 +1,14 @@
 package events
 
 import (
+	"context"
 	"net/http"
+	"time"
 
+	pbEvent "kudago/internal/event/api"
 	httpErrors "kudago/internal/gateway/errors"
 	"kudago/internal/gateway/utils"
+	pbNtf "kudago/internal/notification/api"
 
 	"github.com/asaskevich/govalidator"
 	grpcCodes "google.golang.org/grpc/codes"
@@ -67,6 +71,7 @@ func (h EventHandler) AddEvent(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
+
 		h.logger.Error(r.Context(), "add event", err)
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
@@ -77,5 +82,36 @@ func (h EventHandler) AddEvent(w http.ResponseWriter, r *http.Request) {
 		Event: eventResp,
 	}
 
+	err = h.sendCreatedNotifications(r.Context(), int(event.ID), session.UserID)
+	if err != nil {
+		h.logger.Error(r.Context(), "send create notifications", err)
+	}
+
 	utils.WriteResponse(w, http.StatusOK, resp)
+}
+
+func (h EventHandler) sendCreatedNotifications(ctx context.Context, eventID int, userID int) error {
+	idsResp, err := h.EventService.GetSubscribersIDs(ctx, &pbEvent.GetSubscribersIDsRequest{UserID: int32(userID)})
+	if err != nil {
+		return err
+	}
+
+	req := &pbNtf.CreateNotificationsRequest{
+		UserIDs: make([]int32, 0, len(idsResp.IDs)),
+		Notification: &pbNtf.Notification{
+			Message:  CreatedEventMsg,
+			NotifyAt: time.Now().String(),
+			EventID:  int32(eventID),
+		},
+	}
+
+	for _, id := range idsResp.IDs {
+		req.UserIDs = append(req.UserIDs, int32(id))
+	}
+
+	_, err = h.NotificationService.CreateNotifications(ctx, req)
+	if err != nil {
+		return err
+	}
+	return nil
 }

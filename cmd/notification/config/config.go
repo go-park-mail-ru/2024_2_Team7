@@ -27,7 +27,7 @@ func LoadConfig() (Config, error) {
 	}
 	conf.PostgresConfig = postgresConfig
 
-	conf.ServiceAddr = os.Getenv("CSAT_SERVICE_ADDR")
+	conf.ServiceAddr = os.Getenv("NOTIFICATION_SERVICE_ADDR")
 	if conf.ServiceAddr == "" {
 		return Config{}, errors.New("Failed to get service address")
 	}
