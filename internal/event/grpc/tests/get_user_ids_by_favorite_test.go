@@ -23,7 +23,7 @@ func TestEventGRPC_GetUserIDsByFavorite(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	users := []int{1,2}
+	users := []int{1, 2}
 
 	tests := []struct {
 		name         string
@@ -49,7 +49,7 @@ func TestEventGRPC_GetUserIDsByFavorite(t *testing.T) {
 				return event.NewServerAPI(mockEventService, mockEventGetter, logger)
 			},
 			expectedResp: &pb.GetUserIDsResponse{
-				IDs: []int32{1,2},
+				IDs: []int32{1, 2},
 			},
 			expectedErr: nil,
 		},
@@ -65,7 +65,7 @@ func TestEventGRPC_GetUserIDsByFavorite(t *testing.T) {
 				logger, _ := logger.NewLogger()
 
 				mockEventGetter.EXPECT().
-				GetUserIDsByFavoriteEvent(context.Background(), 1).
+					GetUserIDsByFavoriteEvent(context.Background(), 1).
 					Return(nil, models.ErrInternal)
 				return event.NewServerAPI(mockEventService, mockEventGetter, logger)
 			},

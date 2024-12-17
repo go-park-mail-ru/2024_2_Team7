@@ -1,3 +1,4 @@
+//go:generate mockgen -source=../../event/api/event_grpc.pb.go -destination=mocks/event.go -package=mocks
 //go:generate easyjson event.go
 package events
 
