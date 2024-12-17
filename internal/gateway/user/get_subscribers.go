@@ -3,8 +3,8 @@ package handlers
 import (
 	"net/http"
 
-	pb "kudago/internal/user/api"
 	httpErrors "kudago/internal/gateway/errors"
+	pb "kudago/internal/user/api"
 
 	"kudago/internal/gateway/utils"
 )
@@ -25,9 +25,9 @@ func (h *UserHandlers) GetSubscribers(w http.ResponseWriter, r *http.Request) {
 		utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrUnauthorized)
 		return
 	}
- 
-	req:=&pb.GetSubscribersRequest{
-		ID:int32(session.UserID),
+
+	req := &pb.GetSubscribersRequest{
+		ID: int32(session.UserID),
 	}
 
 	users, err := h.UserService.GetSubscribers(r.Context(), req)

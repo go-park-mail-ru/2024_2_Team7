@@ -79,10 +79,10 @@ func (db *EventDB) SearchEvents(ctx context.Context, params models.SearchParams,
 		tagsToArray(params.Tags),
 		paginationParams.Limit,
 		paginationParams.Offset,
-		params.LatitudeMin,
-		params.LatitudeMax,
-		params.LongitudeMin,
-		params.LongitudeMax,
+		nilIfFloatZero(params.LatitudeMin),
+		nilIfFloatZero(params.LatitudeMax),
+		nilIfFloatZero(params.LongitudeMin),
+		nilIfFloatZero(params.LongitudeMax),
 	}
 
 	rows, err := db.pool.Query(ctx, baseSearchQuery, args...)
@@ -122,4 +122,11 @@ func (db *EventDB) SearchEvents(ctx context.Context, params models.SearchParams,
 	}
 
 	return events, nil
+}
+
+func nilIfFloatZero(value float64) interface{} {
+	if value == 0 {
+		return nil
+	}
+	return value
 }

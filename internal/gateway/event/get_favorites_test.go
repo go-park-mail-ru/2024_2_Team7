@@ -1,4 +1,4 @@
-package handlers
+package events
 
 import (
 	"encoding/json"
@@ -6,9 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	pb "kudago/internal/auth/api"
-	"kudago/internal/auth/grpc"
-	"kudago/internal/gateway/auth/mocks"
+	pb "kudago/internal/event/api"
+	"kudago/internal/gateway/event/mocks"
 	"kudago/internal/gateway/utils"
 	"kudago/internal/logger"
 	"kudago/internal/models"
@@ -19,11 +18,12 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func TestAuthHandler_CheckSession(t *testing.T) {
+func TestAuthHandler_GetFavorites(t *testing.T) {
 	t.Parallel()
 
-	getUserRequest := &pb.GetUserRequest{
-		ID: int32(1),
+	getFavoritesRequest := &pb.GetFavoritesRequest{
+		UserID: int32(1),
+		Params: &pb.PaginationParams{Limit: 1, Offset: 1},
 	}
 
 	logger, _ := logger.NewLogger()
@@ -31,9 +31,9 @@ func TestAuthHandler_CheckSession(t *testing.T) {
 	tests := []struct {
 		name      string
 		req       *http.Request
-		setupFunc func(ctrl *gomock.Controller) *AuthHandlers
+		setupFunc func(ctrl *gomock.Controller) *EventHandler
 		wantCode  int
-		wantBody  *AuthResponse
+		wantBody  *GetEventsResponse
 	}{
 		{
 			name: "Успешная проверка сессии",
@@ -43,24 +43,27 @@ func TestAuthHandler_CheckSession(t *testing.T) {
 				ctx := utils.SetSessionInContext(req.Context(), session)
 				return req.WithContext(ctx)
 			}(),
-			setupFunc: func(ctrl *gomock.Controller) *AuthHandlers {
-				serviceMock := mocks.NewMockAuthServiceClient(ctrl)
-				user := &pb.User{
-					ID:       1,
-					Username: "user1",
-					Email:    "user1@mail.ru",
+			setupFunc: func(ctrl *gomock.Controller) *EventHandler {
+				serviceMock := mocks.NewMockEventServiceClient(ctrl)
+					event := &pb.Events{
+						Events: &pb.Event{
+
+							ID:          1,
+							Title:       "user1",
+							Description: "user1@mail.ru",
+						}
 				}
 
-				serviceMock.EXPECT().GetUser(gomock.Any(), getUserRequest).Return(user, nil)
+				serviceMock.EXPECT().GetFavorites(gomock.Any(), getFavoritesRequest).Return(user, nil)
 
-				return &AuthHandlers{
-					AuthService: serviceMock,
-					logger:      logger,
+				return &EventHandler{
+					EventService: serviceMock,
+					logger:       logger,
 				}
 			},
 			wantCode: http.StatusOK,
-			wantBody: &AuthResponse{
-				User: UserResponse{
+			wantBody: &GetEventsResponse{
+				Events: []EventResponse{
 					ID:       1,
 					Username: "user1",
 					Email:    "user1@mail.ru",
@@ -90,7 +93,7 @@ func TestAuthHandler_CheckSession(t *testing.T) {
 			setupFunc: func(ctrl *gomock.Controller) *AuthHandlers {
 				serviceMock := mocks.NewMockAuthServiceClient(ctrl)
 
-				serviceMock.EXPECT().GetUser(gomock.Any(), getUserRequest).Return(nil, status.Error(codes.NotFound, auth.ErrUserNotFound))
+				serviceMock.EXPECT().GetUser(gomock.Any(), getUserRequest).Return(nil, status.Error(codes.NotFound, event.ErrUserNotFound))
 
 				return &AuthHandlers{
 					AuthService: serviceMock,

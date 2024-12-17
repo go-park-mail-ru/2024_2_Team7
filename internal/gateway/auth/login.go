@@ -67,7 +67,7 @@ func (h *AuthHandlers) Login(w http.ResponseWriter, r *http.Request) {
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
-	
+
 	resp := userToUserResponse(user)
 	utils.WriteResponse(w, http.StatusOK, resp)
 	return
