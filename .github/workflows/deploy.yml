@@ -23,7 +23,7 @@ jobs:
           echo "GOBIN=$(go env GOBIN)" >> $GITHUB_ENV
           go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
       - name: run golangci-lint
-        run: golangci-lint run --new-from-rev origin/dev
+        run: golangci-lint run --new-from-rev origin/deploy
 
   tests:
       runs-on: ubuntu-latest
