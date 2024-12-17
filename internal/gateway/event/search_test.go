@@ -19,12 +19,14 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func TestEventHandler_GetFavorites(t *testing.T) {
+func TestEventHandler_Search(t *testing.T) {
 	t.Parallel()
 
-	getFavoritesRequest := &pb.GetFavoritesRequest{
-		UserID: int32(1),
-		Params: &pb.PaginationParams{Limit: 30},
+	searchEvents := &pb.SearchParams{
+		Params: &pb.PaginationParams{
+			Limit:  30,
+			Offset: 0,
+		},
 	}
 
 	logger, _ := logger.NewLogger()
@@ -37,12 +39,10 @@ func TestEventHandler_GetFavorites(t *testing.T) {
 		wantBody  *GetEventsResponse
 	}{
 		{
-			name: "Успешное получение избранных событий",
+			name: "Успешное получение  событий",
 			req: func() *http.Request {
-				req := httptest.NewRequest(http.MethodGet, "/events/favorites", nil)
-				session := models.Session{UserID: 1, Token: "valid_token"}
-				ctx := utils.SetSessionInContext(req.Context(), session)
-				return req.WithContext(ctx)
+				req := httptest.NewRequest(http.MethodGet, "/events/search", nil)
+				return req
 			}(),
 			setupFunc: func(ctrl *gomock.Controller) *EventHandler {
 				serviceMock := mocks.NewMockEventServiceClient(ctrl)
@@ -56,7 +56,7 @@ func TestEventHandler_GetFavorites(t *testing.T) {
 					},
 				}
 
-				serviceMock.EXPECT().GetFavorites(gomock.Any(), getFavoritesRequest).Return(events, nil)
+				serviceMock.EXPECT().SearchEvents(gomock.Any(), searchEvents).Return(events, nil)
 
 				return &EventHandler{
 					EventService: serviceMock,
@@ -77,14 +77,14 @@ func TestEventHandler_GetFavorites(t *testing.T) {
 		{
 			name: "Internal error",
 			req: func() *http.Request {
-				req := httptest.NewRequest(http.MethodGet, "/events/favorites", nil)
+				req := httptest.NewRequest(http.MethodGet, "/events/search", nil)
 				session := models.Session{UserID: 1, Token: "valid_token"}
 				ctx := utils.SetSessionInContext(req.Context(), session)
 				return req.WithContext(ctx)
 			}(),
 			setupFunc: func(ctrl *gomock.Controller) *EventHandler {
 				serviceMock := mocks.NewMockEventServiceClient(ctrl)
-				serviceMock.EXPECT().GetFavorites(gomock.Any(), getFavoritesRequest).Return(nil, status.Error(codes.NotFound, grpc.ErrInternal))
+				serviceMock.EXPECT().SearchEvents(gomock.Any(), searchEvents).Return(nil, status.Error(codes.NotFound, grpc.ErrInternal))
 
 				return &EventHandler{
 					EventService: serviceMock,
@@ -104,7 +104,7 @@ func TestEventHandler_GetFavorites(t *testing.T) {
 			defer ctrl.Finish()
 
 			recorder := httptest.NewRecorder()
-			tt.setupFunc(ctrl).GetFavorites(recorder, tt.req)
+			tt.setupFunc(ctrl).SearchEvents(recorder, tt.req)
 
 			assert.Equal(t, tt.wantCode, recorder.Code)
 

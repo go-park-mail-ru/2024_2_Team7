@@ -1,7 +1,6 @@
 package events
 
 import (
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -14,17 +13,18 @@ import (
 	"kudago/internal/models"
 
 	"github.com/golang/mock/gomock"
+	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-func TestEventHandler_GetFavorites(t *testing.T) {
+func TestEventHandler_DeleteEventFromFavorites(t *testing.T) {
 	t.Parallel()
 
-	getFavoritesRequest := &pb.GetFavoritesRequest{
-		UserID: int32(1),
-		Params: &pb.PaginationParams{Limit: 30},
+	deleteEventRequest := &pb.FavoriteEvent{
+		EventID: 1,
+		UserID:  1,
 	}
 
 	logger, _ := logger.NewLogger()
@@ -34,29 +34,20 @@ func TestEventHandler_GetFavorites(t *testing.T) {
 		req       *http.Request
 		setupFunc func(ctrl *gomock.Controller) *EventHandler
 		wantCode  int
-		wantBody  *GetEventsResponse
 	}{
 		{
-			name: "Успешное получение избранных событий",
+			name: "Успешное ",
 			req: func() *http.Request {
-				req := httptest.NewRequest(http.MethodGet, "/events/favorites", nil)
+				req := httptest.NewRequest(http.MethodDelete, "/events/1", nil)
+				req = mux.SetURLVars(req, map[string]string{"id": "1"})
 				session := models.Session{UserID: 1, Token: "valid_token"}
 				ctx := utils.SetSessionInContext(req.Context(), session)
 				return req.WithContext(ctx)
 			}(),
 			setupFunc: func(ctrl *gomock.Controller) *EventHandler {
 				serviceMock := mocks.NewMockEventServiceClient(ctrl)
-				events := &pb.Events{
-					Events: []*pb.Event{
-						{
-							ID:          1,
-							Title:       "user1",
-							Description: "user1@mail.ru",
-						},
-					},
-				}
 
-				serviceMock.EXPECT().GetFavorites(gomock.Any(), getFavoritesRequest).Return(events, nil)
+				serviceMock.EXPECT().DeleteEventFromFavorites(gomock.Any(), deleteEventRequest).Return(nil, nil)
 
 				return &EventHandler{
 					EventService: serviceMock,
@@ -64,27 +55,39 @@ func TestEventHandler_GetFavorites(t *testing.T) {
 				}
 			},
 			wantCode: http.StatusOK,
-			wantBody: &GetEventsResponse{
-				Events: []EventResponse{
-					{
-						ID:          1,
-						Title:       "user1",
-						Description: "user1@mail.ru",
-					},
-				},
-			},
 		},
 		{
-			name: "Internal error",
+			name: "Not found",
 			req: func() *http.Request {
-				req := httptest.NewRequest(http.MethodGet, "/events/favorites", nil)
+				req := httptest.NewRequest(http.MethodDelete, "/events/1", nil)
+				req = mux.SetURLVars(req, map[string]string{"id": "1"})
 				session := models.Session{UserID: 1, Token: "valid_token"}
 				ctx := utils.SetSessionInContext(req.Context(), session)
 				return req.WithContext(ctx)
 			}(),
 			setupFunc: func(ctrl *gomock.Controller) *EventHandler {
 				serviceMock := mocks.NewMockEventServiceClient(ctrl)
-				serviceMock.EXPECT().GetFavorites(gomock.Any(), getFavoritesRequest).Return(nil, status.Error(codes.NotFound, grpc.ErrInternal))
+				serviceMock.EXPECT().DeleteEventFromFavorites(gomock.Any(), deleteEventRequest).Return(nil, status.Error(codes.NotFound, grpc.ErrEventNotFound))
+
+				return &EventHandler{
+					EventService: serviceMock,
+					logger:       logger,
+				}
+			},
+			wantCode: http.StatusConflict,
+		},
+		{
+			name: "Internal error",
+			req: func() *http.Request {
+				req := httptest.NewRequest(http.MethodDelete, "/events/1", nil)
+				req = mux.SetURLVars(req, map[string]string{"id": "1"})
+				session := models.Session{UserID: 1, Token: "valid_token"}
+				ctx := utils.SetSessionInContext(req.Context(), session)
+				return req.WithContext(ctx)
+			}(),
+			setupFunc: func(ctrl *gomock.Controller) *EventHandler {
+				serviceMock := mocks.NewMockEventServiceClient(ctrl)
+				serviceMock.EXPECT().DeleteEventFromFavorites(gomock.Any(), deleteEventRequest).Return(nil, status.Error(codes.Internal, grpc.ErrInternal))
 
 				return &EventHandler{
 					EventService: serviceMock,
@@ -92,7 +95,6 @@ func TestEventHandler_GetFavorites(t *testing.T) {
 				}
 			},
 			wantCode: http.StatusInternalServerError,
-			wantBody: &GetEventsResponse{},
 		},
 	}
 
@@ -104,16 +106,9 @@ func TestEventHandler_GetFavorites(t *testing.T) {
 			defer ctrl.Finish()
 
 			recorder := httptest.NewRecorder()
-			tt.setupFunc(ctrl).GetFavorites(recorder, tt.req)
+			tt.setupFunc(ctrl).DeleteEventFromFavorites(recorder, tt.req)
 
 			assert.Equal(t, tt.wantCode, recorder.Code)
-
-			if tt.wantBody != nil {
-				var resp GetEventsResponse
-				err := json.Unmarshal(recorder.Body.Bytes(), &resp)
-				assert.NoError(t, err)
-				assert.Equal(t, tt.wantBody, &resp)
-			}
 		})
 	}
 }

@@ -32,7 +32,7 @@ func (h *UserHandlers) GetSubscribers(w http.ResponseWriter, r *http.Request) {
 
 	users, err := h.UserService.GetSubscribers(r.Context(), req)
 	if err != nil {
-		h.logger.Error(r.Context(), "getFavorites", err)
+		h.logger.Error(r.Context(), "get subscribers", err)
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}

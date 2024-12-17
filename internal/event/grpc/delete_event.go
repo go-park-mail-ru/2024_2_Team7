@@ -17,6 +17,9 @@ func (s *ServerAPI) DeleteEvent(ctx context.Context, req *pb.DeleteEventRequest)
 		if errors.Is(err, models.ErrNotFound) {
 			return nil, status.Error(codes.NotFound, ErrEventNotFound)
 		}
+		if errors.Is(err, models.ErrAccessDenied) {
+			return nil, status.Error(codes.PermissionDenied, ErrPermissionDenied)
+		}
 		s.logger.Error(ctx, "delete event", err)
 		return nil, status.Error(codes.Internal, ErrInternal)
 	}

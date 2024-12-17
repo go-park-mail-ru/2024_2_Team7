@@ -33,7 +33,7 @@ func (h *UserHandlers) Subscribe(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		utils.WriteResponse(w, http.StatusNotFound, httpErrors.ErrInvalidID)
+		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidID)
 		return
 	}
 
