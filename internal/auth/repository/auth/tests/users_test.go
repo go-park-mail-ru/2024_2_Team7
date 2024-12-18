@@ -1,9 +1,10 @@
 package repository
 
 import (
-	"kudago/internal/auth/repository/auth"
 	"testing"
 	"time"
+
+	"kudago/internal/auth/repository/auth"
 
 	"github.com/stretchr/testify/assert"
 
