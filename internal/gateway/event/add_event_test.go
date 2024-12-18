@@ -1,11 +1,11 @@
-package handlers
+package events
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"kudago/internal/gateway/user/mocks"
+	"kudago/internal/gateway/event/mocks"
 	"kudago/internal/gateway/utils"
 	"kudago/internal/logger"
 	"kudago/internal/models"
@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestUserHandler_UpdateUser(t *testing.T) {
+func TestEventHandler_AddEvent(t *testing.T) {
 	t.Parallel()
 
 	logger, _ := logger.NewLogger()
@@ -22,21 +22,21 @@ func TestUserHandler_UpdateUser(t *testing.T) {
 	tests := []struct {
 		name      string
 		req       *http.Request
-		setupFunc func(ctrl *gomock.Controller) *UserHandlers
+		setupFunc func(ctrl *gomock.Controller) *EventHandler
 		wantCode  int
 	}{
 		{
-			name: "No auth",
+			name: "Not found",
 			req: func() *http.Request {
-				req := httptest.NewRequest(http.MethodPut, "/profile", nil)
+				req := httptest.NewRequest(http.MethodDelete, "/events/1", nil)
 				return req
 			}(),
-			setupFunc: func(ctrl *gomock.Controller) *UserHandlers {
-				serviceMock := mocks.NewMockUserServiceClient(ctrl)
+			setupFunc: func(ctrl *gomock.Controller) *EventHandler {
+				serviceMock := mocks.NewMockEventServiceClient(ctrl)
 
-				return &UserHandlers{
-					UserService: serviceMock,
-					logger:      logger,
+				return &EventHandler{
+					EventService: serviceMock,
+					logger:       logger,
 				}
 			},
 			wantCode: http.StatusForbidden,
@@ -44,17 +44,17 @@ func TestUserHandler_UpdateUser(t *testing.T) {
 		{
 			name: "Bad request",
 			req: func() *http.Request {
-				req := httptest.NewRequest(http.MethodGet, "/profile", nil)
+				req := httptest.NewRequest(http.MethodDelete, "/events/1", nil)
 				session := models.Session{UserID: 1, Token: "valid_token"}
 				ctx := utils.SetSessionInContext(req.Context(), session)
 				return req.WithContext(ctx)
 			}(),
-			setupFunc: func(ctrl *gomock.Controller) *UserHandlers {
-				serviceMock := mocks.NewMockUserServiceClient(ctrl)
+			setupFunc: func(ctrl *gomock.Controller) *EventHandler {
+				serviceMock := mocks.NewMockEventServiceClient(ctrl)
 
-				return &UserHandlers{
-					UserService: serviceMock,
-					logger:      logger,
+				return &EventHandler{
+					EventService: serviceMock,
+					logger:       logger,
 				}
 			},
 			wantCode: http.StatusBadRequest,
@@ -69,7 +69,7 @@ func TestUserHandler_UpdateUser(t *testing.T) {
 			defer ctrl.Finish()
 
 			recorder := httptest.NewRecorder()
-			tt.setupFunc(ctrl).UpdateUser(recorder, tt.req)
+			tt.setupFunc(ctrl).AddEvent(recorder, tt.req)
 
 			assert.Equal(t, tt.wantCode, recorder.Code)
 		})

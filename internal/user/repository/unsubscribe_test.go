@@ -1,4 +1,4 @@
-package eventRepository
+package userRepository
 
 import (
 	"context"
@@ -12,25 +12,25 @@ import (
 	"kudago/internal/models"
 )
 
-func TestEventRepository_DeleteEventFromFavorites(t *testing.T) {
+func TestUserRepository_Unsubscribe(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
 
 	tests := []struct {
-		name      string
-		event     models.FavoriteEvent
-		mockSetup func(m pgxmock.PgxConnIface)
-		expectErr error
+		name          string
+		susbscription models.Subscription
+		mockSetup     func(m pgxmock.PgxConnIface)
+		expectErr     error
 	}{
 		{
 			name: "Успешное удаление",
-			event: models.FavoriteEvent{
-				EventID: 1,
-				UserID:  1,
+			susbscription: models.Subscription{
+				SubscriberID: 1,
+				FollowsID:    1,
 			},
 			mockSetup: func(m pgxmock.PgxConnIface) {
-				m.ExpectExec(`DELETE FROM FAVORITE_EVENT WHERE user_id=\$1 AND event_id=\$2`).
+				m.ExpectExec(`DELETE FROM SUBSCRIPTION WHERE subscriber_id=\$1 AND follows_id=\$2`).
 					WithArgs(1, 1).
 					WillReturnResult(pgxmock.NewResult("DELETE", 1))
 			},
@@ -38,11 +38,11 @@ func TestEventRepository_DeleteEventFromFavorites(t *testing.T) {
 		},
 		{
 			name: "Событие не найдено",
-			event: models.FavoriteEvent{
-				EventID: 2,
-				UserID:  1,
+			susbscription: models.Subscription{
+				SubscriberID: 1,
+				FollowsID:    2,
 			}, mockSetup: func(m pgxmock.PgxConnIface) {
-				m.ExpectExec(`DELETE FROM FAVORITE_EVENT WHERE user_id=\$1 AND event_id=\$2`).
+				m.ExpectExec(`DELETE FROM SUBSCRIPTION WHERE subscriber_id=\$1 AND follows_id=\$2`).
 					WithArgs(1, 2).
 					WillReturnResult(pgxmock.NewResult("DELETE", 0))
 			},
@@ -50,11 +50,11 @@ func TestEventRepository_DeleteEventFromFavorites(t *testing.T) {
 		},
 		{
 			name: "ошибка",
-			event: models.FavoriteEvent{
-				EventID: 3,
-				UserID:  1,
+			susbscription: models.Subscription{
+				FollowsID:    3,
+				SubscriberID: 1,
 			}, mockSetup: func(m pgxmock.PgxConnIface) {
-				m.ExpectExec(`DELETE FROM FAVORITE_EVENT WHERE user_id=$1 AND event_id=$2`).
+				m.ExpectExec(`DELETE FROM SUBSCRIPTION WHERE subscriber_id=\$1 AND follows_id=\$2`).
 					WithArgs(1, 3).
 					WillReturnError(fmt.Errorf("database error"))
 			},
@@ -74,7 +74,7 @@ func TestEventRepository_DeleteEventFromFavorites(t *testing.T) {
 
 			db := NewDB(mockConn)
 
-			err = db.DeleteEventFromFavorites(context.Background(), tt.event)
+			err = db.Unsubscribe(context.Background(), tt.susbscription)
 			if tt.expectErr != nil {
 				assert.Error(t, tt.expectErr, err)
 			}
