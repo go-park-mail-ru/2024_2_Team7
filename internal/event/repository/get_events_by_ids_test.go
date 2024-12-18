@@ -72,7 +72,6 @@ func TestEventRepository_GetEventsByIDs(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
-
 		})
 	}
 }

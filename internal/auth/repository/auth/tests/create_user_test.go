@@ -3,10 +3,11 @@ package repository
 import (
 	"context"
 	"fmt"
-	"github.com/pashagolub/pgxmock/v4"
-	"kudago/internal/auth/repository/auth"
 	"testing"
 	"time"
+
+	"github.com/pashagolub/pgxmock/v4"
+	"kudago/internal/auth/repository/auth"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

@@ -90,7 +90,7 @@ func (s *ServerAPI) GetNotifications(ctx context.Context, req *pb.GetNotificatio
 
 	var ids []int
 	for _, n := range notifications {
-		ids = append(ids, n.EventID)
+		ids = append(ids, n.ID)
 	}
 
 	err = s.service.UpdateSentNotifications(ctx, ids)

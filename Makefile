@@ -48,7 +48,7 @@ clean:
 
 coverage:
 	go test -coverpkg=./... -coverprofile=coverage.out.tmp ./...
-	cat coverage.out.tmp | grep -v "mock\|cmd\|config\|docs\|metrics\|api\|easyjson" > coverage.out
+	cat coverage.out.tmp | grep -v "mocks\|cmd\|config\|docs\|metrics\|api\|easyjson" > coverage.out
 	go tool cover -func=coverage.out
 
 

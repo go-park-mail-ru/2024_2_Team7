@@ -107,69 +107,71 @@ func TestEventService_SearchEvents(t *testing.T) {
 	}
 }
 
-// func TestEventService_UpdateEvent(t *testing.T) {
-// 	t.Parallel()
+func TestEventService_UpdateEvent(t *testing.T) {
+	t.Parallel()
 
-// 	ctrl := gomock.NewController(t)
-// 	defer ctrl.Finish()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-// 	mockEventDB := mocks.NewMockEventDB(ctrl)
-// 	service := NewService(mockEventDB)
+	mockEventDB := mocks.NewMockEventDB(ctrl)
+	service := NewService(mockEventDB)
 
-// 	event := models.Event{
-// 		ID:       1,
-// 		AuthorID: 1,
-// 		Title:    "Event",
-// 	}
+	event := models.Event{
+		ID:       1,
+		AuthorID: 1,
+		Title:    "Event",
+	}
 
-// 	testCases := []struct {
-// 		name          string
-// 		event         models.Event
-// 		setupMocks    func()
-// 		expectedEvent models.Event
-// 		expectedError error
-// 	}{
-// 		{
-// 			name:  "success update event",
-// 			event: event,
-// 			setupMocks: func() {
-// 				mockEventDB.EXPECT().GetEventByID(gomock.Any(), 1).Return(event, nil)
-// 				mockEventDB.EXPECT().UpdateEvent(gomock.Any(), gomock.Any()).Return(event, nil)
-// 			},
-// 			expectedEvent: event,
-// 			expectedError: nil,
-// 		},
-// 		{
-// 			name:  "event doesn't exists",
-// 			event: event,
-// 			setupMocks: func() {
-// 				mockEventDB.EXPECT().GetEventByID(gomock.Any(), 1).Return(models.Event{}, models.ErrEventNotFound)
-// 			},
-// 			expectedEvent: models.Event{},
-// 			expectedError: models.ErrEventNotFound,
-// 		},
-// 		{
-// 			name: "access denied",
-// 			event: models.Event{
-// 				ID:       1,
-// 				AuthorID: 3,
-// 				Title:    "access denied",
-// 			},
-// 			setupMocks: func() {
-// 				mockEventDB.EXPECT().GetEventByID(gomock.Any(), 1).Return(event, nil)
-// 			},
-// 			expectedEvent: models.Event{},
-// 			expectedError: models.ErrAccessDenied,
-// 		},
-// 	}
+	testCases := []struct {
+		name          string
+		event         models.Event
+		setupMocks    func()
+		expectedEvent models.Event
+		expectedError error
+	}{
+		{
+			name:  "success update event",
+			event: event,
+			setupMocks: func() {
+				mockEventDB.EXPECT().GetEventByID(gomock.Any(), 1).Return(event, nil)
+				mockEventDB.EXPECT().UpdateEvent(gomock.Any(), gomock.Any()).Return(event, nil)
+			},
+			expectedEvent: event,
+			expectedError: nil,
+		},
+		{
+			name:  "event doesn't exists",
+			event: event,
+			setupMocks: func() {
+				mockEventDB.EXPECT().GetEventByID(gomock.Any(), 1).Return(models.Event{}, models.ErrEventNotFound)
+			},
+			expectedEvent: models.Event{},
+			expectedError: models.ErrEventNotFound,
+		},
+		{
+			name: "access denied",
+			event: models.Event{
+				ID:       1,
+				AuthorID: 3,
+				Title:    "access denied",
+			},
+			setupMocks: func() {
+				mockEventDB.EXPECT().GetEventByID(gomock.Any(), 1).Return(event, nil)
+			},
+			expectedEvent: models.Event{},
+			expectedError: models.ErrAccessDenied,
+		},
+	}
 
-// 	for _, tc := range testCases {
-// 		t.Run(tc.name, func(t *testing.T) {
-// 			tc.setupMocks()
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.setupMocks()
 
-// 			result, err := service.UpdateEvent(context.Background(), tc.event)
-// 			assert.ErrorAs(t, tc.expectedError, err)
-// 			assert.Equal(t, tc.expectedEvent, result)
-// 		})
-// 	}
-// }
+			result, err := service.UpdateEvent(context.Background(), tc.event)
+			if tc.expectedError!=nil{
+				assert.Error(t, tc.expectedError, err)
+				assert.Equal(t, tc.expectedEvent, result)
+			}
+		})
+	}
+}
