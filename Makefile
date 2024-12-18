@@ -47,5 +47,8 @@ clean:
 	rm -rf $(BIN_DIR)
 
 coverage:
-	go test $(go list ./... | grep -vE '/mocks|/docs|/vendor|/api|_easyjson.go') -coverprofile=coverage.out -coverpkg=$(go list ./... | grep -vE '/mocks|/vendor|/api|/docs|_easyjson.go' | tr '\n' ,) && go tool cover -func=coverage.out | grep total
+	go test -coverpkg=./... -coverprofile=coverage.out.tmp ./...
+	cat coverage.out.tmp | grep -v "mock\|cmd\|config\|docs\|metrics\|api\|easyjson" > coverage.out
 	go tool cover -func=coverage.out
+
+
