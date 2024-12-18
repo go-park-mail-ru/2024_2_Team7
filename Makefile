@@ -45,3 +45,7 @@ all: auth_service user_service event_service image_service notification_service 
 
 clean:
 	rm -rf $(BIN_DIR)
+
+coverage:
+	go test $(go list ./... | grep -vE '/mocks|/docs|/vendor|/api|_easyjson.go') -coverprofile=coverage.out -coverpkg=$(go list ./... | grep -vE '/mocks|/vendor|/api|/docs|_easyjson.go' | tr '\n' ,) && go tool cover -func=coverage.out | grep total
+	go tool cover -func=coverage.out

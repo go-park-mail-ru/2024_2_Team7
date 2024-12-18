@@ -3,17 +3,25 @@ package repository
 import (
 	"context"
 	"fmt"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"kudago/internal/models"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type NotificationDB struct {
-	pool *pgxpool.Pool
+	pool Pool
 }
 
-func NewDB(pool *pgxpool.Pool) *NotificationDB {
+type Pool interface {
+	Begin(ctx context.Context) (pgx.Tx, error)
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+	Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
+}
+
+func NewDB(pool Pool) *NotificationDB {
 	return &NotificationDB{
 		pool: pool,
 	}
