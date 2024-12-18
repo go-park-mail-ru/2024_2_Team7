@@ -1,11 +1,13 @@
 package userRepository
 
 import (
+	"context"
 	"time"
 
 	"kudago/internal/models"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type UserInfo struct {
@@ -18,13 +20,21 @@ type UserInfo struct {
 }
 
 type UserDB struct {
-	pool *pgxpool.Pool
+	pool Pool
 }
 
-func NewDB(pool *pgxpool.Pool) *UserDB {
+func NewDB(pool Pool) *UserDB {
 	return &UserDB{
 		pool: pool,
 	}
+}
+
+type Pool interface {
+	Begin(ctx context.Context) (pgx.Tx, error)
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+	Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
 }
 
 func nilIfEmpty(value string) *string {
