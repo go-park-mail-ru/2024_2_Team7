@@ -3,9 +3,10 @@ package tests
 import (
 	"context"
 	"fmt"
-	"kudago/internal/notification/repository"
 	"testing"
 	"time"
+
+	"kudago/internal/notification/repository"
 
 	"github.com/pashagolub/pgxmock/v4"
 	"github.com/stretchr/testify/assert"
@@ -165,6 +166,7 @@ func TestNotificationRepository_CreateNotification(t *testing.T) {
 		})
 	}
 }
+
 func TestNotificationRepository_CreateNotificationsByUserIDs(t *testing.T) {
 	t.Parallel()
 

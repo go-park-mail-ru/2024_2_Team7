@@ -2,9 +2,10 @@ package eventRepository
 
 import (
 	"context"
+	"testing"
+
 	"github.com/jackc/pgx/v5/pgconn"
 	"kudago/internal/models"
-	"testing"
 
 	"github.com/pashagolub/pgxmock/v4"
 	"github.com/stretchr/testify/assert"

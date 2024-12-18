@@ -10,3 +10,7 @@ docker-compose.yml
 static
 bin
 certbot
+cover.html
+cover.out
+coverprofile.tmp
+coverage.out.tmp

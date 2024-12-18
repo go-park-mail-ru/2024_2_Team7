@@ -3,10 +3,11 @@ package tests
 import (
 	"context"
 	"fmt"
-	"kudago/internal/models"
-	"kudago/internal/user/repository"
 	"testing"
 	"time"
+
+	"kudago/internal/models"
+	"kudago/internal/user/repository"
 
 	"github.com/pashagolub/pgxmock/v4"
 	"github.com/stretchr/testify/assert"
@@ -81,7 +82,6 @@ func TestUserRepository_UpdateUser(t *testing.T) {
 		mockSetup   func(m pgxmock.PgxConnIface)
 		expectErr   bool
 	}{
-
 		{
 			name: "Ошибка при обновлении",
 			updatedUser: models.User{

@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
@@ -66,7 +67,7 @@ func (db *NotificationDB) UpdateSentNotifications(ctx context.Context, ids []int
 	defer tx.Rollback(ctx)
 
 	for _, id := range ids {
-		_, err = db.pool.Exec(ctx, updateSentNotificationsQuery, id)
+		_, err = tx.Exec(ctx, updateSentNotificationsQuery, id)
 		if err != nil {
 			return fmt.Errorf("%s: %w", models.LevelDB, err)
 		}
@@ -122,7 +123,7 @@ func (db *NotificationDB) CreateNotificationsByUserIDs(ctx context.Context, ids 
 	defer tx.Rollback(ctx)
 
 	for _, id := range ids {
-		_, err = db.pool.Exec(ctx, createNotificationsByUserIDsQuery, id, ntf.EventID, ntf.Message, ntf.NotifyAt)
+		_, err = tx.Exec(ctx, createNotificationsByUserIDsQuery, id, ntf.EventID, ntf.Message, ntf.NotifyAt)
 		if err != nil {
 			return fmt.Errorf("%s: %w", models.LevelDB, err)
 		}

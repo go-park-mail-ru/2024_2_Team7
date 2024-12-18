@@ -2,9 +2,10 @@ package tests
 
 import (
 	"context"
+	"testing"
+
 	"kudago/internal/models"
 	"kudago/internal/user/repository"
-	"testing"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/pashagolub/pgxmock/v4"
@@ -24,7 +25,6 @@ func TestUserDB_GetUserByID(t *testing.T) {
 		expectErr bool
 		expectRes models.User
 	}{
-
 		{
 			name: "Пользователь не найден",
 			ID:   2,

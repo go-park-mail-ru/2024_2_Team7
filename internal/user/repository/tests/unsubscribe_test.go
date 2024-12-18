@@ -3,9 +3,10 @@ package tests
 import (
 	"context"
 	"fmt"
+	"testing"
+
 	"kudago/internal/models"
 	"kudago/internal/user/repository"
-	"testing"
 
 	"github.com/pashagolub/pgxmock/v4"
 	"github.com/stretchr/testify/assert"
