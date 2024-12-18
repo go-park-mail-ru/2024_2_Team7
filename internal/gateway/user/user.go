@@ -1,4 +1,5 @@
 //go:generate mockgen -source=../../user/api/user_grpc.pb.go -destination=mocks/user.go -package=mocks
+//go:generate mockgen -source=../../image/api/image_grpc.pb.go -destination=mocks/image.go -package=mocks
 
 //go:generate easyjson user.go
 package handlers
