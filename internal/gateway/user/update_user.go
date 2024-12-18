@@ -52,10 +52,6 @@ func (h *UserHandlers) UpdateUser(w http.ResponseWriter, r *http.Request) {
 			case grpcCodes.AlreadyExists:
 				utils.WriteResponse(w, http.StatusConflict, httpErrors.ErrUsernameIsAlredyTaken)
 				return
-			case grpcCodes.Internal:
-				h.logger.Error(r.Context(), "update user", st.Err())
-				utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
-				return
 			}
 			h.logger.Error(r.Context(), "update user", err)
 			utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)

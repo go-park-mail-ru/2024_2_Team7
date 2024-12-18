@@ -34,7 +34,7 @@ func (h *UserHandlers) Profile(w http.ResponseWriter, r *http.Request) {
 		if ok {
 			switch st.Code() {
 			case grpcCodes.NotFound:
-				utils.WriteResponse(w, http.StatusConflict, httpErrors.ErrUserNotFound)
+				utils.WriteResponse(w, http.StatusNotFound, httpErrors.ErrUserNotFound)
 				return
 			}
 		}

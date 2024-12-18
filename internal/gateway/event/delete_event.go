@@ -51,6 +51,9 @@ func (h EventHandler) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 			case grpcCodes.NotFound:
 				utils.WriteResponse(w, http.StatusConflict, httpErrors.ErrEventNotFound)
 				return
+			case grpcCodes.PermissionDenied:
+				utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrAccessDenied)
+				return
 			}
 		}
 
