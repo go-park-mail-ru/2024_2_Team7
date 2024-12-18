@@ -15,7 +15,7 @@ const getSubscribersQuery = `
 `
 
 func (d UserDB) GetSubscribers(ctx context.Context, ID int) ([]models.User, error) {
-	rows, err := d.pool.Query(ctx, getSubscribersQuery, ID)
+	rows, err := d.Pool.Query(ctx, getSubscribersQuery, ID)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", models.LevelDB, err)
 	}
