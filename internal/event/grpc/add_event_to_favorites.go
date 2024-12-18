@@ -19,11 +19,11 @@ func (s *ServerAPI) AddEventToFavorites(ctx context.Context, req *pb.FavoriteEve
 			s.logger.Error(ctx, "add event to favorites", err)
 			switch err {
 			case models.ErrForeignKeyViolation:
-				return nil, status.Error(codes.NotFound, errEventNotFound)
+				return nil, status.Error(codes.NotFound, ErrEventNotFound)
 			case models.ErrNothingToInsert:
-				return nil, status.Error(codes.AlreadyExists, errAlreadyInFavorites)
+				return nil, status.Error(codes.AlreadyExists, ErrAlreadyInFavorites)
 			default:
-				return nil, status.Error(codes.Internal, errInternal)
+				return nil, status.Error(codes.Internal, ErrInternal)
 			}
 		}
 	}

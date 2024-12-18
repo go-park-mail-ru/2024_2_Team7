@@ -1,3 +1,5 @@
+//go:generate mockgen -source=event.go -destination=tests/mocks/event.go -package=mocks
+
 package grpc
 
 import (
@@ -9,11 +11,11 @@ import (
 )
 
 const (
-	errInternal           = "internal error"
-	errEventNotFound      = "event not found"
-	errPermissionDenied   = "permission denied"
-	errAlreadyInFavorites = "event is already in favorites"
-	errBadData            = "bad data request"
+	ErrInternal           = "internal error"
+	ErrEventNotFound      = "event not found"
+	ErrPermissionDenied   = "permission denied"
+	ErrAlreadyInFavorites = "event is already in favorites"
+	ErrBadData            = "bad data request"
 )
 
 type ServerAPI struct {
@@ -41,6 +43,9 @@ type EventsGetter interface {
 	GetEventByID(ctx context.Context, ID int) (models.Event, error)
 	GetFavorites(ctx context.Context, userID int, paginationParams models.PaginationParams) ([]models.Event, error)
 	GetSubscriptionEvents(ctx context.Context, userID int, paginationParams models.PaginationParams) ([]models.Event, error)
+	GetUserIDsByFavoriteEvent(ctx context.Context, eventID int) ([]int, error)
+	GetEventsByIDs(ctx context.Context, ids []int) ([]models.Event, error)
+	GetSubscribersIDs(ctx context.Context, id int) ([]int, error)
 }
 
 func NewServerAPI(service EventService, getter EventsGetter, logger *logger.Logger) *ServerAPI {

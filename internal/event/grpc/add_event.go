@@ -17,10 +17,10 @@ func (s *ServerAPI) AddEvent(ctx context.Context, req *pb.Event) (*pb.Event, err
 	if err != nil {
 		switch err {
 		case models.ErrInvalidCategory:
-			return nil, status.Error(codes.InvalidArgument, errBadData)
+			return nil, status.Error(codes.InvalidArgument, ErrBadData)
 		}
 		s.logger.Error(ctx, "add event", err)
-		return nil, status.Error(codes.Internal, errInternal)
+		return nil, status.Error(codes.Internal, ErrInternal)
 	}
 
 	event := eventToEventPB(eventData)

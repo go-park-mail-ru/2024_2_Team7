@@ -22,10 +22,10 @@ func (s *ServerAPI) Register(ctx context.Context, in *pb.RegisterRequest) (*pb.U
 	userData, err := s.service.Register(ctx, user)
 	if err != nil {
 		if errors.Is(err, models.ErrEmailIsUsed) {
-			return nil, status.Error(codes.AlreadyExists, errUsernameOrEmailIsTaken)
+			return nil, status.Error(codes.AlreadyExists, ErrUsernameOrEmailIsTaken)
 		}
 		s.logger.Error(ctx, "register", err)
-		return nil, status.Error(codes.Internal, errInternal)
+		return nil, status.Error(codes.Internal, ErrInternal)
 	}
 
 	resp := userToUserPb(userData)

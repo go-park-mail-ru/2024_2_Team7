@@ -1,3 +1,5 @@
+//go:generate mockgen -source=auth.go -destination=tests/mocks/auth.go -package=mocks
+
 package auth
 
 import (

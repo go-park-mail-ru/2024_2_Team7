@@ -14,7 +14,7 @@ func (s *ServerAPI) GetCategories(ctx context.Context, req *pb.Empty) (*pb.GetCa
 	categories, err := s.getter.GetCategories(ctx)
 	if err != nil {
 		s.logger.Error(ctx, "get categories", err)
-		return nil, status.Error(codes.Internal, errInternal)
+		return nil, status.Error(codes.Internal, ErrInternal)
 	}
 	resp := writeCategoriesResponse(categories)
 	return resp, nil

@@ -20,11 +20,11 @@ const updateUserQuery = `
 
 func (db *UserDB) UpdateUser(ctx context.Context, updatedUser models.User) (models.User, error) {
 	var user models.User
-	err := db.pool.QueryRow(ctx, updateUserQuery,
+	err := db.Pool.QueryRow(ctx, updateUserQuery,
 		updatedUser.ID,
-		nilIfEmpty(updatedUser.Username),
-		nilIfEmpty(updatedUser.Email),
-		nilIfEmpty(updatedUser.ImageURL),
+		NilIfEmpty(updatedUser.Username),
+		NilIfEmpty(updatedUser.Email),
+		NilIfEmpty(updatedUser.ImageURL),
 	).Scan(&user.ID, &user.Username, &user.Email, &user.ImageURL)
 	if err != nil {
 		return models.User{}, fmt.Errorf("%s: %w", models.LevelDB, err)

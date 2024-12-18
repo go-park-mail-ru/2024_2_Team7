@@ -13,7 +13,7 @@ func (s *ServerAPI) Logout(ctx context.Context, in *pb.LogoutRequest) (*pb.Empty
 	err := s.sessionManager.DeleteSession(ctx, in.Token)
 	if err != nil {
 		s.logger.Error(ctx, "logout", err)
-		return nil, status.Error(codes.Internal, errInternal)
+		return nil, status.Error(codes.Internal, ErrInternal)
 	}
 
 	return nil, nil

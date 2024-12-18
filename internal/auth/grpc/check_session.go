@@ -16,10 +16,10 @@ func (s *ServerAPI) CheckSession(ctx context.Context, in *pb.CheckSessionRequest
 	session, err := s.sessionManager.CheckSession(ctx, in.Cookie)
 	if err != nil {
 		if errors.Is(err, models.ErrUserNotFound) {
-			return nil, status.Error(codes.NotFound, errUserNotFound)
+			return nil, status.Error(codes.NotFound, ErrUserNotFound)
 		}
 		s.logger.Error(ctx, "check session", err)
-		return nil, status.Error(codes.Internal, errInternal)
+		return nil, status.Error(codes.Internal, ErrInternal)
 	}
 
 	user := &pb.Session{

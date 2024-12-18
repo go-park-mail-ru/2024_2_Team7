@@ -1,0 +1,67 @@
+name: Deploy with Commit Hash
+
+on:
+  push:
+    branches:
+      - deploy
+
+jobs:
+
+  linter:
+    runs-on: ubuntu-latest
+    steps:
+      - run:
+          sudo apt-get install libwebp-dev
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.1'
+          cache: false
+      - name: Set go env
+        run: |
+          echo "GOROOT=$(go env GOROOT)" >> $GITHUB_ENV
+          echo "GOBIN=$(go env GOBIN)" >> $GITHUB_ENV
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+      - name: run golangci-lint
+        run: golangci-lint run --new-from-rev origin/deploy
+
+  tests:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v3
+        - name: Set up Go
+          uses: actions/setup-go@v3
+          with:
+            go-version: '1.23.1'
+        - name: Test
+          run: go test -v ./...
+
+  deploy:
+    needs: [tests, linter]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Get Commit Hash
+        id: vars
+        run: echo "COMMIT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - name: Deploy to server via SSH
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "Using Commit Hash: ${{ env.COMMIT_HASH }}"
+            cd back
+            echo "Pulling latest code from deploy branch..."
+            git pull origin deploy
+            echo "Running 'make all'..."
+            make all
+            echo "Building Docker containers with commit hash..."
+            COMMIT_HASH=${{ env.COMMIT_HASH }} docker compose build --build-arg COMMIT_HASH=${{ env.COMMIT_HASH }}
+            echo "Starting Docker containers..."
+            COMMIT_HASH=${{ env.COMMIT_HASH }} docker compose up -d

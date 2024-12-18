@@ -12,7 +12,7 @@ const deleteSubscription = `
 	WHERE subscriber_id=$1 AND follows_id=$2`
 
 func (db *UserDB) Unsubscribe(ctx context.Context, subscription models.Subscription) error {
-	result, err := db.pool.Exec(ctx, deleteSubscription, subscription.SubscriberID, subscription.FollowsID)
+	result, err := db.Pool.Exec(ctx, deleteSubscription, subscription.SubscriberID, subscription.FollowsID)
 	if err != nil {
 		return fmt.Errorf("%s: %w", models.LevelDB, err)
 	}

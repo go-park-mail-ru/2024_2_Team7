@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 
 	httpErrors "kudago/internal/gateway/errors"
@@ -16,11 +15,6 @@ import (
 
 	"github.com/asaskevich/govalidator"
 )
-
-type UpdateRequest struct {
-	Username string `json:"username" valid:"required,alphanum,length(3|50)"`
-	Email    string `json:"email" valid:"email,required"`
-}
 
 func (h *UserHandlers) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	session, ok := utils.GetSessionFromContext(r.Context())
@@ -58,10 +52,6 @@ func (h *UserHandlers) UpdateUser(w http.ResponseWriter, r *http.Request) {
 			case grpcCodes.AlreadyExists:
 				utils.WriteResponse(w, http.StatusConflict, httpErrors.ErrUsernameIsAlredyTaken)
 				return
-			case grpcCodes.Internal:
-				h.logger.Error(r.Context(), "update user", st.Err())
-				utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
-				return
 			}
 			h.logger.Error(r.Context(), "update user", err)
 			utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
@@ -78,7 +68,8 @@ func (h *UserHandlers) UpdateUser(w http.ResponseWriter, r *http.Request) {
 func parseUpdateData(r *http.Request) (*pb.User, *pbImage.UploadRequest, *httpErrors.HttpError) {
 	var req models.User
 	jsonData := r.FormValue("json")
-	err := json.Unmarshal([]byte(jsonData), &req)
+
+	err := req.UnmarshalJSON([]byte(jsonData))
 	if err != nil {
 		return nil, nil, httpErrors.ErrInvalidData
 	}

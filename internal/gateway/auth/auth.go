@@ -1,3 +1,6 @@
+//go:generate mockgen -source=../../auth/api/auth_grpc.pb.go -destination=mocks/auth.go -package=mocks
+//go:generate easyjson auth.go
+
 package handlers
 
 import (
@@ -33,7 +36,7 @@ func init() {
 	})
 }
 
-func NewAuthHandlers(authServiceAddr string, imageServiceAddr string, logger *logger.Logger) (*AuthHandlers, error) {
+func NewHandlers(authServiceAddr string, imageServiceAddr string, logger *logger.Logger) (*AuthHandlers, error) {
 	authConn, err := grpc.NewClient(authServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
@@ -51,15 +54,30 @@ func NewAuthHandlers(authServiceAddr string, imageServiceAddr string, logger *lo
 	}, nil
 }
 
+//easyjson:json
 type AuthResponse struct {
 	User UserResponse `json:"user"`
 }
 
+//easyjson:json
 type UserResponse struct {
 	ID       int    `json:"id"`
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	ImageURL string `json:"image"`
+}
+
+//easyjson:json
+type LoginRequest struct {
+	Username string `json:"username" valid:"required,alphanum,length(3|50)"`
+	Password string `json:"password" valid:"password,required,length(3|50)"`
+}
+
+//easyjson:json
+type RegisterRequest struct {
+	Username string `json:"username" valid:"required,alphanum,length(3|50)"`
+	Email    string `json:"email" valid:"email,required"`
+	Password string `json:"password" valid:"password,required,length(3|50)"`
 }
 
 func userToUserResponse(user *pb.User) AuthResponse {

@@ -1,6 +1,6 @@
 //go:generate mockgen -source ./auth.go -destination=./mocks/auth.go -package=mocks
 
-package authService
+package service
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"kudago/internal/models"
 )
 
-type authService struct {
+type service struct {
 	UserDB UserDB
 }
 
@@ -19,19 +19,19 @@ type UserDB interface {
 	UserExists(ctx context.Context, user models.User) (bool, error)
 }
 
-func NewService(userDB UserDB) authService {
-	return authService{UserDB: userDB}
+func NewService(userDB UserDB) *service {
+	return &service{UserDB: userDB}
 }
 
-func (a *authService) GetUserByID(ctx context.Context, ID int) (models.User, error) {
+func (a *service) GetUserByID(ctx context.Context, ID int) (models.User, error) {
 	return a.UserDB.GetUserByID(ctx, ID)
 }
 
-func (a *authService) CheckCredentials(ctx context.Context, creds models.Credentials) (models.User, error) {
+func (a *service) CheckCredentials(ctx context.Context, creds models.Credentials) (models.User, error) {
 	return a.UserDB.CheckCredentials(ctx, creds.Username, creds.Password)
 }
 
-func (a *authService) Register(ctx context.Context, user models.User) (models.User, error) {
+func (a *service) Register(ctx context.Context, user models.User) (models.User, error) {
 	userExists, err := a.UserDB.UserExists(ctx, user)
 	if err != nil {
 		return models.User{}, err

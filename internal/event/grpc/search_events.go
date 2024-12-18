@@ -28,7 +28,7 @@ func (s *ServerAPI) SearchEvents(ctx context.Context, req *pb.SearchParams) (*pb
 	eventsData, err := s.service.SearchEvents(ctx, searchParams, params)
 	if err != nil {
 		s.logger.Error(ctx, "search events", err)
-		return nil, status.Error(codes.Internal, errInternal)
+		return nil, status.Error(codes.Internal, ErrInternal)
 	}
 
 	event := writeEventsResponse(eventsData, params.Limit)

@@ -1,8 +1,8 @@
 package auth
 
 const (
-	errInternal               = "internal error"
-	errUserNotFound           = "user not found"
-	errInvalidCredentials     = "invalid credentials"
-	errUsernameOrEmailIsTaken = "username or email is taken"
+	ErrInternal               = "internal error"
+	ErrUserNotFound           = "user not found"
+	ErrInvalidCredentials     = "invalid credentials"
+	ErrUsernameOrEmailIsTaken = "username or email is taken"
 )

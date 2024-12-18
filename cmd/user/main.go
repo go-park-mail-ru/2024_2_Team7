@@ -6,17 +6,17 @@ import (
 	"net/http"
 
 	"kudago/cmd/user/config"
+	"kudago/internal/interceptors"
 	"kudago/internal/logger"
 	"kudago/internal/metrics"
 	"kudago/internal/repository/postgres"
-
-	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
-	"kudago/internal/interceptors"
 	proto "kudago/internal/user/api"
-	grpcUser "kudago/internal/user/grpc"
+	grpcEvent "kudago/internal/user/grpc"
 	userRepository "kudago/internal/user/repository"
 
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	"google.golang.org/grpc"
 )
 
@@ -34,7 +34,7 @@ func main() {
 
 	pool, err := postgres.InitPostgres(conf.PostgresConfig, appLogger)
 	if err != nil {
-		log.Fatalf("Failed to connect to the postgres database", err, conf.PostgresConfig)
+		log.Fatalf("Failed to connect to the postgres database: %v", err)
 	}
 	defer pool.Close()
 
@@ -44,9 +44,6 @@ func main() {
 	}
 
 	userDB := userRepository.NewDB(pool)
-
-	userServer := grpcUser.NewServerAPI(userDB, appLogger)
-
 	metrics.InitMetrics()
 
 	grpc_prometheus.EnableHandlingTimeHistogram()
@@ -57,7 +54,10 @@ func main() {
 		),
 	)
 
+	userServer := grpcEvent.NewServerAPI(userDB, appLogger)
 	proto.RegisterUserServiceServer(grpcServer, userServer)
+
+	grpc_prometheus.Register(grpcServer)
 
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())

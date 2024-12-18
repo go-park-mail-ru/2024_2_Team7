@@ -11,14 +11,14 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (s *ServerAPI) GetEventByID(ctx context.Context, req *pb.ID) (*pb.Event, error) {
+func (s *ServerAPI) GetEventByID(ctx context.Context, req *pb.GetEventByIDRequest) (*pb.Event, error) {
 	eventData, err := s.getter.GetEventByID(ctx, int(req.ID))
 	if err != nil {
 		if errors.Is(err, models.ErrEventNotFound) {
-			return nil, status.Error(codes.NotFound, errEventNotFound)
+			return nil, status.Error(codes.NotFound, ErrEventNotFound)
 		}
 		s.logger.Error(ctx, "get event by id", err)
-		return nil, status.Error(codes.Internal, errInternal)
+		return nil, status.Error(codes.Internal, ErrInternal)
 	}
 
 	event := eventToEventPB(eventData)

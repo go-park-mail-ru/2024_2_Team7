@@ -28,7 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ImageServiceClient interface {
 	UploadImage(ctx context.Context, in *UploadRequest, opts ...grpc.CallOption) (*UploadResponse, error)
-	DeleteImage(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
+	DeleteImage(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*Empty, error)
 }
 
 type imageServiceClient struct {
@@ -49,9 +49,9 @@ func (c *imageServiceClient) UploadImage(ctx context.Context, in *UploadRequest,
 	return out, nil
 }
 
-func (c *imageServiceClient) DeleteImage(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error) {
+func (c *imageServiceClient) DeleteImage(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DeleteResponse)
+	out := new(Empty)
 	err := c.cc.Invoke(ctx, ImageService_DeleteImage_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func (c *imageServiceClient) DeleteImage(ctx context.Context, in *DeleteRequest,
 // for forward compatibility.
 type ImageServiceServer interface {
 	UploadImage(context.Context, *UploadRequest) (*UploadResponse, error)
-	DeleteImage(context.Context, *DeleteRequest) (*DeleteResponse, error)
+	DeleteImage(context.Context, *DeleteRequest) (*Empty, error)
 	mustEmbedUnimplementedImageServiceServer()
 }
 
@@ -78,7 +78,7 @@ type UnimplementedImageServiceServer struct{}
 func (UnimplementedImageServiceServer) UploadImage(context.Context, *UploadRequest) (*UploadResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UploadImage not implemented")
 }
-func (UnimplementedImageServiceServer) DeleteImage(context.Context, *DeleteRequest) (*DeleteResponse, error) {
+func (UnimplementedImageServiceServer) DeleteImage(context.Context, *DeleteRequest) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteImage not implemented")
 }
 func (UnimplementedImageServiceServer) mustEmbedUnimplementedImageServiceServer() {}

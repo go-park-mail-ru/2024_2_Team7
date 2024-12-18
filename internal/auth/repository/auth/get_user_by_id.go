@@ -14,7 +14,7 @@ const getUserByIDQuery = `SELECT id, username, email, url_to_avatar FROM "USER" 
 func (d UserDB) GetUserByID(ctx context.Context, ID int) (models.User, error) {
 	var userInfo UserInfo
 
-	err := d.pool.QueryRow(ctx, getUserByIDQuery, ID).Scan(
+	err := d.Pool.QueryRow(ctx, getUserByIDQuery, ID).Scan(
 		&userInfo.ID,
 		&userInfo.Username,
 		&userInfo.Email,
@@ -25,6 +25,6 @@ func (d UserDB) GetUserByID(ctx context.Context, ID int) (models.User, error) {
 		return models.User{}, fmt.Errorf("%s: %w", models.LevelDB, models.ErrUserNotFound)
 	}
 
-	user := toDomainUser(userInfo)
+	user := ToDomainUser(userInfo)
 	return user, err
 }

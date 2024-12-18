@@ -52,7 +52,7 @@ func InitPostgres(config PostgresConfig, logger *logger.Logger) (*pgxpool.Pool, 
 	}
 
 	if err := RunMigrations(config.URL); err != nil {
-		return nil, fmt.Errorf("failed to run migrations: %v", err, config.URL)
+		return nil, fmt.Errorf("failed to run migrations: %v", err)
 	}
 
 	return pool, nil

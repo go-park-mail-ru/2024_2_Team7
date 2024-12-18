@@ -1,8 +1,11 @@
 services:
   auth_service:
+    container_name: auth_service_${COMMIT_HASH}
     build:
       context: .
-      dockerfile: ./internal/auth/Dockerfile
+      dockerfile: build/auth.Dockerfile
+      args:
+        COMMIT_HASH: ${COMMIT_HASH}
     ports:
       - "50051:50051"
       - "9091:9091"
@@ -18,9 +21,12 @@ services:
       - .:/app
 
   user_service:
+    container_name: user_service_${COMMIT_HASH}
     build:
       context: .
-      dockerfile: ./internal/user/Dockerfile
+      dockerfile: build/user.Dockerfile
+      args:
+        COMMIT_HASH: ${COMMIT_HASH}
     ports:
       - "50052:50052"
       - "9092:9092"
@@ -34,9 +40,12 @@ services:
       - .:/app
 
   event_service:
+    container_name: event_service_${COMMIT_HASH}
     build:
       context: .
-      dockerfile: ./internal/event/Dockerfile
+      dockerfile: build/event.Dockerfile
+      args:
+        COMMIT_HASH: ${COMMIT_HASH}
     ports:
       - "50053:50053"
       - "9093:9093"
@@ -50,10 +59,12 @@ services:
       - .:/app
 
   image_service:
-
+    container_name: image_service_${COMMIT_HASH}
     build:
       context: .
-      dockerfile: ./internal/image/Dockerfile
+      dockerfile: build/image.Dockerfile
+      args:
+        COMMIT_HASH: ${COMMIT_HASH}
     ports:
       - "50054:50054"
       - "9094:9094"
@@ -63,24 +74,30 @@ services:
     volumes:
       - .:/app
 
-  # csat_service:
-  #   build:
-  #     context: .
-  #     dockerfile: ./internal/csat/Dockerfile
-  #   ports:
-  #     - "50055:50055"
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #   env_file:
-  #     - .env
-  #   volumes:
-  #     - .:/app
-
-  server_service:
+  notification_service:
+    container_name: notification_service_${COMMIT_HASH}
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: build/notification.Dockerfile
+      args:
+        COMMIT_HASH: ${COMMIT_HASH}
+    ports:
+      - "50056:50056"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+
+  server_service:
+    container_name: server_service_${COMMIT_HASH}
+    build:
+      context: .
+      dockerfile: build/server.Dockerfile
+      args:
+        COMMIT_HASH: ${COMMIT_HASH}
     ports:
       - "8080:8080"
     depends_on:
@@ -91,6 +108,8 @@ services:
       event_service:
         condition: service_started
       image_service:
+        condition: service_started
+      notification_service:
         condition: service_started
     env_file:
       - .env
@@ -132,11 +151,36 @@ services:
     image: redis:latest
     ports:
       - "6379:6379" 
+      
+  node_exporter:
+    image: prom/node-exporter:latest
+    container_name: node_exporter
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+
+  nginx:
+    container_name: nginx
+    restart: unless-stopped
+    image: nginx
+    ports:
+      - 80:80
+      - 443:443
+    depends_on:
+      server_service:
+        condition: service_started
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt/live/vyhodnoy.online/fullchain.pem:/etc/ssl/certs/fullchain.pem:ro
+      - /etc/letsencrypt/live/vyhodnoy.online/privkey.pem:/etc/ssl/private/privkey.pem:ro
+      - /home/user/Desktop/2024_2_Komanda7/public:/usr/share/nginx/html:ro
+      - /home/user/Desktop/2024_2_Team7/static/images:/usr/share/nginx/static/images:ro
 
 volumes:
   postgres_data:
     driver: local
   grafana-data:
+  letsencrypt:
 
 networks:
   default:

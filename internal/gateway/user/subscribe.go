@@ -22,7 +22,7 @@ import (
 // @Failure 404 {object} httpErrors.HttpError "Invalid ID"
 // @Failure 409 {object} httpErrors.HttpError "Self subscription"
 // @Failure 500 {object} httpErrors.HttpError "Internal Server Error"
-// @Router /users/subscribe/{id} [post]
+// @Router /profile/subscribe/{id} [post]
 func (h *UserHandlers) Subscribe(w http.ResponseWriter, r *http.Request) {
 	session, ok := utils.GetSessionFromContext(r.Context())
 	if !ok {
@@ -33,7 +33,7 @@ func (h *UserHandlers) Subscribe(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		utils.WriteResponse(w, http.StatusNotFound, httpErrors.ErrInvalidID)
+		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidID)
 		return
 	}
 
@@ -64,6 +64,7 @@ func (h *UserHandlers) Subscribe(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
+
 		h.logger.Error(r.Context(), "subscribe", err)
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return

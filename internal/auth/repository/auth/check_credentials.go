@@ -17,7 +17,7 @@ const checkCredentialsQuery = `
 
 func (d UserDB) CheckCredentials(ctx context.Context, username, password string) (models.User, error) {
 	var userInfo UserInfo
-	err := d.pool.QueryRow(ctx, checkCredentialsQuery, username, password).Scan(
+	err := d.Pool.QueryRow(ctx, checkCredentialsQuery, username, password).Scan(
 		&userInfo.ID,
 		&userInfo.Username,
 		&userInfo.Email,
@@ -30,6 +30,6 @@ func (d UserDB) CheckCredentials(ctx context.Context, username, password string)
 		}
 		return models.User{}, fmt.Errorf("%s: %w", models.LevelDB, err)
 	}
-	user := toDomainUser(userInfo)
+	user := ToDomainUser(userInfo)
 	return user, nil
 }

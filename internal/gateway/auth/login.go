@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"encoding/json"
+	"io"
 	"net/http"
 
 	pb "kudago/internal/auth/api"
@@ -13,11 +13,6 @@ import (
 	grpcStatus "google.golang.org/grpc/status"
 )
 
-type LoginRequest struct {
-	Username string `json:"username" valid:"required,alphanum,length(3|50)"`
-	Password string `json:"password" valid:"password,required,length(3|50)"`
-}
-
 func (h *AuthHandlers) Login(w http.ResponseWriter, r *http.Request) {
 	_, ok := utils.GetSessionFromContext(r.Context())
 	if ok {
@@ -25,13 +20,21 @@ func (h *AuthHandlers) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
+		return
+	}
+	defer r.Body.Close()
+
 	var req LoginRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	err = req.UnmarshalJSON([]byte(body))
+	if err != nil {
 		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
 		return
 	}
 
-	_, err := govalidator.ValidateStruct(&req)
+	_, err = govalidator.ValidateStruct(&req)
 	if err != nil {
 		utils.ProcessValidationErrors(w, err)
 		return
@@ -64,8 +67,8 @@ func (h *AuthHandlers) Login(w http.ResponseWriter, r *http.Request) {
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
-	resp := userToUserResponse(user)
 
+	resp := userToUserResponse(user)
 	utils.WriteResponse(w, http.StatusOK, resp)
 	return
 }

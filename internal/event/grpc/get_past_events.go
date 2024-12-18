@@ -14,7 +14,7 @@ func (s *ServerAPI) GetPastEvents(ctx context.Context, req *pb.PaginationParams)
 	eventsData, err := s.getter.GetPastEvents(ctx, params)
 	if err != nil {
 		s.logger.Error(ctx, "get past events", err)
-		return nil, status.Error(codes.Internal, errInternal)
+		return nil, status.Error(codes.Internal, ErrInternal)
 	}
 
 	event := writeEventsResponse(eventsData, params.Limit)

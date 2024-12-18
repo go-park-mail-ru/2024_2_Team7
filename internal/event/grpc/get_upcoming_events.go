@@ -14,7 +14,7 @@ func (s *ServerAPI) GetUpcomingEvents(ctx context.Context, req *pb.PaginationPar
 	eventsData, err := s.getter.GetUpcomingEvents(ctx, params)
 	if err != nil {
 		s.logger.Error(ctx, "get upcoming events", err)
-		return nil, status.Error(codes.Internal, errInternal)
+		return nil, status.Error(codes.Internal, ErrInternal)
 	}
 
 	event := writeEventsResponse(eventsData, params.Limit)
