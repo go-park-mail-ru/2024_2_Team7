@@ -24,22 +24,23 @@ $(BIN_DIR):
 	mkdir -p $(BIN_DIR)
 
 auth_service: $(BIN_DIR)
-	go build -o $(BIN_DIR)/auth_service ./cmd/auth/main.go
+	GOOS=linux GOARCH=amd64 go build -o $(BIN_DIR)/auth_service ./cmd/auth/main.go
 
 user_service: $(BIN_DIR)
-	go build -o $(BIN_DIR)/user_service ./cmd/user/main.go
+	GOOS=linux GOARCH=amd64 go build -o $(BIN_DIR)/user_service ./cmd/user/main.go
 
 event_service: $(BIN_DIR)
-	go build -o $(BIN_DIR)/event_service ./cmd/event/main.go
+	GOOS=linux GOARCH=amd64 go build -o $(BIN_DIR)/event_service ./cmd/event/main.go
 
 image_service: $(BIN_DIR)
-	go build -o $(BIN_DIR)/image_service ./cmd/image/main.go
+	GOOS=linux GOARCH=amd64 go build -o $(BIN_DIR)/image_service ./cmd/image/main.go
 
 notification_service: $(BIN_DIR)
-	go build -o $(BIN_DIR)/notification_service ./cmd/notification/main.go
+	GOOS=linux GOARCH=amd64 go build -o $(BIN_DIR)/notification_service ./cmd/notification/main.go
 
 server_service: $(BIN_DIR)
-	go build -o $(BIN_DIR)/server_service ./cmd/server/main.go
+	GOOS=linux GOARCH=amd64 go build -o $(BIN_DIR)/server_service ./cmd/server/main.go
+
 
 all: auth_service user_service event_service image_service notification_service server_service
 
