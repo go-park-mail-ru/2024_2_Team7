@@ -45,3 +45,10 @@ all: auth_service user_service event_service image_service notification_service 
 
 clean:
 	rm -rf $(BIN_DIR)
+
+coverage:
+	go test -coverpkg=./... -coverprofile=coverage.out.tmp ./...
+	cat coverage.out.tmp | grep -v "mocks\|cmd\|config\|docs\|metrics\|api\|easyjson" > coverage.out
+	go tool cover -func=coverage.out
+
+

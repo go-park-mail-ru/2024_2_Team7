@@ -25,7 +25,7 @@ func (d *UserDB) UserExists(ctx context.Context, user models.User) (bool, error)
 		args = append(args, user.ID)
 	}
 
-	err := d.pool.QueryRow(ctx, query, args...).Scan(&exists)
+	err := d.Pool.QueryRow(ctx, query, args...).Scan(&exists)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return false, nil

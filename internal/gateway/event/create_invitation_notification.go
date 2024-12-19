@@ -1,7 +1,6 @@
 package events
 
 import (
-	"io"
 	"net/http"
 	"time"
 
@@ -10,6 +9,7 @@ import (
 	pb "kudago/internal/notification/api"
 
 	"github.com/asaskevich/govalidator"
+	"github.com/mailru/easyjson"
 )
 
 // @Summary Создание уведомления
@@ -27,15 +27,9 @@ func (h EventHandler) CreateInvitationNotification(w http.ResponseWriter, r *htt
 		return
 	}
 
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
-		return
-	}
-	defer r.Body.Close()
-
 	req := InviteNotificationRequest{}
-	if err := req.UnmarshalJSON(body); err != nil {
+	err := easyjson.UnmarshalFromReader(r.Body, &req)
+	if err != nil {
 		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
 		return
 	}

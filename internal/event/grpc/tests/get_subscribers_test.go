@@ -23,7 +23,7 @@ func TestEventGRPC_GetSubscribers(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	subscribers := []int{1,2}
+	subscribers := []int{1, 2}
 
 	tests := []struct {
 		name         string
@@ -49,7 +49,7 @@ func TestEventGRPC_GetSubscribers(t *testing.T) {
 				return event.NewServerAPI(mockEventService, mockEventGetter, logger)
 			},
 			expectedResp: &pb.GetUserIDsResponse{
-				IDs: []int32{1,2},
+				IDs: []int32{1, 2},
 			},
 			expectedErr: nil,
 		},

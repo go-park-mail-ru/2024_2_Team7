@@ -7,11 +7,11 @@ import (
 	"testing"
 
 	pb "kudago/internal/auth/api"
+	"kudago/internal/auth/grpc"
 	"kudago/internal/gateway/auth/mocks"
 	"kudago/internal/gateway/utils"
 	"kudago/internal/logger"
 	"kudago/internal/models"
-	"kudago/internal/auth/grpc"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"

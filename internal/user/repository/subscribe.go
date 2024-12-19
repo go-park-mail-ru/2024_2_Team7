@@ -16,7 +16,7 @@ const insertSubscription = `
 	ON CONFLICT DO NOTHING`
 
 func (db *UserDB) Subscribe(ctx context.Context, subscription models.Subscription) error {
-	result, err := db.pool.Exec(ctx, insertSubscription, subscription.SubscriberID, subscription.FollowsID)
+	result, err := db.Pool.Exec(ctx, insertSubscription, subscription.SubscriberID, subscription.FollowsID)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {

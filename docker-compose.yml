@@ -1,8 +1,11 @@
 services:
   auth_service:
+    container_name: auth_service_${COMMIT_HASH}
     build:
       context: .
       dockerfile: build/auth.Dockerfile
+      args:
+        COMMIT_HASH: ${COMMIT_HASH}
     ports:
       - "50051:50051"
       - "9091:9091"
@@ -18,9 +21,12 @@ services:
       - .:/app
 
   user_service:
+    container_name: user_service_${COMMIT_HASH}
     build:
       context: .
       dockerfile: build/user.Dockerfile
+      args:
+        COMMIT_HASH: ${COMMIT_HASH}
     ports:
       - "50052:50052"
       - "9092:9092"
@@ -34,9 +40,12 @@ services:
       - .:/app
 
   event_service:
+    container_name: event_service_${COMMIT_HASH}
     build:
       context: .
       dockerfile: build/event.Dockerfile
+      args:
+        COMMIT_HASH: ${COMMIT_HASH}
     ports:
       - "50053:50053"
       - "9093:9093"
@@ -50,10 +59,12 @@ services:
       - .:/app
 
   image_service:
-
+    container_name: image_service_${COMMIT_HASH}
     build:
       context: .
       dockerfile: build/image.Dockerfile
+      args:
+        COMMIT_HASH: ${COMMIT_HASH}
     ports:
       - "50054:50054"
       - "9094:9094"
@@ -64,9 +75,12 @@ services:
       - .:/app
 
   notification_service:
+    container_name: notification_service_${COMMIT_HASH}
     build:
       context: .
-      dockerfile: ./internal/notification/Dockerfile
+      dockerfile: build/notification.Dockerfile
+      args:
+        COMMIT_HASH: ${COMMIT_HASH}
     ports:
       - "50056:50056"
     depends_on:
@@ -78,9 +92,12 @@ services:
       - .:/app
 
   server_service:
+    container_name: server_service_${COMMIT_HASH}
     build:
       context: .
       dockerfile: build/server.Dockerfile
+      args:
+        COMMIT_HASH: ${COMMIT_HASH}
     ports:
       - "8080:8080"
     depends_on:

@@ -14,7 +14,7 @@ const createUserQuery = `
 
 func (d *UserDB) CreateUser(ctx context.Context, user models.User) (models.User, error) {
 	var userInfo UserInfo
-	err := d.pool.QueryRow(ctx, createUserQuery,
+	err := d.Pool.QueryRow(ctx, createUserQuery,
 		user.Username,
 		user.Email,
 		user.Password,
@@ -31,6 +31,6 @@ func (d *UserDB) CreateUser(ctx context.Context, user models.User) (models.User,
 	userInfo.Email = user.Email
 	userInfo.ImageURL = &user.ImageURL
 
-	newUser := toDomainUser(userInfo)
+	newUser := ToDomainUser(userInfo)
 	return newUser, nil
 }

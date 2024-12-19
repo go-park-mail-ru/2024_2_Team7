@@ -1,10 +1,9 @@
-//go:generate mockgen -source=notification.go -destination=mocks/notification.go -package=mocks
+//go:generate mockgen -source=notification.go -destination=tests/mocks/notification.go -package=mocks
 
 package grpc
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -18,7 +17,7 @@ import (
 
 const (
 	layout      = "2006-01-02 15:04:05.999999999 -0700 MST"
-	errInternal = "internal error"
+	ErrInternal = "internal error"
 )
 
 type ServerAPI struct {
@@ -55,7 +54,7 @@ func (s *ServerAPI) CreateInvitationNotification(ctx context.Context, req *pb.No
 	err := s.service.CreateNotification(ctx, ntf)
 	if err != nil {
 		s.logger.Error(ctx, "create notification", err)
-		return nil, status.Error(codes.Internal, errInternal)
+		return nil, status.Error(codes.Internal, ErrInternal)
 	}
 	return nil, nil
 }
@@ -68,6 +67,7 @@ func (s *ServerAPI) CreateNotifications(ctx context.Context, req *pb.CreateNotif
 
 	cleanTime := strings.Split(req.Notification.NotifyAt, " m=")[0]
 	notifyAt, _ := time.Parse(layout, cleanTime)
+
 	ntf := models.Notification{
 		EventID:  int(req.Notification.EventID),
 		NotifyAt: notifyAt,
@@ -76,9 +76,8 @@ func (s *ServerAPI) CreateNotifications(ctx context.Context, req *pb.CreateNotif
 
 	if err := s.service.CreateNotificationsByUserIDs(ctx, ids, ntf); err != nil {
 		s.logger.Error(ctx, "create notification by user ids", err)
-		return nil, status.Error(codes.Internal, errInternal)
+		return nil, status.Error(codes.Internal, ErrInternal)
 	}
-	fmt.Println(req, ntf)
 	return nil, nil
 }
 
@@ -86,13 +85,14 @@ func (s *ServerAPI) GetNotifications(ctx context.Context, req *pb.GetNotificatio
 	notifications, err := s.service.GetNotifications(ctx, int(req.UserID))
 	if err != nil {
 		s.logger.Error(ctx, "get notifications", err)
-		return nil, status.Error(codes.Internal, errInternal)
+		return nil, status.Error(codes.Internal, ErrInternal)
 	}
 
 	var ids []int
 	for _, n := range notifications {
-		ids = append(ids, n.EventID)
+		ids = append(ids, n.ID)
 	}
+
 	err = s.service.UpdateSentNotifications(ctx, ids)
 	if err != nil {
 		return nil, err
@@ -125,7 +125,7 @@ func (s *ServerAPI) DeleteNotification(ctx context.Context, req *pb.DeleteNotifi
 	err := s.service.DeleteNotification(ctx, int(req.Id))
 	if err != nil {
 		s.logger.Error(ctx, "delete notification", err)
-		return nil, status.Error(codes.Internal, errInternal)
+		return nil, status.Error(codes.Internal, ErrInternal)
 	}
 
 	return nil, nil

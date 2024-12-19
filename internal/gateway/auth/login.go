@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"io"
 	"net/http"
 
 	pb "kudago/internal/auth/api"
@@ -9,6 +8,7 @@ import (
 	"kudago/internal/gateway/utils"
 
 	"github.com/asaskevich/govalidator"
+	easyjson "github.com/mailru/easyjson"
 	grpcCodes "google.golang.org/grpc/codes"
 	grpcStatus "google.golang.org/grpc/status"
 )
@@ -20,15 +20,8 @@ func (h *AuthHandlers) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
-		return
-	}
-	defer r.Body.Close()
-
 	var req LoginRequest
-	err = req.UnmarshalJSON([]byte(body))
+	err := easyjson.UnmarshalFromReader(r.Body, &req)
 	if err != nil {
 		utils.WriteResponse(w, http.StatusBadRequest, httpErrors.ErrInvalidData)
 		return
@@ -67,7 +60,7 @@ func (h *AuthHandlers) Login(w http.ResponseWriter, r *http.Request) {
 		utils.WriteResponse(w, http.StatusInternalServerError, httpErrors.ErrInternal)
 		return
 	}
-	
+
 	resp := userToUserResponse(user)
 	utils.WriteResponse(w, http.StatusOK, resp)
 	return

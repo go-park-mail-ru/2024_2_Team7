@@ -4,16 +4,25 @@ import (
 	"context"
 	"fmt"
 
-	"kudago/internal/models"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"kudago/internal/models"
 )
 
 type NotificationDB struct {
-	pool *pgxpool.Pool
+	pool Pool
 }
 
-func NewDB(pool *pgxpool.Pool) *NotificationDB {
+type Pool interface {
+	Begin(ctx context.Context) (pgx.Tx, error)
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+	Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
+}
+
+func NewDB(pool Pool) *NotificationDB {
 	return &NotificationDB{
 		pool: pool,
 	}
@@ -58,7 +67,7 @@ func (db *NotificationDB) UpdateSentNotifications(ctx context.Context, ids []int
 	defer tx.Rollback(ctx)
 
 	for _, id := range ids {
-		_, err = db.pool.Exec(ctx, updateSentNotificationsQuery, id)
+		_, err = tx.Exec(ctx, updateSentNotificationsQuery, id)
 		if err != nil {
 			return fmt.Errorf("%s: %w", models.LevelDB, err)
 		}
@@ -114,7 +123,7 @@ func (db *NotificationDB) CreateNotificationsByUserIDs(ctx context.Context, ids 
 	defer tx.Rollback(ctx)
 
 	for _, id := range ids {
-		_, err = db.pool.Exec(ctx, createNotificationsByUserIDsQuery, id, ntf.EventID, ntf.Message, ntf.NotifyAt)
+		_, err = tx.Exec(ctx, createNotificationsByUserIDsQuery, id, ntf.EventID, ntf.Message, ntf.NotifyAt)
 		if err != nil {
 			return fmt.Errorf("%s: %w", models.LevelDB, err)
 		}
