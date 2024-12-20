@@ -10,7 +10,6 @@ import (
 	pbImage "kudago/internal/image/api"
 	"kudago/internal/logger"
 	pb "kudago/internal/user/api"
-	user "kudago/internal/user/api"
 
 	"github.com/asaskevich/govalidator"
 	"google.golang.org/grpc"
@@ -31,14 +30,20 @@ type UserHandlers struct {
 	logger       *logger.Logger
 }
 
-func NewHandlers(userServiceAddr string, logger *logger.Logger) (*UserHandlers, error) {
+func NewHandlers(userServiceAddr string, imageServiceAddr string,logger *logger.Logger) (*UserHandlers, error) {
 	authConn, err := grpc.NewClient(userServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}
 
+	imageConn, err := grpc.NewClient(imageServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, err
+	}
+
 	return &UserHandlers{
-		UserService: user.NewUserServiceClient(authConn),
+		UserService: pb.NewUserServiceClient(authConn),
+		ImageService: pbImage.NewImageServiceClient(imageConn),
 		logger:      logger,
 	}, nil
 }

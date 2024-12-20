@@ -43,7 +43,7 @@ func main() {
 		log.Fatalf("Failed to connect to auth service: %v", err)
 	}
 
-	userHandler, err := userHandlers.NewHandlers(conf.UserServiceAddr, appLogger)
+	userHandler, err := userHandlers.NewHandlers(conf.UserServiceAddr,  conf.ImageServiceAddr, appLogger)
 	if err != nil {
 		log.Fatalf("Failed to connect to user service: %v", err)
 	}
