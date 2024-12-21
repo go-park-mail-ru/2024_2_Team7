@@ -168,7 +168,7 @@ func TestEventService_UpdateEvent(t *testing.T) {
 			tc.setupMocks()
 
 			result, err := service.UpdateEvent(context.Background(), tc.event)
-			if tc.expectedError!=nil{
+			if tc.expectedError != nil {
 				assert.Error(t, tc.expectedError, err)
 				assert.Equal(t, tc.expectedEvent, result)
 			}

@@ -24,7 +24,7 @@ func TestUserHandler_UploadImage(t *testing.T) {
 	t.Parallel()
 
 	uploadRequest := &pb.UploadRequest{
-		Filename:    "2",
+		Filename: "2",
 	}
 
 	logger, _ := logger.NewLogger()
@@ -71,7 +71,7 @@ func TestUserHandler_UploadImage(t *testing.T) {
 
 				return &UserHandlers{
 					ImageService: serviceMock,
-					logger:      logger,
+					logger:       logger,
 				}
 			},
 			wantCode: http.StatusInternalServerError,

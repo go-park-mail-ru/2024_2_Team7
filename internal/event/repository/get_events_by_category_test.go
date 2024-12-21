@@ -3,8 +3,9 @@ package eventRepository
 import (
 	"context"
 	"errors"
-	"kudago/internal/models"
 	"testing"
+
+	"kudago/internal/models"
 
 	"github.com/pashagolub/pgxmock/v4"
 	"github.com/stretchr/testify/assert"
@@ -15,8 +16,8 @@ func TestEventsRepository_GetEventsByCategory(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	//eventStart := time.Now().Add(10 * time.Hour)
-	//eventFinish := eventStart.Add(5 * time.Hour)
+	// eventStart := time.Now().Add(10 * time.Hour)
+	// eventFinish := eventStart.Add(5 * time.Hour)
 
 	tests := []struct {
 		name           string

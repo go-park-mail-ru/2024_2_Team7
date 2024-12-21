@@ -62,7 +62,9 @@ func TestEventHandler_GetEventsByIDs(t *testing.T) {
 					{
 						ID:          1,
 						Title:       "user1",
-						Description: "user1@mail.ru"}},
+						Description: "user1@mail.ru",
+					},
+				},
 			},
 		},
 	}
@@ -78,7 +80,6 @@ func TestEventHandler_GetEventsByIDs(t *testing.T) {
 			tt.setupFunc(ctrl).getEventsByIDs(tt.req.Context(), []int{1})
 
 			assert.Equal(t, tt.wantCode, recorder.Code)
-
 		})
 	}
 }

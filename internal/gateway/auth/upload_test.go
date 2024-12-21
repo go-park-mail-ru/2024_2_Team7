@@ -91,7 +91,6 @@ func TestAuthHandlers_DeleteImage(t *testing.T) {
 		url      string
 		wantCode int
 	}{
-
 		{
 			name:     "Пустой URL",
 			url:      "",
@@ -112,7 +111,6 @@ func TestAuthHandlers_DeleteImage(t *testing.T) {
 			assert.Equal(t, tt.wantCode, recorder.Code)
 
 			assert.Equal(t, http.StatusOK, recorder.Code)
-
 		})
 	}
 }

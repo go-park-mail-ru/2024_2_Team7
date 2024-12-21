@@ -36,7 +36,7 @@ func TestEventHandler_CreateNotification(t *testing.T) {
 
 				return &EventHandler{
 					NotificationService: serviceMock,
-					logger:       logger,
+					logger:              logger,
 				}
 			},
 			wantCode: http.StatusForbidden,
@@ -54,7 +54,7 @@ func TestEventHandler_CreateNotification(t *testing.T) {
 
 				return &EventHandler{
 					NotificationService: serviceMock,
-					logger:       logger,
+					logger:              logger,
 				}
 			},
 			wantCode: http.StatusBadRequest,
