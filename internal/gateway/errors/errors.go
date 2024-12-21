@@ -9,137 +9,137 @@ type HttpError struct {
 
 var (
 	ErrUserIsAuthorized = &HttpError{
-		Message: "User is authorized",
+		Message: "Пользователь уже авторизован",
 		Code:    "already_authorized",
 	}
 
 	ErrUserAlreadyDidTest = &HttpError{
-		Message: "User already did test",
+		Message: "Пользователь уже прошел тест",
 		Code:    "already_answered",
 	}
 
 	ErrEventAlreadyAddedToFavorites = &HttpError{
-		Message: "User already added event to favorites",
+		Message: "Событие уже добавлено в избранное",
 		Code:    "already_added",
 	}
 
 	ErrUserAlreadyLoggedIn = &HttpError{
-		Message: "Already logged in",
+		Message: "Пользователь уже вошел в систему",
 		Code:    "already_logged",
 	}
 
 	ErrUnauthorized = &HttpError{
-		Message: "Unauthorized",
+		Message: "Неавторизован",
 		Code:    "forbidden",
 	}
 
 	ErrWrongCredentials = &HttpError{
-		Message: "Wrong username or password",
+		Message: "Неправильное имя пользователя или пароль",
 		Code:    "wrong_credentials",
 	}
 
 	ErrInvalidData = &HttpError{
-		Message: "Can't decode JSON",
+		Message: "Невозможно декодировать JSON",
 		Code:    "invalid_data",
 	}
 
 	ErrInvalidTime = &HttpError{
-		Message: "Can't decode time to JSON",
+		Message: "Невозможно декодировать время в JSON",
 		Code:    "invalid_time",
 	}
 
 	ErrInvalidCategory = &HttpError{
-		Message: "Wrong or empty category",
+		Message: "Неверная или пустая категория",
 		Code:    "invalid_category",
 	}
 
 	ErrInvalidImage = &HttpError{
-		Message: "Invalid image",
+		Message: "Неверное изображение",
 		Code:    "invalid_image",
 	}
 
 	ErrInvalidImageFormat = &HttpError{
-		Message: "Wrong or empty image format",
+		Message: "Неверный или пустой формат изображения",
 		Code:    "invalid_image",
 	}
 
 	ErrInvalidCapacity = &HttpError{
-		Message: "Wrong or empty capacity",
+		Message: "Неверная или пустая вместимость",
 		Code:    "invalid_capacity",
 	}
 
 	ErrInvalidID = &HttpError{
-		Message: "Can't get ID",
+		Message: "Невозможно получить ID",
 		Code:    "invalid_id",
 	}
 
 	ErrUsernameIsAlredyTaken = &HttpError{
-		Message: "Username is already taken",
+		Message: "Имя пользователя уже занято",
 		Code:    "already_taken",
 	}
 
 	ErrEmailIsAlredyTaken = &HttpError{
-		Message: "Email is already taken",
+		Message: "Электронная почта уже занята",
 		Code:    "already_taken",
 	}
 
 	ErrInternal = &HttpError{
-		Message: "Internal server Error",
-		Code:    "internal_Error",
+		Message: "Внутренняя ошибка сервера",
+		Code:    "internal_error",
 	}
 
 	ErrEventNotFound = &HttpError{
-		Message: "Event not found",
+		Message: "Событие не найдено",
 		Code:    "not_found",
 	}
 
 	ErrUserNotFound = &HttpError{
-		Message: "User not found",
+		Message: "Пользователь не найден",
 		Code:    "not_found",
 	}
 
 	ErrTestNotFound = &HttpError{
-		Message: "Test not found",
+		Message: "Тест не найден",
 		Code:    "not_found",
 	}
 
 	ErrAccessDenied = &HttpError{
-		Message: "User doesn't own this event",
+		Message: "Пользователь не владеет этим событием",
 		Code:    "access_denied",
 	}
 
 	ErrBadTagLength = &HttpError{
-		Message: "Tag length is limited, 20 symbols only, no empty tags",
+		Message: "Длина тега ограничена: максимум 20 символов, пустые теги недопустимы",
 		Code:    "invalid_tag",
 	}
 
 	ErrTooManyTags = &HttpError{
-		Message: "Tags array length is limited 50 tags only",
+		Message: "Массив тегов ограничен: максимум 50 тегов",
 		Code:    "invalid_tags",
 	}
 
 	ErrEventStartAfterEventEnd = &HttpError{
-		Message: "Event start should be before event end",
+		Message: "Начало события должно быть до его окончания",
 		Code:    "invalid_time",
 	}
 
 	ErrBadEventTiming = &HttpError{
-		Message: "Event start should not be in the past and event end should be before 2030",
+		Message: "Начало события не должно быть в прошлом, а окончание должно быть до 2030 года",
 		Code:    "invalid_time",
 	}
 
 	ErrSelfSubscription = &HttpError{
-		Message: "Can't subscribe same user",
+		Message: "Нельзя подписаться на самого себя",
 		Code:    "invalid_id",
 	}
 
 	ErrSubscriptionAlreadyExists = &HttpError{
-		Message: "Already subscribed",
+		Message: "Уже подписан",
 		Code:    "already_subscribed",
 	}
 
 	ErrSubscriptionNotFound = &HttpError{
-		Message: "No subscription to delete",
+		Message: "Подписка для удаления не найдена",
 		Code:    "no_subscription",
 	}
 )
