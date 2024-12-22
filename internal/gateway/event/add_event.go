@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -28,36 +29,42 @@ import (
 // @Failure 500 {object} httpErrors.HttpError "Внутренняя ошибка сервера"
 // @Router /events [post]
 func (h EventHandler) AddEvent(w http.ResponseWriter, r *http.Request) {
-	session, ok := utils.GetSessionFromContext(r.Context())
-	if !ok {
-		utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrUnauthorized)
-		return
-	}
+	// session, ok := utils.GetSessionFromContext(r.Context())
+	// if !ok {
+	// 	utils.WriteResponse(w, http.StatusForbidden, httpErrors.ErrUnauthorized)
+	// 	return
+	// }
 
 	req, media, reqErr := parseEventData(r)
 	if reqErr != nil {
+		fmt.Println(reqErr)
 		utils.WriteResponse(w, http.StatusBadRequest, reqErr)
 		return
 	}
 
 	_, err := govalidator.ValidateStruct(&req)
 	if err != nil {
+		fmt.Println(err)
+
 		utils.ProcessValidationErrors(w, err)
 		return
 	}
 
 	reqErr = checkNewEventRequest(req)
 	if reqErr != nil {
+		fmt.Println(reqErr)
+
 		utils.WriteResponse(w, http.StatusBadRequest, reqErr)
 		return
 	}
 
 	url, err := h.uploadImage(r.Context(), media, w)
 	if err != nil {
+		fmt.Println(err)
 		return
 	}
 
-	event := toPBEvent(req, session.UserID)
+	event := toPBEvent(req, 1)
 	event.Image = url
 
 	event, err = h.EventService.AddEvent(r.Context(), event)
@@ -82,10 +89,10 @@ func (h EventHandler) AddEvent(w http.ResponseWriter, r *http.Request) {
 		Event: eventResp,
 	}
 
-	err = h.sendCreatedNotifications(r.Context(), int(event.ID), session.UserID)
-	if err != nil {
-		h.logger.Error(r.Context(), "send create notifications", err)
-	}
+	// err = h.sendCreatedNotifications(r.Context(), int(event.ID), 1)
+	// if err != nil {
+	// 	h.logger.Error(r.Context(), "send create notifications", err)
+	// }
 
 	utils.WriteResponse(w, http.StatusOK, resp)
 }
